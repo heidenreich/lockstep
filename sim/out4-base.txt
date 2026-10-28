@@ -1,0 +1,36 @@
+== C0 recruit
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"fight":18,"colossus":4,"elite":8} | bosses {"colossus":"4 fought, 0% won, 16t"}
+  1ply                     n=20 win 0% | act reached {"1":13,"2":2,"3":5} | stalls 4 | deaths {"stall:colossus":3,"fight":8,"warden":4,"colossus":3,"stall:elite":1,"elite":1} | bosses {"colossus":"13 fought, 54% won, 101t","mirror":"5 fought, 100% won, 31t","warden":"4 fought, 0% won, 55t"}
+     card plays/run: stomp 44.4, sidestep 17.1, lunge 14.4, quake 13.2, doubletime 9.9, aboutface 4.8, brace 3.4, magnet 2.3, shove 1.3, recall 1.3 | gold spent 27 heals 0.7 | hp into bosses {"colossus":"7.3","mirror":"7.8","warden":"8.0"}
+  2ply                     n=12 win 0% | act reached {"1":6,"2":1,"3":5} | stalls 2 | deaths {"colossus":2,"elite":2,"warden":5,"stall:colossus":2,"fight":1} | bosses {"colossus":"10 fought, 60% won, 73t","mirror":"5 fought, 100% won, 19t","warden":"5 fought, 0% won, 76t"}
+     card plays/run: stomp 14.3, quake 11.7, sidestep 10.3, doubletime 9.6, lunge 7.2, brace 2.9, aboutface 1.8, shove 1.7, recall 0.9, magnet 0.6 | gold spent 51 heals 1.2 | hp into bosses {"colossus":"7.5","mirror":"6.8","warden":"7.6"}
+== C0 drummer
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"fight":18,"colossus":5,"elite":7} | bosses {"colossus":"5 fought, 0% won, 20t"}
+  1ply                     n=20 win 5% | act reached {"1":9,"2":4,"3":7} | stalls 4 | deaths {"elite":2,"warden":6,"fight":4,"colossus":3,"stall:colossus":3,"stall:fight":1} | bosses {"colossus":"17 fought, 65% won, 90t","mirror":"7 fought, 100% won, 21t","warden":"7 fought, 14% won, 51t"}
+     card plays/run: doubletime 53.5, aboutface 29.6, lunge 21.8, quake 18.1, stomp 16.1, sidestep 8.8, magnet 6.4, brace 5.5, recall 1.4, shove 1.1, trapdoor 0.9 | gold spent 26 heals 0.7 | hp into bosses {"colossus":"6.4","mirror":"6.6","warden":"7.3"}
+  2ply                     n=12 win 8% | act reached {"1":2,"3":10} | stalls 2 | deaths {"stall:colossus":2,"warden":9} | bosses {"colossus":"12 fought, 83% won, 63t","mirror":"10 fought, 100% won, 21t","warden":"10 fought, 10% won, 73t"}
+     card plays/run: doubletime 35.3, quake 23.3, aboutface 11.5, lunge 9.6, stomp 5.0, recall 3.2, magnet 1.4, sidestep 1.3, shove 1.2, trapdoor 0.2, brace 0.2 | gold spent 48 heals 1.4 | hp into bosses {"colossus":"6.7","mirror":"7.0","warden":"6.8"}
+== C0 sapper
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"elite":11,"colossus":11,"fight":8} | bosses {"colossus":"11 fought, 0% won, 19t"}
+  1ply                     n=20 win 20% | act reached {"1":3,"2":2,"3":15} | stalls 1 | deaths {"warden":11,"colossus":3,"stall:mirror":1,"fight":1} | bosses {"colossus":"20 fought, 85% won, 49t","mirror":"16 fought, 94% won, 44t","warden":"15 fought, 27% won, 58t"}
+     card plays/run: quake 39.5, lunge 28.3, trapdoor 7.8, stomp 7.4, doubletime 7.0, sidestep 5.5, aboutface 4.5, shove 3.5, brace 3.3, recall 1.9, magnet 1.5 | gold spent 46 heals 1.8 | hp into bosses {"colossus":"8.5","mirror":"8.5","warden":"8.7"}
+  2ply                     n=12 win 67% | act reached {"3":12} | stalls 0 | deaths {"warden":4} | bosses {"colossus":"12 fought, 100% won, 40t","mirror":"12 fought, 100% won, 19t","warden":"12 fought, 67% won, 47t"}
+     card plays/run: quake 32.7, lunge 12.0, shove 4.2, aboutface 3.3, stomp 3.1, sidestep 2.1, doubletime 2.0, brace 1.6, magnet 1.1, recall 0.6, trapdoor 0.3 | gold spent 28 heals 1.1 | hp into bosses {"colossus":"8.8","mirror":"8.7","warden":"8.4"}
+== C3 recruit
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"fight":23,"elite":4,"colossus":3} | bosses {"colossus":"3 fought, 0% won, 15t"}
+  1ply                     n=20 win 0% | act reached {"1":18,"2":1,"3":1} | stalls 2 | deaths {"stall:colossus":1,"elite":4,"fight":11,"colossus":2,"stall:mirror":1,"warden":1} | bosses {"colossus":"5 fought, 40% won, 87t","mirror":"2 fought, 50% won, 110t","warden":"1 fought, 0% won, 59t"}
+     card plays/run: stomp 28.4, sidestep 23.6, lunge 6.1, quake 4.6, aboutface 2.4, magnet 1.9, doubletime 1.9, brace 1.5, recall 1.2, shove 0.5, trapdoor 0.3 | gold spent 11 heals 0.3 | hp into bosses {"colossus":"5.8","mirror":"7.0","warden":"5.0"}
+  2ply                     n=12 win 17% | act reached {"1":7,"2":1,"3":4} | stalls 8 | deaths {"stall:colossus":5,"stall:mirror":1,"stall:fight":2,"colossus":1,"fight":1} | bosses {"colossus":"11 fought, 45% won, 123t","mirror":"5 fought, 80% won, 54t","warden":"2 fought, 100% won, 53t"}
+     card plays/run: stomp 16.8, sidestep 11.0, lunge 10.6, doubletime 9.3, aboutface 3.3, magnet 2.4, recall 1.7, shove 1.3, quake 1.0, trapdoor 0.9, brace 0.8 | gold spent 19 heals 1.4 | hp into bosses {"colossus":"6.9","mirror":"7.6","warden":"6.5"}
+== C3 drummer
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"fight":22,"colossus":4,"elite":4} | bosses {"colossus":"4 fought, 0% won, 12t"}
+  1ply                     n=20 win 0% | act reached {"1":17,"2":2,"3":1} | stalls 5 | deaths {"warden":1,"colossus":5,"stall:elite":1,"fight":9,"stall:colossus":4} | bosses {"colossus":"12 fought, 25% won, 112t","mirror":"1 fought, 100% won, 8t","warden":"1 fought, 0% won, 61t"}
+     card plays/run: doubletime 39.4, aboutface 26.9, stomp 7.2, lunge 6.2, sidestep 5.4, quake 4.7, trapdoor 4.4, brace 2.8, magnet 2.5, recall 0.9, shove 0.8 | gold spent 17 heals 0.3 | hp into bosses {"colossus":"6.1","mirror":"8.0","warden":"7.0"}
+  2ply                     n=12 win 25% | act reached {"1":3,"2":2,"3":7} | stalls 2 | deaths {"fight":4,"warden":3,"stall:colossus":2} | bosses {"colossus":"11 fought, 82% won, 67t","mirror":"7 fought, 100% won, 12t","warden":"6 fought, 50% won, 49t"}
+     card plays/run: doubletime 31.7, quake 14.8, aboutface 7.3, stomp 5.7, lunge 2.9, recall 2.6, brace 1.8, shove 1.6, sidestep 1.2, magnet 1.2, trapdoor 1.0 | gold spent 37 heals 1.6 | hp into bosses {"colossus":"6.1","mirror":"6.3","warden":"6.8"}
+== C3 sapper
+  naive                    n=30 win 0% | act reached {"1":30} | stalls 0 | deaths {"fight":22,"elite":6,"colossus":2} | bosses {"colossus":"2 fought, 0% won, 20t"}
+  1ply                     n=20 win 15% | act reached {"1":5,"2":5,"3":10} | stalls 4 | deaths {"warden":5,"stall:fight":1,"elite":1,"colossus":3,"fight":3,"stall:colossus":2,"mirror":1,"stall:mirror":1} | bosses {"colossus":"20 fought, 75% won, 71t","mirror":"12 fought, 83% won, 64t","warden":"8 fought, 38% won, 71t"}
+     card plays/run: quake 46.3, lunge 20.4, trapdoor 7.3, aboutface 7.3, doubletime 6.9, stomp 6.8, sidestep 5.8, brace 4.3, shove 3.9, magnet 3.6, recall 0.6 | gold spent 40 heals 1.4 | hp into bosses {"colossus":"8.3","mirror":"8.5","warden":"8.6"}
+  2ply                     n=12 win 75% | act reached {"3":12} | stalls 0 | deaths {"warden":3} | bosses {"colossus":"12 fought, 100% won, 46t","mirror":"12 fought, 100% won, 22t","warden":"12 fought, 75% won, 48t"}
+     card plays/run: quake 32.5, lunge 12.5, shove 4.8, brace 3.9, aboutface 2.8, stomp 2.7, doubletime 1.9, magnet 1.7, trapdoor 1.7, recall 0.8, sidestep 0.7 | gold spent 55 heals 1.7 | hp into bosses {"colossus":"8.8","mirror":"8.5","warden":"8.6"}

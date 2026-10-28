@@ -1,0 +1,648 @@
+<title>Lockstep</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one drill hall (the board) beside a slim instrument panel; stacks on phones. Single dark look by choice. */
+:root {
+  --bg: #11181b;
+  --panel: #172125;
+  --tile: #1c282c;
+  --tile2: #192428;
+  --wall: #34484d;
+  --pit: #070b0c;
+  --line: #2a3b40;
+  --ink: #e6ecea;
+  --muted: #8ea3a2;
+  --player: #f3b54a;
+  --lock: #6fd0c4;
+  --enemy: #e2654d;
+  --contra: #d77ad0;
+  --danger: #ff7a8a;
+  --good: #7fd3a6;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; margin: 0; line-height: 1; }
+h1 span { color: var(--lock); }
+.tag { color: var(--muted); margin: 0; max-width: 60ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.board { position: relative; min-width: 0; }
+canvas { display: block; width: 100%; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); touch-action: manipulation; }
+.board.hit canvas { box-shadow: 0 0 0 3px var(--danger); }
+.over {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border-radius: 10px; padding: 16px;
+}
+.over h2 { font-family: var(--f-display); font-size: 30px; margin: 0; }
+.over p { margin: 0; color: var(--muted); }
+.choices { display: grid; gap: 8px; justify-items: center; }
+.choices button { display: grid; gap: 2px; width: min(320px, 100%); text-align: left; }
+.choices button small { font-weight: 400; font-size: 12.5px; opacity: .85; }
+.choices kbd { border-color: color-mix(in srgb, var(--bg) 40%, transparent); color: var(--bg); margin-right: 4px; }
+.ups { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.ups b { color: var(--lock); font-weight: 600; display: block; }
+.ups .none { color: var(--muted); }
+.panel { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--f-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hp { display: flex; gap: 4px; }
+.hp i { width: 14px; height: 14px; border-radius: 3px; background: var(--line); }
+.hp i.on { background: var(--player); }
+.status { font-family: var(--f-mono); font-size: 13px; color: var(--lock); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { position: relative; width: 44px; height: 24px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 12px; background: var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.switch input:checked + span { background: var(--lock); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--lock); outline-offset: 2px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+button {
+  font: inherit; font-weight: 600; color: var(--bg); background: var(--lock); border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible { outline: 2px solid var(--player); outline-offset: 2px; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; }
+.rules b { color: var(--lock); font-weight: 600; }
+.rules em { color: var(--player); font-style: normal; font-weight: 600; }
+.rules .c { color: var(--contra); font-weight: 600; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-height: 7.5em; }
+.log li:first-child { color: var(--ink); }
+.log .t { color: var(--line); filter: brightness(1.8); margin-right: 6px; }
+.pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(3, 50px); gap: 6px; justify-content: center; }
+.pad button { padding: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--line); font-family: var(--f-mono); display: grid; place-content: center; gap: 0; line-height: 1.15; }
+.pad button:active { background: var(--line); }
+.pad button small { font-size: 10px; font-weight: 600; color: var(--good); }
+.pad button small.bad { color: var(--danger); }
+.pad button small.gain { color: var(--lock); }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .w { grid-column: 2; grid-row: 2; font-size: 11px; }
+.pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; }
+.keys { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+@media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Lock<span>step</span></h1>
+    <p class="tag">The room copies your every move. Steer it so they crash into walls and pits, never into you.</p>
+  </header>
+
+  <div class="game">
+    <div class="board" id="board">
+      <canvas id="cv" aria-label="Game board"></canvas>
+      <div class="over" id="over" hidden>
+        <h2 id="overTitle">Out of step</h2>
+        <p id="overText"></p>
+        <div class="choices" id="overActions"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Turn</span><b id="sTurn">0</b></div>
+          <div class="stat"><span class="label">Wave</span><b id="sWave">1</b></div>
+          <div class="stat"><span class="label">Score</span><b id="sScore">0</b></div>
+          <div class="stat"><span class="label">Best</span><b id="sBest">0</b></div>
+        </div>
+        <div class="row"><span class="label">Health</span><div class="hp" id="hp"></div></div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="card">
+        <span class="label">Controls</span>
+        <div class="pad">
+          <button class="u" data-d="0,-1" aria-label="Move up"><b>▲</b><small></small></button>
+          <button class="l" data-d="-1,0" aria-label="Move left"><b>◀</b><small></small></button>
+          <button class="w" data-d="0,0" aria-label="Wait"><b>wait</b><small></small></button>
+          <button class="r" data-d="1,0" aria-label="Move right"><b>▶</b><small></small></button>
+          <button class="d" data-d="0,1" aria-label="Move down"><b>▼</b><small></small></button>
+        </div>
+        <p class="keys"><kbd>WASD</kbd> or arrows to move or attack · <kbd>Space</kbd> wait · <kbd>R</kbd> restart</p>
+      </div>
+
+      <div class="card">
+        <span class="label">Upgrades</span>
+        <ul class="ups" id="ups"></ul>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label for="preview">Show what each move costs</label>
+          <span class="switch"><input type="checkbox" id="preview" checked><span></span></span>
+        </div>
+        <p class="hint" id="previewHint"></p>
+        <button class="ghost" id="restart">Restart run</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="game">
+    <div class="card">
+      <span class="label">How it works</span>
+      <ul class="rules">
+        <li>Each turn you move one tile, wait, or bump into an enemy to hit it.</li>
+        <li><b>Lockstep:</b> whichever way you press, every drone and heavy tries to move that way too. <span class="c">Contrarians</span> move the opposite way. The room copies your input even when you attack or walk into a wall.</li>
+        <li>An enemy that moves into your tile hits you, and so does one that ends its move right beside you. Attacking, or stopping against a wall, lets whatever is lined up behind you crash into you.</li>
+        <li>Every wave after the first takes place in a different room: Crossroads, Gallery, Moat, Lanes or Funnel. Each moves the walls and pits, so the pushes that pay off change.</li>
+        <li>After each wave you <b>pick one of three upgrades</b> that bend the rules: deeper pits, shoving, crushing enemies against walls or each other, and more. They last the whole run.</li>
+        <li>Herd enemies into <em>pits</em> for 2 points each. Each pit holds 2 per wave, then fills in (dashed outline) until the next wave. Bump kills score 1, and clearing a wave scores twice its number.</li>
+        <li>An enemy blocked <b>3 turns in a row</b> (by a wall, the edge or another enemy) breaks lockstep and chases you. A dot means it has been blocked; a red ring means it has broken free. A chaser that loses you (4 or more tiles away for 4 turns) falls back into step.</li>
+        <li>Waiting lets every enemy chase you for one turn and brings in a new one. While two or more enemies remain, another arrives every 8 turns, up to 2 extra per wave.</li>
+        <li>Each wave has <b>60 turns</b> of patience. After that, the room goes into a frenzy: every enemy breaks step and chases you until the wave is cleared.</li>
+        <li><em>Heavies</em> take 2 hits, hit for 2 and move every other turn. Everything else has 1 health and hits for 1.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="label">Log</span>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = 11, H = 11, MAXHP = 6, BREAK = 3, RELOCK = 4, SPAWN_EVERY = 8, MAX_EXTRAS = 2, FRENZY = 60;
+const room = (name, walls, pits) => ({ name, walls: new Set(walls), pits: new Set(pits) });
+const ROOMS = [
+  room("Crossroads", ["2,2", "8,2", "2,8", "8,8"], ["5,3", "5,7", "3,5", "7,5"]),
+  room("Gallery", ["3,3", "3,4", "3,6", "3,7", "7,3", "7,4", "7,6", "7,7"], ["5,1", "5,9", "1,5", "9,5"]),
+  room("Moat", ["5,3", "5,7", "3,5", "7,5"], ["2,2", "8,2", "2,8", "8,8"]),
+  room("Lanes", ["1,3", "2,3", "8,3", "9,3", "1,7", "2,7", "8,7", "9,7"], ["5,3", "5,7", "0,5", "10,5"]),
+  room("Funnel", ["4,4", "6,4", "4,6", "6,6"], ["5,0", "5,10", "0,5", "10,5"])
+];
+const UPGRADES = {
+  deep: { name: "Deep pits", text: "Pits hold 3 enemies per wave instead of 2." },
+  shove: { name: "Shove", text: "An enemy you hit but don't kill is knocked back up to 2 tiles, into a pit if one is in the way." },
+  pileup: { name: "Pile-up", text: "An enemy that breaks free against another enemy takes 1 damage as it does." },
+  spikes: { name: "Spiked walls", text: "An enemy that breaks free against a wall or the edge takes 1 damage as it does." },
+  turncoat: { name: "Turncoat", text: "For the first 10 turns of each wave, contrarians move with you." },
+  patience: { name: "Patience", text: "Frenzy starts 20 turns later." },
+  stillness: { name: "Stillness", text: "Once per wave, waiting freezes the room: nothing chases and nothing arrives." },
+  steady: { name: "Brace", text: "Once per wave, the first locked enemy that lands beside you deals no damage." },
+  mend: { name: "Mend", text: "+3 maximum health, and heal 3." }
+};
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const TYPES = {
+  drone: { name: "drone", hp: 1, dmg: 1 },
+  heavy: { name: "heavy", hp: 2, dmg: 2 },
+  contra: { name: "contrarian", hp: 1, dmg: 1 }
+};
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+var settings = { preview: true };
+var state = null;
+let cell = 48, best = 0, sim = false, lastHits = 0;
+
+try { best = +localStorage.getItem("lockstep-best") || 0; } catch (e) {}
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+function readColors() { for (const k of ["tile", "tile2", "wall", "pit", "line", "ink", "muted", "player", "lock", "enemy", "contra", "danger", "bg"]) C[k] = css("--" + k); }
+
+const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const has = id => !!state.ups[id];
+const pitHolds = () => has("deep") ? 3 : 2;
+const frenzyAt = () => FRENZY + (has("patience") ? 20 : 0);
+const isWall = (x, y) => ROOMS[state.room].walls.has(x + "," + y);
+// A pit that has swallowed its fill this wave acts as floor.
+const isPit = (x, y) => ROOMS[state.room].pits.has(x + "," + y) && (state.pitFill[x + "," + y] || 0) < pitHolds();
+const enemyAt = (x, y) => state.enemies.find(e => e.x === x && e.y === y);
+const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const nameOf = e => TYPES[e.type].name;
+
+function log(msg) {
+  state.log.unshift({ t: state.turn, msg });
+  state.log.length = Math.min(state.log.length, 7);
+}
+
+function newGame() {
+  state = {
+    v: 6, turn: 0, wave: 0, room: 0, waveTurn: 0, frenzy: false, extras: 0, pitFill: {}, score: 0, kills: 0, hits: 0, over: false,
+    ups: {}, choice: null, stills: 0, guard: 0, maxhp: MAXHP,
+    player: { x: 5, y: 5, hp: MAXHP }, enemies: [], log: []
+  };
+  nextWave();
+  log("The room moves when you move. Steer it.");
+  render();
+}
+
+function spawn(type) {
+  const P = state.player, cand = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const edge = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+    if (!edge || isWall(x, y) || isPit(x, y) || enemyAt(x, y) || dist({ x, y }, P) < 4) continue;
+    cand.push({ x, y });
+  }
+  if (!cand.length) return null;
+  const c = cand[Math.floor(Math.random() * cand.length)], t = TYPES[type];
+  state.enemies.push({ x: c.x, y: c.y, type, hp: t.hp, dmg: t.dmg, blocked: 0, free: state.frenzy, chased: 0, skip: false });
+  return type;
+}
+
+function randomType() {
+  const pool = ["drone", "drone", "contra", "heavy"];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// Moves the player to the nearest open tile if the new room put a wall or pit under them.
+function settle() {
+  const P = state.player, open = (x, y) => inB(x, y) && !isWall(x, y) && !isPit(x, y);
+  if (open(P.x, P.y)) return;
+  let best = null;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (open(x, y) && (!best || dist({ x, y }, P) < dist(best, P))) best = { x, y };
+  P.x = best.x; P.y = best.y;
+}
+
+function nextWave() {
+  state.wave++;
+  state.extras = 0;
+  state.pitFill = {};
+  state.waveTurn = 0;
+  state.frenzy = false;
+  state.stills = has("stillness") ? 1 : 0;
+  state.guard = has("steady") ? 1 : 0;
+  if (state.wave > 1) {
+    let r; do r = Math.floor(Math.random() * ROOMS.length); while (r === state.room);
+    state.room = r;
+    settle();
+  }
+  const n = state.wave, total = 3 + Math.floor((n - 1) / 2);
+  const contras = 1 + Math.floor(n / 3), heavies = Math.min(1 + Math.floor((n - 1) / 2), 2);
+  let made = 0;
+  for (let i = 0; i < total; i++) if (spawn(i < contras ? "contra" : i < contras + heavies ? "heavy" : "drone")) made++;
+  if (n > 1) log(`Wave ${n}, ${ROOMS[state.room].name}: ${made} enemies.`);
+}
+
+function offerUpgrades() {
+  const left = Object.keys(UPGRADES).filter(id => !has(id));
+  for (let i = left.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [left[i], left[j]] = [left[j], left[i]]; }
+  state.choice = left.slice(0, 3);
+  if (!state.choice.length) { state.choice = null; nextWave(); }
+}
+
+function pick(i) {
+  if (!state || !state.choice) return;
+  const id = state.choice[Math.max(0, Math.min(state.choice.length - 1, Math.floor(+i || 0)))];
+  state.ups[id] = true;
+  if (id === "mend") { state.maxhp += 3; state.player.hp = Math.min(state.maxhp, state.player.hp + 3); }
+  log(`You take ${UPGRADES[id].name}.`);
+  state.choice = null;
+  nextWave();
+  render();
+}
+
+// Damages a locked enemy that slammed into something (Pile-up, Spiked walls).
+function slam(e, what) {
+  e.hp--;
+  if (e.hp > 0) { log(`A ${nameOf(e)} slams into ${what}.`); return; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; state.score += 1;
+  log(`A ${nameOf(e)} is crushed against ${what}. +1`);
+}
+
+function hurt(e, how) {
+  const P = state.player;
+  P.hp -= e.dmg; state.hits++;
+  log(`${how}. −${e.dmg}`);
+}
+
+// Returns true if the enemy survived.
+function hitEnemy(e) {
+  e.hp--;
+  if (e.hp > 0) { log(`You hit the ${nameOf(e)}.`); return true; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; state.score += 1;
+  log(`You killed a ${nameOf(e)}. +1`);
+  return false;
+}
+
+function fall(e, x, y) {
+  const k = x + "," + y, n = state.pitFill[k] = (state.pitFill[k] || 0) + 1;
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; state.score += 2;
+  log(`A ${nameOf(e)} fell into a pit. +2${n >= pitHolds() ? " The pit is full until the next wave." : ""}`);
+}
+
+const enemyFree = (x, y) => inB(x, y) && !isWall(x, y) && !isPit(x, y) && !enemyAt(x, y)
+  && !(x === state.player.x && y === state.player.y);
+
+// Walking distance to the player around walls and pits.
+function pathField() {
+  const P = state.player, f = new Map([[P.x + "," + P.y, 0]]), q = [[P.x, P.y]];
+  while (q.length) {
+    const [x, y] = q.shift(), d = f.get(x + "," + y);
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+      if (inB(nx, ny) && !isWall(nx, ny) && !isPit(nx, ny) && !f.has(k)) { f.set(k, d + 1); q.push([nx, ny]); }
+    }
+  }
+  return f;
+}
+
+// Heavies act every other time they're asked to.
+function resting(e) {
+  if (e.type !== "heavy") return false;
+  const s = e.skip; e.skip = !e.skip; return s;
+}
+
+// Returns true if the enemy reached and hit you.
+function chase(e, field) {
+  const P = state.player;
+  if (dist(e, P) > 1) {
+    const here = field.get(e.x + "," + e.y) ?? 999;
+    // Ties go to the step nearest you in a straight line, so a chaser can't just mirror you.
+    let best = null;
+    for (const [dx, dy] of DIRS) {
+      const x = e.x + dx, y = e.y + dy;
+      if (!enemyFree(x, y)) continue;
+      const d = field.get(x + "," + y) ?? 999, eu = (x - P.x) ** 2 + (y - P.y) ** 2;
+      if (d < here && (!best || d < best.d || (d === best.d && eu < best.eu))) best = { x, y, d, eu };
+    }
+    if (best) { e.x = best.x; e.y = best.y; }
+  }
+  if (dist(e, P) !== 1) return false;
+  hurt(e, `A ${nameOf(e)} hits you`);
+  return true;
+}
+
+function shift(dx, dy) {
+  const P = state.player;
+  const turned = has("turncoat") && state.waveTurn < 10;
+  const v = e => e.type === "contra" && !turned ? [-dx, -dy] : [dx, dy];
+  const lead = e => { const [vx, vy] = v(e); return e.x * vx + e.y * vy; };
+  const lock = state.enemies.filter(e => !e.free).sort((a, b) => lead(b) - lead(a));
+  const free = state.enemies.filter(e => e.free);
+  const acted = [];
+  for (const e of lock) {
+    if (!state.enemies.includes(e) || resting(e)) continue;
+    const [vx, vy] = v(e), tx = e.x + vx, ty = e.y + vy;
+    if (tx === P.x && ty === P.y) { e.blocked = 0; hurt(e, `A ${nameOf(e)} crashes into you`); continue; }
+    if (inB(tx, ty) && isPit(tx, ty)) { fall(e, tx, ty); continue; }
+    acted.push(e);
+    const byWall = !inB(tx, ty) || isWall(tx, ty), byEnemy = !byWall && enemyAt(tx, ty);
+    if (byWall || byEnemy) {
+      if (++e.blocked >= BREAK) {
+        // Spiked walls and Pile-up only bite on the push that would break an enemy free.
+        if (byWall && has("spikes")) slam(e, "the wall");
+        else if (byEnemy && has("pileup")) slam(e, "another enemy");
+        if (state.enemies.includes(e)) { e.free = true; e.chased = 0; log(`A ${nameOf(e)} breaks lockstep and comes for you.`); }
+      }
+      continue;
+    }
+    e.x = tx; e.y = ty; e.blocked = 0;
+  }
+  // Locked enemies that end the shift beside you strike too.
+  for (const e of acted) {
+    if (e.free || !state.enemies.includes(e) || dist(e, P) !== 1) continue;
+    if (state.guard > 0) { state.guard--; log(`A ${nameOf(e)} lands beside you, and you brace. No damage.`); continue; }
+    hurt(e, `A ${nameOf(e)} lands beside you and strikes`);
+  }
+  if (!free.length) return;
+  const field = pathField();
+  for (const e of free) {
+    if (!state.enemies.includes(e) || resting(e)) continue;
+    if (chase(e, field) || dist(e, P) < RELOCK || state.frenzy) e.chased = 0;
+    else if (++e.chased >= RELOCK) { e.free = false; e.blocked = 0; log(`A ${nameOf(e)} loses you and falls back into step.`); }
+  }
+}
+
+function step(dx, dy) {
+  if (!state || state.over || state.choice) return;
+  state.turn++;
+  const P = state.player, still = !dx && !dy && state.stills > 0;
+  if (still) {
+    state.stills--;
+    log("You hold still, and the room holds still with you.");
+  } else if (dx || dy) {
+    const tx = P.x + dx, ty = P.y + dy, e = inB(tx, ty) && enemyAt(tx, ty);
+    if (e) {
+      // Shove: knock a survivor back a tile, into a pit if one is there.
+      if (hitEnemy(e) && has("shove")) {
+        for (let i = 0; i < 2; i++) {
+          const bx = e.x + dx, by = e.y + dy;
+          if (inB(bx, by) && isPit(bx, by)) { fall(e, bx, by); break; }
+          if (!enemyFree(bx, by)) break;
+          e.x = bx; e.y = by;
+        }
+      }
+    }
+    else if (inB(tx, ty) && !isWall(tx, ty) && !isPit(tx, ty)) { P.x = tx; P.y = ty; }
+    else log(isPit(tx, ty) ? "You stop at the pit's edge. The room doesn't." : "You hit the wall. The room keeps going.");
+    shift(dx, dy);
+  } else {
+    const field = pathField();
+    for (const e of [...state.enemies]) if (state.enemies.includes(e) && !resting(e)) chase(e, field);
+    const t = spawn(randomType());
+    log(t ? `You wait. The room catches up, and a ${TYPES[t].name} arrives.` : "You wait. The room catches up.");
+  }
+  if (P.hp > 0 && state.enemies.length && ++state.waveTurn >= frenzyAt() && !state.frenzy) {
+    state.frenzy = true;
+    for (const e of state.enemies) e.free = true;
+    log("The room loses patience. Every enemy breaks step.");
+  }
+  if (!still && P.hp > 0 && state.enemies.length >= 2 && state.extras < MAX_EXTRAS && state.turn % SPAWN_EVERY === 0) {
+    const t = spawn(randomType());
+    if (t) { state.extras++; log(`A ${TYPES[t].name} joins the room.`); }
+  }
+  if (P.hp <= 0) {
+    P.hp = 0; state.over = true;
+    if (!sim && state.score > best) { best = state.score; try { localStorage.setItem("lockstep-best", best); } catch (e) {} }
+    log("You fell out of step.");
+  } else if (!state.enemies.length) {
+    state.score += state.wave * 2;
+    log(`Wave ${state.wave} cleared. +${state.wave * 2} Pick an upgrade.`);
+    offerUpgrades();
+  }
+  render();
+}
+
+// Plays a move on a copy of the game to see what it would cost.
+function preview(dx, dy) {
+  const saved = JSON.stringify(state), hp = state.player.hp, kills = state.kills, score = state.score;
+  sim = true;
+  step(dx, dy);
+  const out = { dmg: hp - state.player.hp, pts: state.score - score, kills: state.kills - kills, dead: state.over };
+  state = JSON.parse(saved);
+  sim = false;
+  return out;
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+function disc(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+
+function draw() {
+  const s = cell, dpr = window.devicePixelRatio || 1;
+  cv.width = W * s * dpr; cv.height = H * s * dpr;
+  cv.style.height = (H * s) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = v => v * s + s / 2;
+  const mono = `600 ${Math.round(s * 0.2)}px ${css("--f-mono")}`;
+
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    ctx.fillStyle = (x + y) % 2 ? C.tile : C.tile2;
+    ctx.fillRect(x * s, y * s, s, s);
+  }
+  const R = ROOMS[state.room];
+  for (const k of R.walls) {
+    const [x, y] = k.split(",").map(Number);
+    ctx.fillStyle = C.wall; rr(x * s + 3, y * s + 3, s - 6, s - 6, 5); ctx.fill();
+    ctx.fillStyle = C.line; ctx.fillRect(x * s + 6, y * s + s - 9, s - 12, 3);
+  }
+  for (const k of R.pits) {
+    const [x, y] = k.split(",").map(Number), filled = state.pitFill[k] || 0;
+    ctx.strokeStyle = C.wall; ctx.lineWidth = 2;
+    if (filled >= pitHolds()) { ctx.setLineDash([3, 4]); disc(cx(x), cx(y), s * 0.36); ctx.stroke(); ctx.setLineDash([]); continue; }
+    ctx.fillStyle = C.pit; disc(cx(x), cx(y), s * 0.42); ctx.fill(); ctx.stroke();
+    if (filled) { ctx.fillStyle = C.wall; disc(cx(x), cx(y), s * 0.16); ctx.fill(); }
+  }
+
+  for (const e of state.enemies) {
+    const x = cx(e.x), y = cx(e.y);
+    ctx.save();
+    ctx.globalAlpha = e.skip ? 0.6 : 1;
+    ctx.fillStyle = e.type === "contra" ? C.contra : C.enemy;
+    if (e.type === "heavy") {
+      rr(x - s * 0.32, y - s * 0.32, s * 0.64, s * 0.64, 6); ctx.fill();
+      ctx.fillStyle = C.bg;
+      for (let i = 0; i < e.hp; i++) { disc(x - s * 0.1 + i * s * 0.2, y, s * 0.06); ctx.fill(); }
+    } else {
+      ctx.beginPath(); ctx.moveTo(x, y - s * 0.3); ctx.lineTo(x + s * 0.26, y); ctx.lineTo(x, y + s * 0.3); ctx.lineTo(x - s * 0.26, y); ctx.closePath(); ctx.fill();
+      if (e.type === "contra") {
+        ctx.fillStyle = C.bg; ctx.font = mono; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("⇄", x, y + 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (e.free) { ctx.strokeStyle = C.danger; ctx.lineWidth = 2; disc(x, y, s * 0.42); ctx.stroke(); }
+    else if (e.blocked > 0) { ctx.fillStyle = C.danger; disc(x + s * 0.3, y - s * 0.3, s * 0.07); ctx.fill(); }
+    if (e.skip) { ctx.fillStyle = C.muted; ctx.font = mono; ctx.textAlign = "center"; ctx.fillText("zz", x - s * 0.28, y - s * 0.3); }
+    ctx.restore();
+  }
+
+  const P = state.player;
+  ctx.fillStyle = C.player; disc(cx(P.x), cx(P.y), s * 0.3); ctx.fill();
+  ctx.fillStyle = C.bg; disc(cx(P.x), cx(P.y), s * 0.09); ctx.fill();
+}
+
+function render() {
+  if (sim) return;
+  const P = state.player;
+  $("sTurn").textContent = state.turn;
+  $("sWave").textContent = state.wave;
+  $("sScore").textContent = state.score;
+  $("sBest").textContent = Math.max(best, state.score);
+  $("hp").innerHTML = Array.from({ length: state.maxhp }, (_, i) => `<i class="${i < P.hp ? "on" : ""}"></i>`).join("");
+  const next = SPAWN_EVERY - (state.turn % SPAWN_EVERY), loose = state.enemies.filter(e => e.free).length;
+  const arrivals = state.extras < MAX_EXTRAS ? `Next arrival in ${next} turn${next === 1 ? "" : "s"}` : "No more arrivals this wave";
+  const left = frenzyAt() - state.waveTurn;
+  $("status").textContent = `${ROOMS[state.room].name} · `
+    + (state.frenzy ? "Frenzy: everything is chasing you" : `${arrivals} · frenzy in ${left}`)
+    + (loose && !state.frenzy ? ` · ${loose} broken free` : "")
+    + (state.stills ? " · 1 still wait" : "");
+  const owned = Object.keys(state.ups);
+  $("ups").innerHTML = owned.length
+    ? owned.map(id => `<li><b>${UPGRADES[id].name}</b> ${UPGRADES[id].text}</li>`).join("")
+    : `<li class="none">None yet. Clear a wave to pick one of three.</li>`;
+  $("previewHint").textContent = settings.preview
+    ? "Each button shows the health that move costs this turn, or the points it earns."
+    : "Previews off: read the room yourself.";
+
+  document.querySelectorAll(".pad button").forEach(b => {
+    const small = b.querySelector("small");
+    if (!settings.preview || state.over || state.choice) { small.textContent = ""; small.className = ""; return; }
+    const [dx, dy] = b.dataset.d.split(",").map(Number), p = preview(dx, dy);
+    small.textContent = p.dead ? "dies" : p.dmg ? `−${p.dmg}` : p.pts ? `+${p.pts}` : "safe";
+    small.className = p.dead || p.dmg ? "bad" : p.pts ? "gain" : "";
+  });
+
+  $("log").innerHTML = state.log.map(l => `<li><span class="t">${String(l.t).padStart(3, "0")}</span>${l.msg}</li>`).join("");
+  $("over").hidden = !state.over && !state.choice;
+  if (state.choice) {
+    $("overTitle").textContent = `Wave ${state.wave} cleared`;
+    $("overText").textContent = "Pick one upgrade for the rest of the run.";
+    $("overActions").innerHTML = state.choice.map((id, i) =>
+      `<button data-i="${i}"><span><kbd>${i + 1}</kbd> ${UPGRADES[id].name}</span><small>${UPGRADES[id].text}</small></button>`).join("");
+  } else if (state.over) {
+    $("overTitle").textContent = "Out of step";
+    $("overText").textContent = `Score ${state.score} · wave ${state.wave} · ${state.kills} kills · ${state.turn} turns`;
+    $("overActions").innerHTML = `<button id="again">Play again</button>`;
+  }
+  if (state.hits !== lastHits) { lastHits = state.hits; flash(); }
+  draw();
+}
+
+let flashT;
+function flash() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  $("board").classList.add("hit");
+  clearTimeout(flashT); flashT = setTimeout(() => $("board").classList.remove("hit"), 160);
+}
+
+function resize() {
+  const w = $("board").clientWidth;
+  cell = Math.max(24, Math.floor(Math.min(w, 620) / W));
+  cv.style.width = (cell * W) + "px";
+  if (state) draw();
+}
+
+const KEYS = {
+  ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+  w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], " ": [0, 0], ".": [0, 0]
+};
+window.addEventListener("keydown", e => {
+  if (["INPUT", "BUTTON"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === "r") { newGame(); return; }
+  if (state && state.choice && ["1", "2", "3"].includes(k)) { e.preventDefault(); pick(+k - 1); return; }
+  const d = KEYS[k];
+  if (!d) return;
+  e.preventDefault();
+  step(d[0], d[1]);
+});
+document.querySelectorAll(".pad button").forEach(b => b.addEventListener("click", () => {
+  const [dx, dy] = b.dataset.d.split(",").map(Number); step(dx, dy); b.blur();
+}));
+$("preview").addEventListener("change", e => { settings.preview = e.target.checked; render(); });
+$("restart").addEventListener("click", () => { newGame(); $("restart").blur(); });
+$("overActions").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "again") newGame(); else pick(+b.dataset.i);
+});
+
+function boot(data) {
+  readColors();
+  if (data && data.settings) Object.assign(settings, data.settings);
+  $("preview").checked = settings.preview;
+  resize();
+  if (data && data.state && data.state.v === 6) { state = data.state; lastHits = state.hits; render(); } else newGame();
+}
+window.claude?.hot?.snapshot?.(() => ({ state, settings }));
+new ResizeObserver(resize).observe($("board"));
+document.fonts?.ready?.then(() => state && draw());
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>

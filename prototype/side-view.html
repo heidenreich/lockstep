@@ -1,0 +1,508 @@
+<title>Lockstep Side-View</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one side-on stage per screen, three stages left to right; status and controls below. Single dark look by choice. */
+:root {
+  --bg: #0d121b;
+  --sky1: #1b2740;
+  --sky2: #101826;
+  --panel: #151f2d;
+  --chalk: #2a3850;
+  --stone: #3a4a62;
+  --stone2: #2f3d52;
+  --ink: #eef0f3;
+  --muted: #8c9ab0;
+  --brass: #d9a441;
+  --brass-ink: #1a1305;
+  --cadet: #f2ece0;
+  --drone: #e05252;
+  --contra: #a77bf0;
+  --heavy: #d0763a;
+  --good: #5fc9a0;
+  --danger: #ff6b7a;
+  --f-display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+  --f-body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; margin: 0;
+  padding-block: 16px 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1000px; margin: 0 auto; display: grid; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--f-display); font-weight: 900; font-size: clamp(32px, 6vw, 48px); text-transform: uppercase; letter-spacing: .03em; margin: 0; line-height: 1; }
+h1 span { color: var(--brass); }
+.tag { color: var(--muted); margin: 0; max-width: 64ch; }
+.boardbox { position: relative; min-width: 0; }
+canvas { display: block; max-width: 100%; border-radius: 12px; border: 1px solid var(--chalk); cursor: crosshair; touch-action: manipulation; }
+.cover { position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center; background: color-mix(in srgb, var(--bg) 80%, transparent); border-radius: 12px; padding: 16px; }
+.cover h2 { font-family: var(--f-display); font-weight: 900; font-size: 40px; text-transform: uppercase; margin: 0; }
+.cover p { margin: 0; color: var(--muted); }
+.row3 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 760px) { .row3 { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--chalk); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.stats { font-family: var(--f-mono); font-size: 13px; color: var(--muted); display: grid; gap: 3px; }
+.stats b { color: var(--ink); font-weight: 600; }
+.stats .warn b { color: var(--danger); }
+.hp { display: flex; gap: 4px; }
+.hp i { width: 14px; height: 14px; border-radius: 3px; background: var(--chalk); }
+.hp i.on { background: var(--danger); }
+.pad { display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: 46px 46px; gap: 6px; justify-content: center; }
+.pad button { font: inherit; padding: 0; background: #1a2636; color: var(--ink); border: 1px solid var(--chalk); border-radius: 8px; font-family: var(--f-mono); cursor: pointer; display: grid; place-content: center; line-height: 1.1; }
+.pad button small { font-size: 10px; color: var(--good); }
+.pad button small.bad { color: var(--danger); }
+.pad button small.gain { color: var(--brass); }
+.pad .j { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .w { grid-column: 2; grid-row: 2; font-size: 12px; } .pad .r { grid-column: 3; grid-row: 2; }
+.pad button:focus-visible, .btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+.keys { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk); border-radius: 4px; padding: 0 4px; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; }
+.rules b { color: var(--brass); font-weight: 600; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.log li:first-child { color: var(--ink); }
+.btn { font: inherit; font-weight: 600; background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 9px; padding: 10px 18px; cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Lock<span>step</span> · side-view</h1>
+    <p class="tag">The same rule, turned on its side. When you walk or jump, the whole line does too. Walk them off ledges, drop them into the abyss, land on their heads.</p>
+  </header>
+
+  <div class="boardbox" id="boardbox">
+    <canvas id="cv" aria-label="Stage"></canvas>
+    <div class="cover" id="cover" hidden></div>
+  </div>
+
+  <div class="row3">
+    <div class="panel">
+      <div class="eyebrow">How it works</div>
+      <ul class="rules">
+        <li>Each turn: walk left or right, jump, or wait. Walking into an enemy hits it.</li>
+        <li><b>Lockstep:</b> every drone and heavy copies your move, jumps included. Contrarians walk the opposite way and never jump.</li>
+        <li><b>Gravity</b> pulls everyone down one tile per turn. A jump lifts you two tiles and you hang there for that turn, so you can steer across a two-tile gap.</li>
+        <li>Enemies that fall off the bottom are gone (+2). Land on an enemy's head for 2 damage. Fall yourself and you lose 2 health and climb back where you last stood.</li>
+        <li>An enemy that walks into you, or lands on you, hits you. Blocked 3 turns in a row, it breaks step and chases you.</li>
+        <li>The exit opens once the stage is clear. After 50 turns on a stage, everything breaks step and more drop in.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Status</div>
+      <div class="stats" id="stats"></div>
+      <div class="hp" id="hp"></div>
+      <ul class="log" id="log"></ul>
+    </div>
+    <div class="panel">
+      <div class="eyebrow">Controls</div>
+      <div class="pad" id="pad">
+        <button class="j" data-c="J" aria-label="Jump"><b>▲</b><small></small></button>
+        <button class="l" data-c="L" aria-label="Left"><b>◀</b><small></small></button>
+        <button class="w" data-c="W" aria-label="Wait"><b>wait</b><small></small></button>
+        <button class="r" data-c="R" aria-label="Right"><b>▶</b><small></small></button>
+      </div>
+      <p class="keys"><kbd>A</kbd><kbd>D</kbd>/arrows walk · <kbd>W</kbd>/<kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>S</kbd>/<kbd>↓</kbd> wait · <kbd>R</kbd> restart. Hover the stage or the pad to preview.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = 24, H = 10, MAXHP = 6, BREAK = 3, RELOCK = 6, FRENZY = 50, JUMP = 2;
+// '#' stone, 'P' start, 'E' exit, D/C/H enemies. Columns open to the bottom are the abyss.
+const STAGES = [
+  { name: "The drill yard", rows: [
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "..P.......D..D.....C...E",
+    "########..######..######",
+    "########..######..######"] },
+  { name: "The barracks", rows: [
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    ".........####...........",
+    "...........D............",
+    "....####.......H....####",
+    ".P.........D.....D.....E",
+    "######...#######...#####",
+    "######...#######...#####"] },
+  { name: "The citadel", rows: [
+    "........................",
+    "........................",
+    "........................",
+    "..........C.............",
+    "........#####...........",
+    "........................",
+    "...................#....",
+    ".P....D...D...H....#.C.E",
+    "#####..########..#######",
+    "#####..########..#######"] }
+];
+const FOES = { D: { type: "drone", hp: 1, dmg: 1 }, C: { type: "contra", hp: 1, dmg: 1 }, H: { type: "heavy", hp: 2, dmg: 2, slow: true } };
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+var state = null, SIM = false;
+let best = 0, cell = 40, FX = [];
+try { best = +localStorage.getItem("lockstep-side-best") || 0; } catch (e) {}
+
+/* ---------- Setup ---------- */
+function loadStage(i) {
+  const s = STAGES[i];
+  state.stage = i; state.stageTurn = 0; state.frenzy = false; state.drops = 0;
+  state.solid = s.rows.map(r => r.split("").map(ch => ch === "#"));
+  state.enemies = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const ch = s.rows[y][x];
+    if (ch === "P") { state.p.x = x; state.p.y = y; state.p.safe = { x, y }; }
+    if (ch === "E") state.exit = { x, y };
+    if (FOES[ch]) state.enemies.push(mk(ch, x, y));
+  }
+  log(`Stage ${i + 1}: ${s.name}. ${state.enemies.length} enemies hold the exit.`);
+}
+function mk(ch, x, y) { const f = FOES[ch]; return { id: state.nextId++, ch, type: f.type, x, y, hp: f.hp, max: f.hp, dmg: f.dmg, blocked: 0, free: false, far: 0, skip: false, face: -1 }; }
+function newGame() {
+  state = { v: 1, turn: 0, score: 0, kills: 0, over: false, won: false, nextId: 1, p: { x: 0, y: 0, hp: MAXHP, safe: null, face: 1 }, log: [], hits: 0, lastHurt: 0 };
+  loadStage(0);
+  render();
+}
+function log(m) { if (!SIM) { state.log.unshift(m); state.log.length = Math.min(state.log.length, 6); } }
+function fx(kind, x, y, n) { if (!SIM) FX.push({ kind, x, y, n }); }
+
+/* ---------- Board queries ---------- */
+const solid = (x, y) => x < 0 || x >= W || y < 0 ? true : y >= H ? false : state.solid[y][x];
+const enemyAt = (x, y) => state.enemies.find(e => e.x === x && e.y === y);
+const isP = (x, y) => state.p.x === x && state.p.y === y;
+const unitAt = (x, y) => isP(x, y) || !!enemyAt(x, y);
+const grounded = u => solid(u.x, u.y + 1) || unitAt(u.x, u.y + 1);
+const alive = e => state.enemies.includes(e);
+const gateOpen = () => state.enemies.length === 0;
+
+/* ---------- Damage ---------- */
+function hurt(e, n, how) {
+  state.p.hp -= n; state.hits++; state.lastHurt += n;
+  log(`A ${e.type} ${how}. −${n}`); fx("hurt", state.p.x, state.p.y, n);
+}
+function hit(e, n, how) {
+  e.hp -= n; fx("hit", e.x, e.y, n);
+  if (e.hp > 0) { log(`${how} the ${e.type}.`); return; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; state.score += 1;
+  log(`${how} the ${e.type} down. +1`);
+}
+
+/* ---------- Movement ---------- */
+// Rises up to JUMP tiles; returns true if it left the ground.
+function jump(u, isPlayer) {
+  if (!grounded(u)) return false;
+  let rose = 0;
+  for (let i = 0; i < JUMP; i++) {
+    const ty = u.y - 1, e = enemyAt(u.x, ty);
+    if (isPlayer && e) { hit(e, 1, "You headbutt"); break; }
+    if (!isPlayer && isP(u.x, ty)) { hurt(u, u.dmg, "jumps into you"); break; }
+    if (solid(u.x, ty) || unitAt(u.x, ty)) break;
+    u.y = ty; rose++;
+  }
+  // A jumper hangs at the top for the rest of the turn, so a jump buys two turns of air.
+  if (rose) u.hang = true;
+  return rose > 0;
+}
+function playerAct(c) {
+  const P = state.p;
+  if (c === "J") { if (!jump(P, true)) log(grounded(P) ? "No headroom." : "You can't jump in mid-air."); return; }
+  const dx = c === "L" ? -1 : 1, tx = P.x + dx;
+  P.face = dx;
+  const e = enemyAt(tx, P.y);
+  if (e) { hit(e, 1, "You hit"); return; }
+  if (!solid(tx, P.y)) P.x = tx; else log("A wall stops you. The line keeps going.");
+}
+const resting = e => { if (!FOES[e.ch].slow || state.frenzy) return false; const s = e.skip; e.skip = !e.skip; return s; };
+function lineAct(c) {
+  const P = state.p;
+  const vec = e => c === "J" ? (e.type === "contra" ? 0 : "J") : (c === "L" ? -1 : 1) * (e.type === "contra" ? -1 : 1);
+  const lead = e => { const v = vec(e); return v === "J" ? -e.y : v ? e.x * v : 0; };
+  const lock = state.enemies.filter(e => !e.free).sort((a, b) => lead(b) - lead(a));
+  for (const e of lock) {
+    if (!alive(e) || resting(e)) continue;
+    const v = vec(e);
+    if (!v) continue;
+    if (v === "J") { jump(e, false); continue; }
+    e.face = v;
+    const tx = e.x + v;
+    if (isP(tx, e.y)) { e.blocked = 0; hurt(e, e.dmg, "walks into you"); continue; }
+    if (solid(tx, e.y) || enemyAt(tx, e.y)) {
+      if (++e.blocked >= BREAK) { e.free = true; e.far = 0; log(`A ${e.type} breaks step and comes for you.`); }
+      continue;
+    }
+    e.x = tx; e.blocked = 0;
+  }
+}
+function chasersAct(all) {
+  const P = state.p;
+  for (const e of [...state.enemies]) {
+    if (!alive(e) || (!all && !e.free) || resting(e)) continue;
+    const dx = Math.sign(P.x - e.x);
+    if (dx) {
+      e.face = dx;
+      const tx = e.x + dx;
+      if (isP(tx, e.y)) hurt(e, e.dmg, "hits you");
+      else if (!solid(tx, e.y) && !enemyAt(tx, e.y)) e.x = tx;
+      else if (P.y <= e.y) jump(e, false);
+    } else if (P.y < e.y - 1) jump(e, false);
+    if (!e.free || state.frenzy) continue;
+    if (Math.abs(P.x - e.x) + Math.abs(P.y - e.y) >= RELOCK) { if (++e.far >= 4) { e.free = false; e.blocked = 0; log(`A ${e.type} loses you and falls back into step.`); } }
+    else e.far = 0;
+  }
+}
+// Everyone not standing on something drops one tile, lowest first.
+function gravity() {
+  const P = state.p;
+  const units = [P, ...state.enemies].sort((a, b) => b.y - a.y);
+  for (const u of units) {
+    if (u !== P && !alive(u)) continue;
+    if (u.hang) { u.hang = false; continue; }
+    if (grounded(u)) continue;
+    const ty = u.y + 1;
+    if (ty >= H) {
+      if (u === P) {
+        P.hp -= 2; state.hits++; state.lastHurt += 2; fx("hurt", P.x, P.y, 2);
+        log("You fall into the abyss and climb back out. −2");
+        const s = P.safe; P.x = s.x; P.y = s.y;
+        if (enemyAt(P.x, P.y)) { const e = enemyAt(P.x, P.y); state.enemies.splice(state.enemies.indexOf(e), 1); }
+      } else {
+        state.enemies.splice(state.enemies.indexOf(u), 1);
+        state.kills++; state.score += 2; fx("abyss", u.x, H - 1);
+        log(`A ${u.type} drops into the abyss. +2`);
+      }
+      continue;
+    }
+    u.y = ty;
+  }
+}
+function applyGravity() {
+  const P = state.p;
+  const startAir = !grounded(P) && !P.hang;
+  const enemiesAir = new Set(state.enemies.filter(e => !grounded(e) && !e.hang));
+  gravity();
+  // Stomp: the player was airborne and is now resting on an enemy.
+  const under = enemyAt(P.x, P.y + 1);
+  if (startAir && under) hit(under, 2, "You land on");
+  // Crush: an airborne enemy that is now resting on the player hits them.
+  for (const e of enemiesAir) if (alive(e) && e.x === P.x && e.y === P.y - 1) hurt(e, e.dmg, "lands on you");
+  if (solid(P.x, P.y + 1)) P.safe = { x: P.x, y: P.y };
+}
+
+/* ---------- Turn ---------- */
+function step(c) {
+  if (!state || state.over) return false;
+  state.turn++; state.stageTurn++; state.lastHurt = 0;
+  if (c === "W") { chasersAct(true); log("You wait. The line closes in."); }
+  else { playerAct(c); lineAct(c); chasersAct(false); }
+  applyGravity();
+  if (!state.frenzy && state.stageTurn >= FRENZY && state.enemies.length) {
+    state.frenzy = true;
+    for (const e of state.enemies) e.free = true;
+    log("Frenzy: the line breaks step and reinforcements drop in.");
+  }
+  if (state.frenzy && state.stageTurn % 10 === 0 && state.enemies.length < 8) {
+    const xs = []; for (let x = 0; x < W; x++) if (!solid(x, 0) && !unitAt(x, 0) && Math.abs(x - state.p.x) >= 4) xs.push(x);
+    if (xs.length) { const e = mk("D", xs[Math.floor(Math.random() * xs.length)], 0); e.free = true; state.enemies.push(e); log("A drone drops in from above."); }
+  }
+  const P = state.p;
+  if (P.hp <= 0) { P.hp = 0; state.over = true; log("You fell out of step."); saveBest(); }
+  else if (gateOpen() && P.x === state.exit.x && P.y === state.exit.y) {
+    state.score += 5 * (state.stage + 1);
+    if (state.stage + 1 < STAGES.length) { log(`Stage cleared. +${5 * (state.stage + 1)}`); loadStage(state.stage + 1); }
+    else { state.over = true; state.won = true; log("The citadel is yours."); saveBest(); }
+  }
+  render();
+  return true;
+}
+function saveBest() { if (SIM) return; if (state.score > best) { best = state.score; try { localStorage.setItem("lockstep-side-best", best); } catch (e) {} } }
+
+// Plays a command on a copy and reports the outcome.
+function preview(c) {
+  const saved = JSON.stringify(state); SIM = true;
+  let out;
+  try {
+    const hp = state.p.hp, score = state.score;
+    step(c);
+    out = { dmg: state.lastHurt, pts: state.score - score, p: { x: state.p.x, y: state.p.y }, enemies: state.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: state.over, stage: state.stage };
+  } finally { state = JSON.parse(saved); SIM = false; }
+  return out;
+}
+
+/* ---------- Render ---------- */
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+function readColors() { for (const k of ["bg", "sky1", "sky2", "chalk", "stone", "stone2", "ink", "muted", "brass", "cadet", "drone", "contra", "heavy", "good", "danger"]) C[k] = css("--" + k); }
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+let vis = {}, parts = [], floats = [], shake = 0, hoverCmd = null, pvCache = { key: "", val: null }, lastT = 0;
+
+function render() {
+  if (SIM) return;
+  const s = state;
+  $("stats").innerHTML = [
+    `<span>Stage <b>${s.stage + 1}/3</b> · ${STAGES[s.stage].name}</span>`,
+    `<span>Turn <b>${s.stageTurn}</b>${s.frenzy ? ' · <b style="color:var(--danger)">frenzy</b>' : ` · frenzy in <b>${Math.max(0, FRENZY - s.stageTurn)}</b>`}</span>`,
+    `<span>Enemies <b>${s.enemies.length}</b> · exit <b>${gateOpen() ? "open" : "shut"}</b></span>`,
+    `<span>Score <b>${s.score}</b> · best <b>${Math.max(best, s.score)}</b></span>`
+  ].join("");
+  $("hp").innerHTML = Array.from({ length: MAXHP }, (_, i) => `<i class="${i < s.p.hp ? "on" : ""}"></i>`).join("");
+  $("log").innerHTML = s.log.map(m => `<li>${m}</li>`).join("");
+  document.querySelectorAll("#pad button").forEach(b => {
+    const sm = b.querySelector("small");
+    if (s.over) { sm.textContent = ""; return; }
+    const pv = preview(b.dataset.c);
+    sm.textContent = pv.over && !s.won && pv.dmg ? "dies" : pv.dmg ? `−${pv.dmg}` : pv.pts ? `+${pv.pts}` : "safe";
+    sm.className = pv.dmg ? "bad" : pv.pts ? "gain" : "";
+  });
+  const cover = $("cover");
+  cover.hidden = !s.over;
+  if (s.over) cover.innerHTML = `<h2>${s.won ? "Citadel taken" : "Out of step"}</h2><p>Score ${s.score} · stage ${s.stage + 1} · ${s.kills} enemies · ${s.turn} turns</p><div><button class="btn" id="again">Play again</button></div>`;
+  for (const k of Object.keys(vis)) if (k !== "p" && !s.enemies.some(e => e.id === +k)) delete vis[k];
+  pvCache.key = "";
+  resize(); draw(0);
+}
+function resize() {
+  const w = $("boardbox").clientWidth || 900;
+  cell = Math.max(16, Math.floor(Math.min(w, 1000) / W));
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W * cell * dpr; cv.height = H * cell * dpr;
+  cv.style.width = W * cell + "px"; cv.style.height = H * cell + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function disc(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+function burst(x, y, color, n) { if (reduced()) return; for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, sp = 40 + Math.random() * 90; parts.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 30, life: 0.6, color }); } }
+function drawUnit(kind, x, y, s, face, extra) {
+  const col = kind === "player" ? C.cadet : kind === "contra" ? C.contra : kind === "heavy" ? C.heavy : C.drone;
+  const w = kind === "heavy" ? 0.8 : 0.66, h = kind === "heavy" ? 0.78 : 0.7;
+  ctx.fillStyle = kind === "player" ? C.brass : col;
+  rr(x - s * w / 2, y + s * (0.5 - h), s * w, s * h, s * 0.16); ctx.fill();
+  if (kind === "player") { ctx.fillStyle = C.cadet; rr(x - s * w / 2 + 3, y + s * (0.5 - h) + 3, s * w - 6, s * h - 6, s * 0.12); ctx.fill(); }
+  const ey = y + s * (0.5 - h) + s * h * 0.36, ex = x + face * s * 0.1;
+  ctx.fillStyle = kind === "player" ? C.bg : C.bg;
+  disc(ex - s * 0.1, ey, s * 0.06); ctx.fill(); disc(ex + s * 0.1, ey, s * 0.06); ctx.fill();
+  if (kind === "contra") { ctx.fillStyle = C.bg; ctx.font = `600 ${Math.round(s * 0.22)}px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("⇄", x, y + s * 0.28); }
+  if (extra) extra();
+}
+function preview2() {
+  if (!state || state.over || !hoverCmd) return null;
+  const key = state.turn + "|" + hoverCmd;
+  if (pvCache.key !== key) { pvCache = { key, val: preview(hoverCmd) }; }
+  return pvCache.val;
+}
+function draw(dt) {
+  const s = state; if (!s) return;
+  const S = cell;
+  for (const f of FX) {
+    const cx = (f.x + 0.5) * S, cy = (f.y + 0.5) * S;
+    if (f.kind === "hit") { floats.push({ x: cx, y: cy - 8, t: `−${f.n}`, c: C.ink, life: 1 }); burst(cx, cy, C.ink, 6); }
+    if (f.kind === "hurt") { floats.push({ x: cx, y: cy - 12, t: `−${f.n}`, c: C.danger, life: 1.2 }); burst(cx, cy, C.danger, 10); shake = reduced() ? 0 : 6; }
+    if (f.kind === "abyss") { floats.push({ x: cx, y: cy - 10, t: "+2", c: C.brass, life: 1.1 }); burst(cx, cy, C.muted, 12); }
+  }
+  FX = [];
+  const k = reduced() || !dt ? 1 : 1 - Math.pow(0.0004, dt);
+  const tgt = [["p", s.p], ...s.enemies.map(e => [String(e.id), e])];
+  for (const [id, t] of tgt) { if (!vis[id]) vis[id] = { x: t.x, y: t.y }; if (dt) { vis[id].x += (t.x - vis[id].x) * k; vis[id].y += (t.y - vis[id].y) * k; } }
+  ctx.save();
+  if (shake > 0.2) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= Math.pow(0.002, dt || 1); } else shake = 0;
+  const g = ctx.createLinearGradient(0, 0, 0, H * S); g.addColorStop(0, C.sky1); g.addColorStop(1, C.sky2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W * S, H * S);
+  ctx.strokeStyle = C.chalk; ctx.globalAlpha = 0.35; ctx.lineWidth = 1;
+  for (let x = 1; x < W; x++) { ctx.beginPath(); ctx.moveTo(x * S + 0.5, 0); ctx.lineTo(x * S + 0.5, H * S); ctx.stroke(); }
+  ctx.globalAlpha = 1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!s.solid[y][x]) continue;
+    ctx.fillStyle = (x + y) % 2 ? C.stone : C.stone2; ctx.fillRect(x * S, y * S, S, S);
+    if (y === 0 || !s.solid[y - 1][x]) { ctx.fillStyle = C.brass; ctx.globalAlpha = 0.55; ctx.fillRect(x * S, y * S, S, 3); ctx.globalAlpha = 1; }
+  }
+  // Abyss glow at the bottom of open columns.
+  for (let x = 0; x < W; x++) if (!s.solid[H - 1][x]) { const gg = ctx.createLinearGradient(0, (H - 1.5) * S, 0, H * S); gg.addColorStop(0, "rgba(0,0,0,0)"); gg.addColorStop(1, C.bg); ctx.fillStyle = gg; ctx.fillRect(x * S, (H - 1.5) * S, S, 1.5 * S); }
+  // Exit.
+  const ex = s.exit.x * S, ey = s.exit.y * S, open = gateOpen();
+  ctx.fillStyle = open ? C.brass : C.stone2; rr(ex + S * 0.14, ey + S * 0.05, S * 0.72, S * 0.95, S * 0.3); ctx.fill();
+  if (!open) { ctx.strokeStyle = C.muted; ctx.lineWidth = 2; for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(ex + S * (0.14 + i * 0.18), ey + S * 0.2); ctx.lineTo(ex + S * (0.14 + i * 0.18), ey + S); ctx.stroke(); } }
+  // Preview ghosts.
+  const pv = preview2();
+  if (pv && pv.stage === s.stage) {
+    ctx.save(); ctx.globalAlpha = 0.6; ctx.setLineDash([3, 4]); ctx.lineWidth = 2;
+    const after = new Map(pv.enemies.map(e => [e.id, e]));
+    for (const e of s.enemies) {
+      const a = after.get(e.id), x0 = (e.x + 0.5) * S, y0 = (e.y + 0.5) * S;
+      if (!a) { ctx.setLineDash([]); ctx.strokeStyle = C.brass; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x0 - S * 0.2, y0 - S * 0.2); ctx.lineTo(x0 + S * 0.2, y0 + S * 0.2); ctx.moveTo(x0 + S * 0.2, y0 - S * 0.2); ctx.lineTo(x0 - S * 0.2, y0 + S * 0.2); ctx.stroke(); ctx.setLineDash([3, 4]); ctx.lineWidth = 2; continue; }
+      if (a.x === e.x && a.y === e.y) continue;
+      ctx.strokeStyle = a.free ? C.danger : C.ink; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo((a.x + 0.5) * S, (a.y + 0.5) * S); ctx.stroke();
+      rr(a.x * S + S * 0.2, a.y * S + S * 0.2, S * 0.6, S * 0.6, 6); ctx.stroke();
+    }
+    ctx.strokeStyle = pv.dmg ? C.danger : C.cadet; rr(pv.p.x * S + S * 0.15, pv.p.y * S + S * 0.15, S * 0.7, S * 0.7, 8); ctx.stroke();
+    ctx.restore();
+    if (pv.dmg) { ctx.fillStyle = C.danger; ctx.font = `700 ${Math.round(S * 0.32)}px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.fillText(`−${pv.dmg}`, (pv.p.x + 0.5) * S, pv.p.y * S + 2); }
+  }
+  for (const e of s.enemies) {
+    const v = vis[e.id], x = (v.x + 0.5) * S, y = (v.y + 0.5) * S;
+    drawUnit(e.type, x, y, S, e.face, () => {
+      if (e.free) { ctx.strokeStyle = C.danger; ctx.lineWidth = 2; rr(x - S * 0.42, y - S * 0.32, S * 0.84, S * 0.84, S * 0.2); ctx.stroke(); }
+      else for (let i = 0; i < e.blocked; i++) { ctx.fillStyle = C.danger; disc(x - S * 0.2 + i * S * 0.2, y - S * 0.32, S * 0.05); ctx.fill(); }
+      if (e.max > 1) { ctx.fillStyle = C.bg; ctx.fillRect(x - S * 0.3, y + S * 0.38, S * 0.6, 4); ctx.fillStyle = C.heavy; ctx.fillRect(x - S * 0.3, y + S * 0.38, S * 0.6 * e.hp / e.max, 4); }
+      if (e.skip && FOES[e.ch].slow && !s.frenzy) { ctx.fillStyle = C.muted; ctx.font = `600 ${Math.round(S * 0.22)}px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.fillText("zz", x + S * 0.34, y - S * 0.3); }
+    });
+  }
+  const vp = vis.p; drawUnit("player", (vp.x + 0.5) * S, (vp.y + 0.5) * S, S, s.p.face);
+  for (const p of parts) { p.x += p.vx * (dt || 0); p.y += p.vy * (dt || 0); p.vy += 300 * (dt || 0); p.life -= dt || 0; ctx.globalAlpha = Math.max(0, p.life * 1.6); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
+  parts = parts.filter(p => p.life > 0); ctx.globalAlpha = 1;
+  for (const f of floats) { f.y -= 28 * (dt || 0); f.life -= dt || 0; ctx.globalAlpha = Math.max(0, Math.min(1, f.life)); ctx.fillStyle = f.c; ctx.font = `700 ${Math.round(S * 0.32)}px ${css("--f-mono")}`; ctx.textAlign = "center"; ctx.fillText(f.t, f.x, f.y); }
+  floats = floats.filter(f => f.life > 0); ctx.globalAlpha = 1;
+  ctx.restore();
+}
+function frame(t) { const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016); lastT = t; if (state && !document.hidden) draw(dt); requestAnimationFrame(frame); }
+
+/* ---------- Input ---------- */
+const KEYS = { ArrowLeft: "L", a: "L", ArrowRight: "R", d: "R", ArrowUp: "J", w: "J", " ": "J", ArrowDown: "W", s: "W", ".": "W" };
+window.addEventListener("keydown", e => {
+  if (["BUTTON", "INPUT"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === "r") { newGame(); return; }
+  const c = KEYS[k]; if (!c) return;
+  e.preventDefault(); step(c);
+});
+function cmdAt(ev) {
+  const r = cv.getBoundingClientRect(), gx = (ev.clientX - r.left) / r.width * W - 0.5, gy = (ev.clientY - r.top) / r.height * H - 0.5;
+  const dx = gx - state.p.x, dy = gy - state.p.y;
+  if (dy < -0.7 && Math.abs(dx) < 1.2) return "J";
+  if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.7) return "W";
+  return dx < 0 ? "L" : "R";
+}
+cv.addEventListener("mousemove", ev => { if (state && !state.over) hoverCmd = cmdAt(ev); });
+cv.addEventListener("mouseleave", () => { hoverCmd = null; });
+cv.addEventListener("click", ev => { if (state && !state.over) step(cmdAt(ev)); });
+$("pad").addEventListener("click", ev => { const b = ev.target.closest("button"); if (b) { step(b.dataset.c); b.blur(); } });
+$("pad").addEventListener("mouseover", ev => { const b = ev.target.closest("button"); if (b) hoverCmd = b.dataset.c; });
+$("pad").addEventListener("mouseleave", () => { hoverCmd = null; });
+$("cover").addEventListener("click", ev => { if (ev.target.id === "again") newGame(); });
+
+function boot(data) {
+  readColors();
+  if (data && data.state && data.state.v === 1) { state = data.state; render(); } else newGame();
+  requestAnimationFrame(frame);
+}
+window.claude?.hot?.snapshot?.(() => ({ state }));
+new ResizeObserver(() => { if (state) { resize(); draw(0); } }).observe($("boardbox"));
+document.fonts?.ready?.then(() => readColors());
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>

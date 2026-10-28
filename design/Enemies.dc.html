@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lockstep enemies and bosses</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&amp;family=Barlow:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d9a441}a:hover{color:#f0c050}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1040px; box-sizing: border-box; padding: 56px 64px; background: #0d121b; color: #eef0f3; font-family: Barlow, 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c9ab0">Know the line</div>
+      <h1 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 64px; line-height: 0.9; letter-spacing: 0.02em; text-transform: uppercase">Enemies <span style="color: #d9a441">&amp; bosses</span></h1>
+    </div>
+    <div style="display: flex; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0; align-items: center">
+      <span style="display: flex; gap: 8px; align-items: center"><span style="display: flex; gap: 3px"><span style="width: 7px; height: 7px; border-radius: 50%; background: #ff6b7a"></span><span style="width: 7px; height: 7px; border-radius: 50%; background: #ff6b7a"></span></span>Blocked turns (3 = breaks step)</span>
+      <span style="display: flex; gap: 8px; align-items: center"><span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #ff6b7a"></span>Broken free, chasing you</span>
+    </div>
+  </div>
+
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #8c9ab0">The line</div>
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 18px">
+
+    <div style="background: #151f2d; border: 1px solid #2a3850; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 150px; background: #16202e; border-bottom: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Drone: a red diamond with a chevron visor">
+          <defs><linearGradient id="gDrone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f07070"/><stop offset="1" stop-color="#a83a3a"/></linearGradient></defs>
+          <path d="M0 40H120M0 80H120M40 0V120M80 0V120" stroke="#2a3850"/>
+          <ellipse cx="60" cy="94" rx="30" ry="9" fill="#000" opacity="0.4"/>
+          <rect x="40" y="40" width="40" height="40" rx="9" transform="rotate(45 60 60)" fill="url(#gDrone)" stroke="#6e2222" stroke-width="2.5"/>
+          <ellipse cx="52" cy="46" rx="10" ry="5" fill="#fff" opacity="0.2" transform="rotate(-25 52 46)"/>
+          <path d="M56 50L67 60L56 70" fill="none" stroke="#0d121b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1">Drone</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">1 health · hits 1</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Copies your every move. The backbone of the line.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: line it up with a pit and step that way.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #2a3850; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 150px; background: #16202e; border-bottom: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Contrarian: a violet diamond marked with opposing arrows">
+          <defs><linearGradient id="gContra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c3a2ff"/><stop offset="1" stop-color="#7650c0"/></linearGradient></defs>
+          <path d="M0 40H120M0 80H120M40 0V120M80 0V120" stroke="#2a3850"/>
+          <ellipse cx="60" cy="94" rx="30" ry="9" fill="#000" opacity="0.4"/>
+          <rect x="40" y="40" width="40" height="40" rx="9" transform="rotate(45 60 60)" fill="url(#gContra)" stroke="#45307a" stroke-width="2.5"/>
+          <ellipse cx="52" cy="46" rx="10" ry="5" fill="#fff" opacity="0.2" transform="rotate(-25 52 46)"/>
+          <path d="M48 55H72M66 49L72 55L66 61M72 66H48M54 60L48 66L54 72" fill="none" stroke="#0d121b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1">Contrarian</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">1 health · hits 1</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Moves the opposite way to you. Walks straight at you when you advance.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: step away from a pit to send it in.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #2a3850; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 150px; background: #16202e; border-bottom: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Heavy: an orange block with a health bar, resting">
+          <defs><linearGradient id="gHeavy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ec9a5e"/><stop offset="1" stop-color="#9c5424"/></linearGradient></defs>
+          <path d="M0 40H120M0 80H120M40 0V120M80 0V120" stroke="#2a3850"/>
+          <ellipse cx="60" cy="96" rx="34" ry="10" fill="#000" opacity="0.4"/>
+          <rect x="30" y="30" width="60" height="60" rx="14" fill="url(#gHeavy)" stroke="#5e3214" stroke-width="2.5"/>
+          <ellipse cx="48" cy="40" rx="12" ry="5" fill="#fff" opacity="0.2" transform="rotate(-20 48 40)"/>
+          <path d="M56 50L67 60L56 70" fill="none" stroke="#0d121b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="30" y="98" width="60" height="6" rx="2" fill="#000" opacity="0.55"/><rect x="30" y="98" width="60" height="6" rx="2" fill="#d0763a"/>
+          <text x="96" y="30" font-family="IBM Plex Mono, monospace" font-size="14" font-weight="600" fill="#8c9ab0">zz</text>
+        </svg>
+      </div>
+      <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1">Heavy</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">2 health · hits 2</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Moves every other turn (zz means it rests next). Stops resting in a frenzy.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: let the line pass it, then pin it.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #5c4a24; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 150px; background: #16202e; border-bottom: 1px solid #2a3850; display: flex; align-items: center; justify-content: center; position: relative">
+        <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Runner: a gold-ringed diamond with a double chevron">
+          <defs><linearGradient id="gRunner" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd77a"/><stop offset="1" stop-color="#b8892a"/></linearGradient></defs>
+          <path d="M0 40H120M0 80H120M40 0V120M80 0V120" stroke="#2a3850"/>
+          <ellipse cx="60" cy="94" rx="30" ry="9" fill="#000" opacity="0.4"/>
+          <circle cx="60" cy="60" r="38" fill="none" stroke="#f0c050" stroke-width="2.5"/>
+          <rect x="40" y="40" width="40" height="40" rx="9" transform="rotate(45 60 60)" fill="url(#gRunner)" stroke="#6e5214" stroke-width="2.5"/>
+          <path d="M50 51L59 60L50 69M60 51L69 60L60 69" fill="none" stroke="#0d121b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="position: absolute; top: 12px; right: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #f0c050">Elite</span>
+      </div>
+      <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1">Runner</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">2 health · hits 1</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Copies your move twice. Reaches pits, and you, before anyone else.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: give it a pit two tiles away.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #5c4a24; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="height: 150px; background: #16202e; border-bottom: 1px solid #2a3850; display: flex; align-items: center; justify-content: center; position: relative">
+        <svg width="130" height="130" viewBox="0 0 120 120" role="img" aria-label="Anchor: a gold-ringed block with a bolt at its centre">
+          <defs><linearGradient id="gAnchor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd77a"/><stop offset="1" stop-color="#b8892a"/></linearGradient></defs>
+          <path d="M0 40H120M0 80H120M40 0V120M80 0V120" stroke="#2a3850"/>
+          <ellipse cx="60" cy="96" rx="34" ry="10" fill="#000" opacity="0.4"/>
+          <circle cx="60" cy="60" r="44" fill="none" stroke="#f0c050" stroke-width="2.5"/>
+          <rect x="30" y="30" width="60" height="60" rx="14" fill="url(#gAnchor)" stroke="#6e5214" stroke-width="2.5"/>
+          <circle cx="60" cy="60" r="12" fill="#0d121b"/><circle cx="60" cy="60" r="5" fill="#f0c050"/>
+          <path d="M24 60H14M106 60H96M60 24V14M60 106V96" stroke="#f0c050" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span style="position: absolute; top: 12px; right: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: #f0c050">Elite</span>
+      </div>
+      <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; flex-grow: 1">
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 28px; text-transform: uppercase; line-height: 1">Anchor</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">3 health · hits 1</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Never moves; strikes anything beside it. A wall that fights back.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: clear the rest. A lone Anchor yields.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #8c9ab0; margin-top: 4px">Bosses · pits deal 3 and they climb back out · all enrage at turn 30</div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; flex-grow: 1">
+
+    <div style="background: #151f2d; border: 1px solid #6a2a3a; border-radius: 16px; display: grid; grid-template-columns: 170px minmax(0, 1fr); overflow: hidden">
+      <div style="background: #16202e; border-right: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="150" height="150" viewBox="0 0 160 160" role="img" aria-label="The Colossus: a large crimson block wearing a gold crown">
+          <defs><linearGradient id="gCol" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7d93"/><stop offset="1" stop-color="#b42a45"/></linearGradient></defs>
+          <ellipse cx="80" cy="134" rx="50" ry="13" fill="#000" opacity="0.45"/>
+          <rect x="34" y="44" width="92" height="86" rx="20" fill="url(#gCol)" stroke="#6a1426" stroke-width="3"/>
+          <ellipse cx="58" cy="58" rx="18" ry="7" fill="#fff" opacity="0.2" transform="rotate(-18 58 58)"/>
+          <path d="M48 46L52 20L66 34L80 14L94 34L108 20L112 46Z" fill="#f0c050" stroke="#8a6a1a" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M72 74L88 87L72 100" fill="none" stroke="#0d121b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="128" y="44" font-family="IBM Plex Mono, monospace" font-size="16" font-weight="600" fill="#8c9ab0">zz</text>
+        </svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #ff7d93">Act 1 boss</div>
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 34px; text-transform: uppercase; line-height: 1">The Colossus</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">8 health · hits 2 · moves every other turn</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">A giant Heavy that keeps step. A drone arrives every 6 turns.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: walk it into pits three times.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #6a2a3a; border-radius: 16px; display: grid; grid-template-columns: 170px minmax(0, 1fr); overflow: hidden">
+      <div style="background: #16202e; border-right: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="150" height="150" viewBox="0 0 160 160" role="img" aria-label="The Mirror: a large violet diamond split by a silver line, wearing a gold crown">
+          <defs><linearGradient id="gMir" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d0b4ff"/><stop offset="1" stop-color="#6a42b8"/></linearGradient></defs>
+          <ellipse cx="80" cy="136" rx="46" ry="12" fill="#000" opacity="0.45"/>
+          <rect x="44" y="52" width="72" height="72" rx="14" transform="rotate(45 80 88)" fill="url(#gMir)" stroke="#3a2470" stroke-width="3"/>
+          <path d="M80 42V134" stroke="#eef0f3" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.8"/>
+          <path d="M52 40L56 16L68 30L80 10L92 30L104 16L108 40Z" fill="#f0c050" stroke="#8a6a1a" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M62 80H98M90 72L98 80L90 88M98 98H62M70 90L62 98L70 106" fill="none" stroke="#0d121b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #ff7d93">Act 2 boss</div>
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 34px; text-transform: uppercase; line-height: 1">The Mirror</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">8 health · hits 1 · a Contrarian</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Every 5 turns it flips the cadence: for 5 turns, everyone moves the other way.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: watch the countdown, plan both halves.</p>
+      </div>
+    </div>
+
+    <div style="background: #151f2d; border: 1px solid #6a2a3a; border-radius: 16px; display: grid; grid-template-columns: 170px minmax(0, 1fr); overflow: hidden">
+      <div style="background: #16202e; border-right: 1px solid #2a3850; display: flex; align-items: center; justify-content: center">
+        <svg width="150" height="150" viewBox="0 0 160 160" role="img" aria-label="The Warden: a large crimson block inside a dashed red ring, wearing a gold crown and carrying keys">
+          <defs><linearGradient id="gWar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7d93"/><stop offset="1" stop-color="#8e1e36"/></linearGradient></defs>
+          <ellipse cx="80" cy="134" rx="50" ry="13" fill="#000" opacity="0.45"/>
+          <circle cx="80" cy="88" r="66" fill="none" stroke="#ff6b7a" stroke-width="3" stroke-dasharray="8 6"/>
+          <rect x="38" y="48" width="84" height="80" rx="18" fill="url(#gWar)" stroke="#5a0e20" stroke-width="3"/>
+          <path d="M50 50L54 24L67 38L80 18L93 38L106 24L110 50Z" fill="#f0c050" stroke="#8a6a1a" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M60 84H100" stroke="#0d121b" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="112" cy="116" r="9" fill="none" stroke="#f0c050" stroke-width="3"/><path d="M118 122L130 134M126 130L130 126" stroke="#f0c050" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 8px">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #ff7d93">Act 3 boss</div>
+        <h2 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 34px; text-transform: uppercase; line-height: 1">The Warden</h2>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8c9ab0">9 health · hits 2 · never keeps step</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.45">Hunts you every other turn and steps around pits. Two drones arrive every 7 turns.</p>
+        <p style="margin: 0; font-size: 13px; color: #8c9ab0; margin-top: auto">Beat it: a Trapdoor it can't see, or a Shove.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

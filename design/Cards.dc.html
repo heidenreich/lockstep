@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lockstep move cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&amp;family=Barlow:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#d9a441}a:hover{color:#f0c050}
+.card{background:#151f2d;border:1px solid #2a3850;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box;min-height:0}
+.top{display:flex;justify-content:space-between;align-items:center}
+.chip{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;border:1px solid;border-radius:999px;padding:3px 9px}
+.cd{width:34px;height:34px;border-radius:50%;background:#d9a441;color:#1a1305;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:600;line-height:1}
+.cd b{font-size:15px}.cd i{font-style:normal;font-size:8px;letter-spacing:.08em}
+.art{background:#16202e;border:1px solid #2a3850;border-radius:10px;height:112px;display:flex;align-items:center;justify-content:center}
+.nm{margin:0;font-family:'Big Shoulders Display','Arial Narrow',sans-serif;font-weight:900;font-size:26px;line-height:1;text-transform:uppercase;letter-spacing:.02em}
+.rows{display:grid;grid-template-columns:54px minmax(0,1fr);gap:5px 8px;font-size:13.5px;line-height:1.35}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8c9ab0;padding-top:2px}
+.up{border-top:1px solid #2a3850;padding-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#d9a441}
+.foot{margin-top:auto;font-size:12px;color:#8c9ab0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1060px; box-sizing: border-box; padding: 56px 64px; background: #0d121b; color: #eef0f3; font-family: Barlow, 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #8c9ab0">Break the rule when it matters</div>
+      <h1 style="margin: 0; font-family: 'Big Shoulders Display', 'Arial Narrow', sans-serif; font-weight: 900; font-size: 64px; line-height: 0.9; letter-spacing: 0.02em; text-transform: uppercase">Move <span style="color: #d9a441">cards</span></h1>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end">
+      <span class="chip" style="color: #f2ece0; border-color: #6b675e">Footwork</span>
+      <span class="chip" style="color: #5fc9a0; border-color: #2f5a4c">Command</span>
+      <span class="chip" style="color: #ff6b7a; border-color: #6a2a3a">Strike</span>
+      <span class="chip" style="color: #7fb2ff; border-color: #2c4a72">Guard</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 20px; flex-grow: 1">
+
+    <!-- Sidestep -->
+    <div class="card" style="border-color: #3e3c38">
+      <div class="top"><span class="chip" style="color: #f2ece0; border-color: #6b675e">Footwork</span><span class="cd"><b>3</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You step right while two drones hold still">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="51" cy="51" r="11" fill="#d9a441"/><circle cx="51" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="85" cy="51" r="11" fill="none" stroke="#f2ece0" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M63 51H73M69 47L73 51L69 55" fill="none" stroke="#f2ece0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="111" y="9" width="16" height="16" rx="3" transform="rotate(45 119 17)" fill="#e05252"/>
+        <rect x="145" y="77" width="16" height="16" rx="3" transform="rotate(45 153 85)" fill="#e05252"/>
+        <path d="M131 11V23M135 11V23M165 79V91" stroke="#8c9ab0" stroke-width="2.5" stroke-linecap="round"/>
+      </svg></div>
+      <h2 class="nm">Sidestep</h2>
+      <div class="rows"><span class="lbl">You</span><span>Move 1.</span><span class="lbl">Room</span><span>Holds still.</span></div>
+      <div class="up">+ Cooldown 2</div>
+      <div class="foot">Recruit starter</div>
+    </div>
+
+    <!-- Stomp -->
+    <div class="card" style="border-color: #24443a">
+      <div class="top"><span class="chip" style="color: #5fc9a0; border-color: #2f5a4c">Command</span><span class="cd"><b>2</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You stay put while the line steps right">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="17" cy="51" r="15" fill="none" stroke="#5fc9a0" stroke-width="2" stroke-dasharray="3 3"/>
+        <rect x="77" y="9" width="16" height="16" rx="3" transform="rotate(45 85 17)" fill="#e05252"/>
+        <rect x="77" y="77" width="16" height="16" rx="3" transform="rotate(45 85 85)" fill="#e05252"/>
+        <rect x="111" y="9" width="16" height="16" rx="3" transform="rotate(45 119 17)" fill="none" stroke="#e05252" stroke-width="2" stroke-dasharray="3 3"/>
+        <rect x="111" y="77" width="16" height="16" rx="3" transform="rotate(45 119 85)" fill="none" stroke="#e05252" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M97 17H106M102 13L106 17L102 21M97 85H106M102 81L106 85L102 89" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></div>
+      <h2 class="nm">Stomp</h2>
+      <div class="rows"><span class="lbl">You</span><span>Stay put.</span><span class="lbl">Room</span><span>Moves 1 your way.</span></div>
+      <div class="up">+ Cooldown 1</div>
+      <div class="foot">Recruit starter</div>
+    </div>
+
+    <!-- Double Time -->
+    <div class="card" style="border-color: #3e3c38">
+      <div class="top"><span class="chip" style="color: #f2ece0; border-color: #6b675e">Footwork</span><span class="cd"><b>3</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You step right once while the line steps right twice">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="51" cy="51" r="11" fill="none" stroke="#f2ece0" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M29 51H39M35 47L39 51L35 55" fill="none" stroke="#f2ece0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="77" y="9" width="16" height="16" rx="3" transform="rotate(45 85 17)" fill="#e05252"/>
+        <rect x="145" y="9" width="16" height="16" rx="3" transform="rotate(45 153 17)" fill="none" stroke="#e05252" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M97 17H140M126 12L132 17L126 22M136 12L142 17L136 22" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="77" y="77" width="16" height="16" rx="3" transform="rotate(45 85 85)" fill="#e05252"/>
+        <rect x="145" y="77" width="16" height="16" rx="3" transform="rotate(45 153 85)" fill="none" stroke="#e05252" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M97 85H140M126 80L132 85L126 90M136 80L142 85L136 90" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></div>
+      <h2 class="nm">Double Time</h2>
+      <div class="rows"><span class="lbl">You</span><span>Move 1.</span><span class="lbl">Room</span><span>Moves 2 your way.</span></div>
+      <div class="up">+ Cooldown 2</div>
+      <div class="foot">Drummer starter</div>
+    </div>
+
+    <!-- About Face -->
+    <div class="card" style="border-color: #3e3c38">
+      <div class="top"><span class="chip" style="color: #f2ece0; border-color: #6b675e">Footwork</span><span class="cd"><b>3</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You step right while the line steps left, toward a pit">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="85" cy="85" r="13" fill="#26324a"/><circle cx="85" cy="85" r="10" fill="#05080d"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="51" cy="51" r="11" fill="none" stroke="#f2ece0" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M29 51H39M35 47L39 51L35 55" fill="none" stroke="#f2ece0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="111" y="77" width="16" height="16" rx="3" transform="rotate(45 119 85)" fill="#e05252"/>
+        <path d="M105 85H98M102 81L98 85L102 89" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="145" y="9" width="16" height="16" rx="3" transform="rotate(45 153 17)" fill="#e05252"/>
+        <rect x="111" y="9" width="16" height="16" rx="3" transform="rotate(45 119 17)" fill="none" stroke="#e05252" stroke-width="2" stroke-dasharray="3 3"/>
+        <path d="M139 17H132M136 13L132 17L136 21" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></div>
+      <h2 class="nm">About Face</h2>
+      <div class="rows"><span class="lbl">You</span><span>Move 1.</span><span class="lbl">Room</span><span>Moves the opposite way.</span></div>
+      <div class="up">+ Cooldown 2</div>
+      <div class="foot">Drummer starter</div>
+    </div>
+
+    <!-- Lunge -->
+    <div class="card" style="border-color: #4a2430">
+      <div class="top"><span class="chip" style="color: #ff6b7a; border-color: #6a2a3a">Strike</span><span class="cd"><b>3</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You dash two tiles and strike the drone at the end for 2">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441" opacity="0.35"/><circle cx="17" cy="51" r="9" fill="#f2ece0" opacity="0.35"/>
+        <path d="M29 51H70M64 45L70 51L64 57" fill="none" stroke="#f2ece0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="85" cy="51" r="11" fill="#d9a441"/><circle cx="85" cy="51" r="9" fill="#f2ece0"/>
+        <rect x="111" y="43" width="16" height="16" rx="3" transform="rotate(45 119 51)" fill="#e05252"/>
+        <path d="M119 28V35M134 36L129 41M134 66L129 61M119 74V67" stroke="#d9a441" stroke-width="2.5" stroke-linecap="round"/>
+        <text x="143" y="56" font-family="IBM Plex Mono, monospace" font-size="15" font-weight="600" fill="#ff6b7a">−2</text>
+      </svg></div>
+      <h2 class="nm">Lunge</h2>
+      <div class="rows"><span class="lbl">You</span><span>Dash up to 2; first enemy hit takes 2.</span><span class="lbl">Room</span><span>Moves 1.</span></div>
+      <div class="up">+ Hits for 3</div>
+      <div class="foot">Starter pool</div>
+    </div>
+
+    <!-- Shove -->
+    <div class="card" style="border-color: #4a2430">
+      <div class="top"><span class="chip" style="color: #ff6b7a; border-color: #6a2a3a">Strike</span><span class="cd"><b>2</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="You shove the drone beside you two tiles back, into a pit">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="119" cy="51" r="13" fill="#26324a"/><circle cx="119" cy="51" r="10" fill="#05080d"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <rect x="43" y="43" width="16" height="16" rx="3" transform="rotate(45 51 51)" fill="#e05252" opacity="0.4"/>
+        <path d="M63 51H104M98 45L104 51L98 57" fill="none" stroke="#d9a441" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="113" y="45" width="12" height="12" rx="2" transform="rotate(45 119 51)" fill="#e05252"/>
+        <path d="M33 41L38 45M33 61L38 57" stroke="#d9a441" stroke-width="2.5" stroke-linecap="round"/>
+      </svg></div>
+      <h2 class="nm">Shove</h2>
+      <div class="rows"><span class="lbl">You</span><span>Hit a neighbour for 1, knock it back 2.</span><span class="lbl">Room</span><span>Holds still.</span></div>
+      <div class="up">+ Knocks back 3</div>
+      <div class="foot">Sapper starter</div>
+    </div>
+
+    <!-- Quake -->
+    <div class="card" style="border-color: #4a2430">
+      <div class="top"><span class="chip" style="color: #ff6b7a; border-color: #6a2a3a">Strike</span><span class="cd"><b>5</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="The line is pushed into a wall; pinned drones take 1 damage">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <rect x="140" y="4" width="26" height="94" rx="5" fill="#56698a"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <rect x="111" y="9" width="16" height="16" rx="3" transform="rotate(45 119 17)" fill="#e05252"/>
+        <rect x="111" y="77" width="16" height="16" rx="3" transform="rotate(45 119 85)" fill="#e05252"/>
+        <circle cx="108" cy="2" r="2.5" fill="#ff6b7a"/><circle cx="108" cy="70" r="2.5" fill="#ff6b7a"/>
+        <path d="M45 6L52 16L44 26L52 36L44 46L52 56L44 66L52 76L45 86L50 96" fill="none" stroke="#d9a441" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M134 10L138 14M134 24L138 20M134 78L138 82M134 92L138 88" stroke="#d9a441" stroke-width="2.5" stroke-linecap="round"/>
+      </svg></div>
+      <h2 class="nm">Quake</h2>
+      <div class="rows"><span class="lbl">You</span><span>Stay put.</span><span class="lbl">Room</span><span>Moves 1; anything already pinned takes 1.</span></div>
+      <div class="up">+ Cooldown 4</div>
+      <div class="foot">Unlock: beat the Colossus</div>
+    </div>
+
+    <!-- Magnet -->
+    <div class="card" style="border-color: #24443a">
+      <div class="top"><span class="chip" style="color: #5fc9a0; border-color: #2f5a4c">Command</span><span class="cd"><b>4</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="Every locked drone steps one tile toward you; one steps into a pit">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="119" cy="51" r="13" fill="#26324a"/><circle cx="119" cy="51" r="10" fill="#05080d"/>
+        <circle cx="85" cy="51" r="11" fill="#d9a441"/><circle cx="85" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="85" cy="51" r="16" fill="none" stroke="#5fc9a0" stroke-width="2" stroke-dasharray="3 3"/>
+        <rect x="9" y="43" width="16" height="16" rx="3" transform="rotate(45 17 51)" fill="#e05252"/>
+        <path d="M30 51H40M36 47L40 51L36 55" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="145" y="43" width="16" height="16" rx="3" transform="rotate(45 153 51)" fill="#e05252" opacity="0.4"/>
+        <path d="M140 51H133M137 47L133 51L137 55" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="43" y="9" width="16" height="16" rx="3" transform="rotate(45 51 17)" fill="#e05252"/>
+        <path d="M64 17H72M68 13L72 17L68 21" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></div>
+      <h2 class="nm">Magnet</h2>
+      <div class="rows"><span class="lbl">You</span><span>Stay put.</span><span class="lbl">Room</span><span>Every locked enemy steps 1 toward you.</span></div>
+      <div class="up">+ Cooldown 3</div>
+      <div class="foot">Unlock: reach act 2</div>
+    </div>
+
+    <!-- Recall -->
+    <div class="card" style="border-color: #24443a">
+      <div class="top"><span class="chip" style="color: #5fc9a0; border-color: #2f5a4c">Command</span><span class="cd"><b>6</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="Two drones that broke free lose their red rings and fall back into step">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="17" cy="51" r="11" fill="#d9a441"/><circle cx="17" cy="51" r="9" fill="#f2ece0"/>
+        <rect x="77" y="9" width="16" height="16" rx="3" transform="rotate(45 85 17)" fill="#e05252"/>
+        <circle cx="85" cy="17" r="15" fill="none" stroke="#ff6b7a" stroke-width="2" stroke-dasharray="2 4"/>
+        <rect x="111" y="77" width="16" height="16" rx="3" transform="rotate(45 119 85)" fill="#e05252"/>
+        <circle cx="119" cy="85" r="15" fill="none" stroke="#ff6b7a" stroke-width="2" stroke-dasharray="2 4"/>
+        <path d="M108 30A26 26 0 0 1 134 52M130 47L134 52L139 48" fill="none" stroke="#5fc9a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M140 72L146 78L158 64" fill="none" stroke="#5fc9a0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg></div>
+      <h2 class="nm">Recall</h2>
+      <div class="rows"><span class="lbl">You</span><span>Stay put.</span><span class="lbl">Room</span><span>Everything that broke free falls back into step.</span></div>
+      <div class="up">+ Cooldown 4</div>
+      <div class="foot">Unlock: beat the Mirror</div>
+    </div>
+
+    <!-- Trapdoor -->
+    <div class="card" style="border-color: #1f3554">
+      <div class="top"><span class="chip" style="color: #7fb2ff; border-color: #2c4a72">Guard</span><span class="cd"><b>6</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="A hidden pit opens beside you and a chasing drone walks into it">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <circle cx="51" cy="51" r="11" fill="#d9a441"/><circle cx="51" cy="51" r="9" fill="#f2ece0"/>
+        <circle cx="85" cy="51" r="13" fill="#05080d" stroke="#d9a441" stroke-width="2" stroke-dasharray="4 3"/>
+        <text x="85" y="56" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="#d9a441">4</text>
+        <rect x="145" y="43" width="16" height="16" rx="3" transform="rotate(45 153 51)" fill="#e05252"/>
+        <circle cx="153" cy="51" r="15" fill="none" stroke="#ff6b7a" stroke-width="2"/>
+        <path d="M135 51H102M108 45L102 51L108 57" fill="none" stroke="#e05252" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 4"/>
+      </svg></div>
+      <h2 class="nm">Trapdoor</h2>
+      <div class="rows"><span class="lbl">You</span><span>Open a hidden pit beside you for 4 turns.</span><span class="lbl">Room</span><span>Holds; chasers walk in.</span></div>
+      <div class="up">+ Cooldown 4</div>
+      <div class="foot">Starter pool · the Warden's weakness</div>
+    </div>
+
+    <!-- Brace -->
+    <div class="card" style="border-color: #1f3554">
+      <div class="top"><span class="chip" style="color: #7fb2ff; border-color: #2c4a72">Guard</span><span class="cd"><b>4</b><i>CD</i></span></div>
+      <div class="art"><svg width="170" height="102" viewBox="0 0 170 102" role="img" aria-label="A shield surrounds you and two strikes glance off">
+        <path d="M34 0V102M68 0V102M102 0V102M136 0V102M0 34H170M0 68H170" stroke="#2a3850"/>
+        <path d="M85 22L106 30V50C106 66 96 76 85 82C74 76 64 66 64 50V30Z" fill="none" stroke="#5fc9a0" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="85" cy="51" r="11" fill="#d9a441"/><circle cx="85" cy="51" r="9" fill="#f2ece0"/>
+        <rect x="43" y="43" width="16" height="16" rx="3" transform="rotate(45 51 51)" fill="#e05252"/>
+        <rect x="111" y="43" width="16" height="16" rx="3" transform="rotate(45 119 51)" fill="#e05252"/>
+        <path d="M60 40L64 44M60 62L64 58M110 40L106 44M110 62L106 58" stroke="#eef0f3" stroke-width="2.5" stroke-linecap="round"/>
+      </svg></div>
+      <h2 class="nm">Brace</h2>
+      <div class="rows"><span class="lbl">You</span><span>Stay put; take no damage this turn.</span><span class="lbl">Room</span><span>Holds still.</span></div>
+      <div class="up">+ Cooldown 3</div>
+      <div class="foot">Unlock: fall three times</div>
+    </div>
+
+    <!-- Legend -->
+    <div class="card" style="background: #0f1622; border-style: dashed; justify-content: flex-start; gap: 14px">
+      <h2 class="nm" style="font-size: 22px; color: #8c9ab0">Reading a card</h2>
+      <div style="display: flex; gap: 10px; align-items: center"><span class="cd"><b>3</b><i>CD</i></span><span style="font-size: 13px; line-height: 1.4">Cooldown: turns before you can play it again. Step is always free.</span></div>
+      <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.4"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" style="flex: none"><circle cx="17" cy="17" r="11" fill="#d9a441"/><circle cx="17" cy="17" r="9" fill="#f2ece0"/></svg><span>You. A dashed outline is where you end up.</span></div>
+      <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.4"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" style="flex: none"><rect x="9" y="9" width="16" height="16" rx="3" transform="rotate(45 17 17)" fill="#e05252"/></svg><span>The line. Normally it copies your step; most cards change that.</span></div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #d9a441; border-top: 1px solid #2a3850; padding-top: 10px">+ Upgrade at a rest, an elite or the shop</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

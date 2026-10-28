@@ -1,0 +1,755 @@
+<title>The Heir</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one stone hall (the board) beside a slim instrument panel; stacks on phones. Single dark look by choice. */
+:root {
+  --bg: #11181b;
+  --panel: #172125;
+  --tile: #1c282c;
+  --tile2: #192428;
+  --wall: #34484d;
+  --line: #2a3b40;
+  --ink: #e6ecea;
+  --muted: #8ea3a2;
+  --player: #f3b54a;
+  --heir: #c9b27c;
+  --enemy: #e2654d;
+  --danger: #ff7a8a;
+  --good: #7fd3a6;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; margin: 0; line-height: 1; text-wrap: balance; }
+h1 span { color: var(--heir); }
+.tag { color: var(--muted); margin: 0; max-width: 60ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.board { position: relative; min-width: 0; }
+canvas { display: block; width: 100%; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); touch-action: manipulation; }
+.board.hit canvas { box-shadow: 0 0 0 3px var(--danger); }
+.over {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border-radius: 10px; padding: 16px;
+}
+.over h2 { font-family: var(--f-display); font-size: 30px; margin: 0; text-wrap: balance; }
+.over h2 span { color: var(--heir); }
+.over p { margin: 0 auto; color: var(--muted); max-width: 42ch; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.choices button { display: grid; gap: 0; text-align: center; }
+.choices small { font-weight: 400; font-size: 12px; opacity: .8; }
+.panel { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--f-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hp { display: flex; gap: 4px; flex-wrap: wrap; }
+.hp i { width: 14px; height: 14px; border-radius: 3px; background: var(--line); }
+.hp i.on { background: var(--player); }
+.body-name { font-family: var(--f-display); font-weight: 800; font-size: 20px; line-height: 1.1; }
+.heir-status { font-family: var(--f-mono); font-size: 13px; color: var(--heir); }
+.skills { display: grid; gap: 6px; }
+.skills button { display: flex; align-items: center; gap: 8px; text-align: left; background: transparent; color: var(--ink); border: 1px solid var(--line); padding: 7px 10px; font-weight: 500; }
+.skills button .n { flex: 1; min-width: 0; }
+.skills button .cd { font-family: var(--f-mono); font-size: 12px; color: var(--good); }
+.skills button.cooling .cd { color: var(--muted); }
+.skills button.cooling .n { color: var(--muted); }
+.skills button.armed { border-color: var(--heir); box-shadow: inset 0 0 0 1px var(--heir); }
+.skills button.inh .n::after { content: " · inherited"; color: var(--heir); font-size: 12px; }
+.skills button:disabled { opacity: .45; cursor: default; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { position: relative; width: 44px; height: 24px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 12px; background: var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.switch input:checked + span { background: var(--heir); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--heir); outline-offset: 2px; }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+button {
+  font: inherit; font-weight: 600; color: var(--bg); background: var(--heir); border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible { outline: 2px solid var(--player); outline-offset: 2px; }
+.lineage { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.lineage li b { color: var(--ink); font-weight: 600; }
+.lineage li i { color: var(--heir); font-style: normal; }
+.lineage li.now b { color: var(--player); }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink); }
+.rules b { color: var(--heir); font-weight: 600; }
+.rules em { color: var(--player); font-style: normal; font-weight: 600; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-height: 7.5em; }
+.log li:first-child { color: var(--ink); }
+.log .t { color: var(--line); filter: brightness(1.8); margin-right: 6px; }
+.pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 44px); gap: 6px; justify-content: center; }
+.pad button { padding: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--line); font-family: var(--f-mono); }
+.pad button:active { background: var(--line); }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .w { grid-column: 2; grid-row: 2; font-size: 11px; }
+.pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; }
+.keys { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+@media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>The <span>Heir</span></h1>
+    <p class="tag">When you die, whatever killed you becomes you, and carries one of your skills. Build a line of murderers five generations long.</p>
+  </header>
+
+  <div class="game">
+    <div class="board" id="board">
+      <canvas id="cv" aria-label="Game board"></canvas>
+      <div class="over" id="over" hidden>
+        <h2 id="overTitle"></h2>
+        <p id="overText"></p>
+        <div class="choices" id="choices"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Gen</span><b id="sGen">1</b></div>
+          <div class="stat"><span class="label">Wave</span><b id="sWave">1</b></div>
+          <div class="stat"><span class="label">Score</span><b id="sScore">0</b></div>
+          <div class="stat"><span class="label">Best</span><b id="sBest">0</b></div>
+        </div>
+        <div class="row"><span class="body-name" id="bodyName"></span><div class="hp" id="hp"></div></div>
+        <div class="heir-status" id="traitStatus"></div>
+        <div class="heir-status" id="clockStatus"></div>
+        <div class="skills" id="skills"></div>
+        <p class="hint" id="aimHint"></p>
+      </div>
+
+      <div class="card">
+        <span class="label">Lineage</span>
+        <ol class="lineage" id="lineage"></ol>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label for="choose">Choose inherited skill</label>
+          <span class="switch"><input type="checkbox" id="choose" checked><span></span></span>
+        </div>
+        <p class="hint" id="chooseHint"></p>
+        <button class="ghost" id="restart">Restart run</button>
+      </div>
+
+      <div class="card">
+        <span class="label">Controls</span>
+        <div class="pad">
+          <button class="u" data-d="0,-1" aria-label="Move up">▲</button>
+          <button class="l" data-d="-1,0" aria-label="Move left">◀</button>
+          <button class="w" data-d="0,0" aria-label="Wait">wait</button>
+          <button class="r" data-d="1,0" aria-label="Move right">▶</button>
+          <button class="d" data-d="0,1" aria-label="Move down">▼</button>
+        </div>
+        <p class="keys"><kbd>WASD</kbd> or arrows to move or attack · <kbd>Space</kbd> wait · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> skill, then a direction · <kbd>Esc</kbd> cancel · <kbd>R</kbd> restart</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="game">
+    <div class="card">
+      <span class="label">How it works</span>
+      <ul class="rules">
+        <li>Each turn you move one tile, wait, use a skill, or bump into an enemy to hit it. Then every enemy steps toward you and hits you if it ends next to you.</li>
+        <li>When you die, the enemy that struck the <b>killing blow becomes your heir</b>. It keeps its own body (health, damage, movement, native skill), starts where it stood, and <b>inherits one skill</b> from the character it killed. It leaves the wave; the wave goes on.</li>
+        <li>Dying costs you. The heir starts at <b>half its health</b>, or less if you'd already wounded it.</li>
+        <li>Each wave gives you <b>25 turns</b>. After that, another enemy arrives every 10 turns until the wave is cleared.</li>
+        <li>Skills: press <b>1</b>, <b>2</b> or <b>3</b>, then a direction if the skill is aimed. Using one takes your turn; the number shows turns until it's ready. Enemies never use skills; theirs only wake up when they become you.</li>
+        <li><em>Knight</em> 6 HP, hits 2, Cleave (hit all 4 sides, every 4 turns). You start as one; they never appear as enemies.</li>
+        <li><em>Goblin</em> 3 HP, hits 1, Dash (up to 3 tiles in a line, every 3). Fast: every other turn it takes two steps. As your heir, every second action of yours is free: enemies don't respond.</li>
+        <li><em>Skeleton Archer</em> 3 HP, hits 1, Bolt (2 damage to the first enemy in a line, every 3). Shoots along a clear row or column up to 4 tiles. As your heir, waiting shoots the nearest enemy that way.</li>
+        <li><em>Slime</em> 4 HP, hits 1, Regrow (heal 2, every 6). Slow: acts every other turn. As your heir, enemies act twice after every second action of yours.</li>
+        <li><em>Orc</em> 5 HP, hits 2, Charge (run in a line and hit what you reach for damage +1, every 4).</li>
+        <li>Wave <i>n</i> brings 2 + ⌊(<i>n</i>−1)/2⌋ enemies: goblins and slimes from wave 1, archers from wave 2, orcs from wave 3. The line ends when generation 5 dies. Score: 2 per wave cleared + 1 per kill.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="label">Log</span>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = 11, H = 11, MAX_GEN = 5, SLOTS = 3, ARCHER_RANGE = 4, START = { x: 5, y: 8 };
+const WAVE_TIME = 25, REINFORCE_EVERY = 10;
+const WALLS = new Set(["3,3", "7,3", "5,5", "3,7", "7,7"]);
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const BODIES = {
+  knight: { name: "Knight", hp: 6, dmg: 2, trait: "steady", skill: "cleave" },
+  goblin: { name: "Goblin", hp: 3, dmg: 1, trait: "fast", skill: "dash" },
+  archer: { name: "Skeleton Archer", hp: 3, dmg: 1, trait: "ranged", skill: "bolt" },
+  slime: { name: "Slime", hp: 4, dmg: 1, trait: "slow", skill: "regrow" },
+  orc: { name: "Orc", hp: 5, dmg: 2, trait: "steady", skill: "charge" }
+};
+const SKILLS = {
+  cleave: { name: "Cleave", cd: 4, aimed: false, text: "hit all 4 sides" },
+  dash: { name: "Dash", cd: 3, aimed: true, text: "up to 3 tiles in a line" },
+  bolt: { name: "Bolt", cd: 3, aimed: true, text: "2 damage, first enemy in a line" },
+  regrow: { name: "Regrow", cd: 6, aimed: false, text: "heal 2" },
+  charge: { name: "Charge", cd: 4, aimed: true, text: "run in a line, hit for +1" }
+};
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const settings = { choose: true };
+let state = null, cell = 48, best = 0, lastFlash = 0;
+
+try { best = +localStorage.getItem("heir-best") || 0; } catch (e) {}
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+function readColors() { for (const k of ["tile", "tile2", "wall", "line", "ink", "muted", "player", "heir", "enemy", "danger", "good", "bg"]) C[k] = css("--" + k); }
+
+const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const isWall = (x, y) => WALLS.has(x + "," + y);
+const enemyAt = (x, y) => state.enemies.find(e => e.x === x && e.y === y);
+const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const nameOf = t => BODIES[t].name;
+const skillName = id => SKILLS[id].name;
+
+function log(msg) {
+  state.log.unshift({ t: state.turn, msg });
+  state.log.length = Math.min(state.log.length, 7);
+}
+
+function makePlayer(type, x, y, inherited) {
+  const b = BODIES[type];
+  let skills = [{ id: b.skill, cd: 0, native: true }];
+  for (const id of inherited) if (!skills.some(s => s.id === id)) skills.push({ id, cd: 0, native: false });
+  if (skills.length > SLOTS) skills = [skills[0], ...skills.slice(-(SLOTS - 1))];
+  return { type, x, y, hp: b.hp, maxhp: b.hp, dmg: b.dmg, skills };
+}
+
+function newGame() {
+  state = {
+    turn: 0, gen: 1, wave: 0, wavesCleared: 0, kills: 0, score: 0, nextId: 1, clock: WAVE_TIME,
+    player: makePlayer("knight", START.x, START.y, []),
+    enemies: [], lineage: [{ gen: 1, type: "knight", inherited: null, kills: 0, fate: null }],
+    dying: null, over: false, aim: null, flash: 0, log: []
+  };
+  nextWave();
+  log("Gen 1: a Knight. Whatever kills it inherits it.");
+  render();
+}
+
+function nextWave() {
+  state.wave++;
+  const made = spawnEnemies(2 + Math.floor((state.wave - 1) / 2));
+  state.clock = WAVE_TIME;
+  if (state.wave > 1) log(`Wave ${state.wave}: ${made.length} enemies.`);
+}
+
+function spawnEnemies(count) {
+  const n = state.wave;
+  const pool = ["goblin", "slime"];
+  if (n >= 2) pool.push("archer");
+  if (n >= 3) pool.push("orc");
+  const P = state.player, cand = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const edge = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+    if (!edge || isWall(x, y) || enemyAt(x, y) || dist({ x, y }, P) < 5) continue;
+    cand.push({ x, y });
+  }
+  cand.sort(() => Math.random() - 0.5);
+  const made = [];
+  for (let i = 0; i < count; i++) {
+    const c = cand.pop(); if (!c) break;
+    const type = pool[Math.floor(Math.random() * pool.length)], b = BODIES[type];
+    state.enemies.push({ id: state.nextId++, type, x: c.x, y: c.y, hp: b.hp, dmg: b.dmg, rest: true, surge: false });
+    made.push(type);
+  }
+  return made;
+}
+
+function waveCleared() {
+  state.wavesCleared++;
+  state.score += 2;
+  log(`Wave ${state.wave} cleared. +2`);
+  nextWave();
+}
+
+function hitEnemy(e, dmg, how) {
+  e.hp -= dmg;
+  const what = nameOf(e.type);
+  if (e.hp > 0) { log(`${how} the ${what} (${e.hp} left).`); return false; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; state.score++;
+  state.lineage[state.lineage.length - 1].kills++;
+  log(`${how} the ${what} dead. +1`);
+  return true;
+}
+
+function damagePlayer(e) {
+  const P = state.player;
+  P.hp -= e.dmg; state.flash++;
+  log(`The ${nameOf(e.type)} hit you. −${e.dmg}`);
+  if (P.hp <= 0) die(e);
+}
+
+function die(killer) {
+  const P = state.player;
+  P.hp = 0;
+  const entry = state.lineage[state.lineage.length - 1];
+  if (!killer) {
+    entry.fate = "died";
+    endLine();
+    return;
+  }
+  entry.fate = `killed by ${nameOf(killer.type)}`;
+  log(`Gen ${state.gen} ${nameOf(P.type)} was killed by a ${nameOf(killer.type)}.`);
+  if (state.gen >= MAX_GEN) { endLine(); return; }
+  const native = BODIES[killer.type].skill;
+  state.dying = {
+    killerId: killer.id, killerType: killer.type, x: killer.x, y: killer.y, deadType: P.type,
+    choices: P.skills.map(s => s.id).filter(id => id !== native)
+  };
+  state.aim = null;
+}
+
+function endLine() {
+  state.over = true; state.dying = null; state.aim = null;
+  if (state.score > best) { best = state.score; try { localStorage.setItem("heir-best", best); } catch (e) {} }
+  log("The line has ended.");
+}
+
+function inherit(choiceIndex) {
+  if (!state || !state.dying) return;
+  const D = state.dying, ch = D.choices;
+  const id = ch.length ? ch[Math.max(0, Math.min(ch.length - 1, Math.floor(+choiceIndex || 0)))] : null;
+  const k = state.enemies.find(e => e.id === D.killerId);
+  const pos = k || D;
+  if (k) state.enemies.splice(state.enemies.indexOf(k), 1);
+  state.gen++;
+  state.player = makePlayer(D.killerType, pos.x, pos.y, id ? [id] : []);
+  // Dying costs: the heir arrives at half health, less if you'd wounded it.
+  state.player.hp = Math.max(1, Math.min(k ? k.hp : state.player.maxhp, Math.ceil(state.player.maxhp / 2)));
+  state.lineage.push({ gen: state.gen, type: D.killerType, inherited: id, kills: 0, fate: null });
+  state.dying = null; state.aim = null;
+  log(id ? `Gen ${state.gen}: the ${nameOf(D.killerType)} takes up your line with ${skillName(id)}, at ${state.player.hp} health.`
+         : `Gen ${state.gen}: the ${nameOf(D.killerType)} takes up your line at ${state.player.hp} health.`);
+  if (!state.enemies.length) waveCleared();
+  render();
+}
+
+function enemyFree(x, y) {
+  const P = state.player;
+  if (!inB(x, y) || isWall(x, y) || enemyAt(x, y)) return false;
+  return !(P.x === x && P.y === y);
+}
+
+// Walking distance to the player around walls (other enemies ignored).
+function pathField() {
+  const P = state.player, f = new Map([[P.x + "," + P.y, 0]]), q = [[P.x, P.y]];
+  while (q.length) {
+    const [x, y] = q.shift(), d = f.get(x + "," + y);
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+      if (inB(nx, ny) && !isWall(nx, ny) && !f.has(k)) { f.set(k, d + 1); q.push([nx, ny]); }
+    }
+  }
+  return f;
+}
+
+function moveToward(e, field) {
+  const steps = c => field.get(c.x + "," + c.y) ?? 999;
+  const d = steps(e);
+  if (d <= 1) return;
+  const opts = DIRS.map(([dx, dy]) => ({ x: e.x + dx, y: e.y + dy }))
+    .filter(c => enemyFree(c.x, c.y))
+    .map(c => ({ ...c, d: steps(c), r: Math.random() }))
+    .sort((a, b) => a.d - b.d || a.r - b.r);
+  if (opts.length && (opts[0].d < d || (opts[0].d === d && Math.random() < 0.5))) {
+    e.x = opts[0].x; e.y = opts[0].y;
+  }
+}
+
+// True if a can hit b along a clear row/column within range (walls and enemies block).
+function lineClear(a, b, range) {
+  if (a.x !== b.x && a.y !== b.y) return false;
+  const d = dist(a, b);
+  if (d < 1 || d > range) return false;
+  const sx = Math.sign(b.x - a.x), sy = Math.sign(b.y - a.y);
+  for (let i = 1; i < d; i++) {
+    const x = a.x + sx * i, y = a.y + sy * i;
+    if (isWall(x, y) || enemyAt(x, y)) return false;
+  }
+  return true;
+}
+
+const reach = e => e.type === "archer" ? ARCHER_RANGE : 1;
+
+function enemiesAct() {
+  const P = state.player, field = pathField();
+  for (const e of [...state.enemies]) {
+    if (state.dying || state.over) return;
+    if (!state.enemies.includes(e)) continue;
+    if (e.type === "slime") {
+      if (e.rest) { e.rest = false; continue; }
+      e.rest = true;
+    }
+    let moves = 1;
+    if (e.type === "goblin") { e.surge = !e.surge; if (e.surge) moves = 2; }
+    if (!lineClear(e, P, reach(e))) for (let i = 0; i < moves; i++) moveToward(e, field);
+    if (lineClear(e, P, reach(e))) damagePlayer(e);
+  }
+}
+
+const trait = () => BODIES[state.player.type].trait;
+
+// How many enemy phases follow the action the player is about to take (turn is 1-based after increment).
+function enemyPhases(turn) {
+  const t = trait();
+  if (t === "fast" && turn % 2 === 0) return 0;
+  if (t === "slow" && turn % 2 === 0) return 2;
+  return 1;
+}
+
+function endTurn(usedSlot) {
+  const P = state.player;
+  for (const s of P.skills) if (s.cd > 0) s.cd--;
+  if (usedSlot != null) P.skills[usedSlot].cd = SKILLS[P.skills[usedSlot].id].cd;
+  state.turn++;
+  state.aim = null;
+  const phases = enemyPhases(state.turn);
+  if (phases === 0 && state.enemies.length) log("Quick feet: the enemies didn't get to respond.");
+  if (phases === 2 && state.enemies.length) log("Sluggish body: the enemies act twice.");
+  for (let i = 0; i < phases; i++) {
+    if (state.dying || state.over || !state.enemies.length) break;
+    enemiesAct();
+  }
+  if (!state.dying && !state.over && state.enemies.length && --state.clock <= 0) {
+    const [t] = spawnEnemies(1);
+    state.clock = REINFORCE_EVERY;
+    if (t) log(`Too slow: a ${nameOf(t)} joins the wave.`);
+  }
+  if (!state.dying && !state.over && !state.enemies.length) waveCleared();
+  if (state.dying && !settings.choose) { inherit(Math.floor(Math.random() * Math.max(1, state.dying.choices.length))); return; }
+  render();
+}
+
+const playerFree = (x, y) => inB(x, y) && !isWall(x, y) && !enemyAt(x, y);
+
+// First enemy along a direction, stopping at walls; null if none within range.
+function firstEnemy(from, dx, dy, range) {
+  for (let i = 1; i <= range; i++) {
+    const x = from.x + dx * i, y = from.y + dy * i;
+    if (!inB(x, y) || isWall(x, y)) return null;
+    const e = enemyAt(x, y);
+    if (e) return { e, d: i };
+  }
+  return null;
+}
+
+function step(dx, dy) {
+  if (!state || state.over || state.dying) return;
+  const P = state.player;
+  dx = Math.sign(dx || 0); dy = dx ? 0 : Math.sign(dy || 0);
+  if (!dx && !dy) {
+    if (trait() === "ranged") {
+      const shots = DIRS.map(([x, y]) => firstEnemy(P, x, y, ARCHER_RANGE)).filter(Boolean).sort((a, b) => a.d - b.d);
+      if (shots.length) hitEnemy(shots[0].e, P.dmg, "Your arrow hit");
+    }
+  } else {
+    const tx = P.x + dx, ty = P.y + dy, e = inB(tx, ty) && enemyAt(tx, ty);
+    if (e) hitEnemy(e, P.dmg, "You hit");
+    else if (playerFree(tx, ty)) { P.x = tx; P.y = ty; }
+  }
+  endTurn(null);
+}
+
+function useSkill(slot, dx, dy) {
+  if (!state || state.over || state.dying) return;
+  const P = state.player, s = P.skills[slot];
+  if (!s) return;
+  const def = SKILLS[s.id];
+  if (s.cd > 0) { log(`${def.name} is ready in ${s.cd}.`); state.aim = null; render(); return; }
+  dx = Math.sign(dx || 0); dy = dx ? 0 : Math.sign(dy || 0);
+  if (def.aimed && !dx && !dy) { state.aim = slot; render(); return; }
+  state.aim = null;
+  let ok = false;
+  if (s.id === "cleave") {
+    const hit = DIRS.map(([x, y]) => enemyAt(P.x + x, P.y + y)).filter(Boolean);
+    if (!hit.length) log("Cleave hits only air.");
+    for (const e of hit) hitEnemy(e, P.dmg, "Cleave hit");
+    ok = true;
+  } else if (s.id === "regrow") {
+    if (P.hp >= P.maxhp) log("Already at full health.");
+    else { const h = Math.min(2, P.maxhp - P.hp); P.hp += h; log(`Regrow: +${h} health.`); ok = true; }
+  } else if (s.id === "dash") {
+    let n = 0;
+    while (n < 3 && playerFree(P.x + dx, P.y + dy)) { P.x += dx; P.y += dy; n++; }
+    if (n) { log(`Dash: ${n} tile${n === 1 ? "" : "s"}.`); ok = true; } else log("Nowhere to dash.");
+  } else if (s.id === "bolt") {
+    const t = firstEnemy(P, dx, dy, W);
+    if (t) { hitEnemy(t.e, 2, "Bolt hit"); ok = true; } else log("No enemy along that line.");
+  } else if (s.id === "charge") {
+    let n = 0;
+    while (playerFree(P.x + dx, P.y + dy)) { P.x += dx; P.y += dy; n++; }
+    const tx = P.x + dx, ty = P.y + dy, e = inB(tx, ty) && enemyAt(tx, ty);
+    if (e) { hitEnemy(e, P.dmg + 1, "Charge hit"); ok = true; }
+    else if (n) { log(`Charge: ${n} tiles, nothing to hit.`); ok = true; }
+    else log("Nowhere to charge.");
+  }
+  if (!ok) { render(); return; }
+  endTurn(slot);
+}
+
+function cancelAim() { if (state && state.aim != null) { state.aim = null; render(); } }
+
+// Tiles an aimed skill would cover in each direction (for the board preview).
+function aimTiles(id) {
+  const P = state.player, out = [];
+  for (const [dx, dy] of DIRS) {
+    let x = P.x, y = P.y;
+    for (let i = 0; i < W; i++) {
+      x += dx; y += dy;
+      if (!inB(x, y) || isWall(x, y)) break;
+      const e = enemyAt(x, y);
+      if (id === "dash") { if (e || i >= 3) break; out.push({ x, y, end: i === 2 }); continue; }
+      out.push({ x, y, end: !!e });
+      if (e) break;
+    }
+  }
+  return out;
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+function disc(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+
+function glyph(type, x, y, s, color) {
+  ctx.fillStyle = color;
+  if (type === "orc") rr(x - s * 0.32, y - s * 0.3, s * 0.64, s * 0.62, 7);
+  else {
+    ctx.beginPath();
+    if (type === "knight") {
+      ctx.moveTo(x - s * 0.27, y - s * 0.3); ctx.lineTo(x + s * 0.27, y - s * 0.3); ctx.lineTo(x + s * 0.27, y + s * 0.02);
+      ctx.quadraticCurveTo(x + s * 0.22, y + s * 0.24, x, y + s * 0.34);
+      ctx.quadraticCurveTo(x - s * 0.22, y + s * 0.24, x - s * 0.27, y + s * 0.02);
+    } else if (type === "goblin") {
+      ctx.moveTo(x, y - s * 0.32); ctx.lineTo(x + s * 0.27, y); ctx.lineTo(x, y + s * 0.32); ctx.lineTo(x - s * 0.27, y);
+    } else if (type === "archer") {
+      ctx.moveTo(x, y - s * 0.33); ctx.lineTo(x + s * 0.3, y + s * 0.27); ctx.lineTo(x - s * 0.3, y + s * 0.27);
+    } else {
+      ctx.moveTo(x - s * 0.33, y + s * 0.26); ctx.arc(x, y + s * 0.26, s * 0.33, Math.PI, 0);
+    }
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.fillStyle = C.bg;
+  if (type === "knight") { ctx.fillRect(x - s * 0.16, y - s * 0.13, s * 0.32, s * 0.06); return; }
+  const ey = type === "slime" ? y + s * 0.1 : type === "archer" ? y + s * 0.06 : y - s * 0.03;
+  for (const sx of [-1, 1]) { disc(x + sx * s * 0.08, ey, s * 0.045); ctx.fill(); }
+}
+
+function draw() {
+  const s = cell, dpr = window.devicePixelRatio || 1;
+  cv.width = W * s * dpr; cv.height = H * s * dpr;
+  cv.style.height = (H * s) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = x => x * s + s / 2;
+  const mono = `600 ${Math.round(s * 0.2)}px ${css("--f-mono")}`;
+
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    ctx.fillStyle = (x + y) % 2 ? C.tile : C.tile2;
+    ctx.fillRect(x * s, y * s, s, s);
+  }
+  for (const k of WALLS) {
+    const [x, y] = k.split(",").map(Number);
+    ctx.fillStyle = C.wall; rr(x * s + 4, y * s + 4, s - 8, s - 8, 5); ctx.fill();
+    ctx.fillStyle = C.line; ctx.fillRect(x * s + 6, y * s + s - 7, s - 12, 3);
+  }
+
+  const P = state.player;
+  if (state.aim != null && P.skills[state.aim]) {
+    ctx.save();
+    for (const t of aimTiles(P.skills[state.aim].id)) {
+      ctx.globalAlpha = t.end ? 0.42 : 0.2; ctx.fillStyle = C.heir;
+      rr(t.x * s + 3, t.y * s + 3, s - 6, s - 6, 6); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Archers that have you in their sights.
+  for (const e of state.enemies) if (e.type === "archer" && lineClear(e, P, ARCHER_RANGE) && dist(e, P) > 1) {
+    ctx.save(); ctx.strokeStyle = C.enemy; ctx.globalAlpha = 0.5; ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.moveTo(cx(e.x), cx(e.y)); ctx.lineTo(cx(P.x), cx(P.y)); ctx.stroke(); ctx.restore();
+  }
+
+  for (const e of state.enemies) {
+    const x = cx(e.x), y = cx(e.y), resting = e.type === "slime" && e.rest;
+    ctx.save();
+    ctx.globalAlpha = resting ? 0.6 : 1;
+    glyph(e.type, x, y, s, C.enemy);
+    ctx.globalAlpha = 0.8; ctx.fillStyle = C.ink;
+    for (let i = 0; i < e.hp; i++) ctx.fillRect(x - (e.hp * s * 0.1) / 2 + i * s * 0.1 + s * 0.015, y + s * 0.38, s * 0.07, s * 0.05);
+    ctx.globalAlpha = 1; ctx.font = mono; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    if (resting) { ctx.fillStyle = C.muted; ctx.fillText("zz", x + s * 0.3, y - s * 0.3); }
+    if (e.type === "goblin" && !e.surge) { ctx.fillStyle = C.enemy; ctx.fillText("»", x + s * 0.32, y - s * 0.3); }
+    if (state.dying && e.id === state.dying.killerId) {
+      ctx.strokeStyle = C.heir; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); disc(x, y, s * 0.45); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ctx.save();
+  if (state.dying || state.over) ctx.globalAlpha = 0.35;
+  glyph(P.type, cx(P.x), cx(P.y), s, C.player);
+  const inh = P.skills.filter(k => !k.native);
+  inh.forEach((k, j) => {
+    const bx = cx(P.x) + s * 0.3 - j * s * 0.24, by = cx(P.y) - s * 0.3;
+    ctx.fillStyle = C.bg; disc(bx, by, s * 0.12); ctx.fill();
+    ctx.strokeStyle = C.heir; ctx.lineWidth = 1.5; disc(bx, by, s * 0.12); ctx.stroke();
+    ctx.fillStyle = C.heir; ctx.font = `600 ${Math.round(s * 0.15)}px ${css("--f-mono")}`;
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(SKILLS[k.id].name[0], bx, by + 1);
+  });
+  ctx.restore();
+}
+
+function traitText() {
+  const t = trait(), next = state.turn + 1;
+  if (t === "fast") return next % 2 === 0 ? "Fast: your next action is free." : "Fast: the action after next is free.";
+  if (t === "slow") return next % 2 === 0 ? "Slow: enemies act twice after your next action." : "Slow: enemies act once after your next action.";
+  if (t === "ranged") return "Ranged: wait shoots the nearest enemy in line (4 tiles).";
+  return "Steady: no special movement.";
+}
+
+function render() {
+  const P = state.player;
+  $("sGen").textContent = `${state.gen}/${MAX_GEN}`;
+  $("sWave").textContent = state.wave;
+  $("sScore").textContent = state.score;
+  $("sBest").textContent = Math.max(best, state.score);
+  $("bodyName").textContent = nameOf(P.type);
+  $("hp").innerHTML = Array.from({ length: P.maxhp }, (_, i) => `<i class="${i < P.hp ? "on" : ""}"></i>`).join("");
+  $("traitStatus").textContent = traitText();
+  $("clockStatus").textContent = state.enemies.length && !state.over
+    ? `Reinforcements in ${state.clock} turn${state.clock === 1 ? "" : "s"}.` : "";
+  const locked = state.over || !!state.dying;
+  $("skills").innerHTML = Array.from({ length: SLOTS }, (_, i) => {
+    const k = P.skills[i];
+    if (!k) return `<button disabled><kbd>${i + 1}</kbd><span class="n">Empty slot</span></button>`;
+    const d = SKILLS[k.id];
+    const cls = [k.cd > 0 ? "cooling" : "", state.aim === i ? "armed" : "", k.native ? "" : "inh"].join(" ");
+    return `<button class="${cls}" data-slot="${i}" title="${d.text}"${locked ? " disabled" : ""}><kbd>${i + 1}</kbd><span class="n">${d.name}</span><span class="cd">${k.cd > 0 ? k.cd : "ready"}</span></button>`;
+  }).join("");
+  const aimed = state.aim != null && P.skills[state.aim];
+  $("aimHint").textContent = aimed ? `${SKILLS[aimed.id].name}: pick a direction. Esc cancels.` : "Skills take your turn. Numbers are turns until ready.";
+  $("lineage").innerHTML = state.lineage.map((g, i) => {
+    const now = i === state.lineage.length - 1 && !state.over;
+    return `<li class="${now ? "now" : ""}">Gen ${g.gen} <b>${nameOf(g.type)}</b>${g.inherited ? ` <i>+${skillName(g.inherited)}</i>` : ""} · ${g.kills} kill${g.kills === 1 ? "" : "s"}${g.fate ? ` · ${g.fate}` : now ? " · alive" : ""}</li>`;
+  }).join("");
+  $("chooseHint").textContent = settings.choose
+    ? "When you die, you pick which skill the heir inherits."
+    : "The heir inherits one of your skills at random.";
+  $("log").innerHTML = state.log.map(l => `<li><span class="t">${String(l.t).padStart(3, "0")}</span>${l.msg}</li>`).join("");
+
+  const D = state.dying;
+  $("over").hidden = !state.over && !D;
+  if (D) {
+    const kn = nameOf(D.killerType);
+    $("overTitle").innerHTML = `The <span>${kn}</span> that killed you takes up your line`;
+    $("overText").textContent = D.choices.length
+      ? `It keeps its own body and ${skillName(BODIES[D.killerType].skill)}. Choose one of your ${nameOf(D.deadType)}'s skills to pass down.`
+      : `It already knows everything your ${nameOf(D.deadType)} knew.`;
+    $("choices").innerHTML = D.choices.length
+      ? D.choices.map((id, i) => `<button data-i="${i}">${i + 1} · ${skillName(id)}<small>${SKILLS[id].text}</small></button>`).join("")
+      : `<button data-i="0">Continue</button>`;
+  } else if (state.over) {
+    $("overTitle").textContent = "The line has ended";
+    $("overText").textContent = `Score ${state.score} · ${state.wavesCleared} waves cleared · ${state.kills} kills · ${state.gen} generations`;
+    $("choices").innerHTML = `<button id="again">Play again</button>`;
+  }
+  if (state.flash !== lastFlash) { lastFlash = state.flash; flash(); }
+  draw();
+}
+
+let flashT;
+function flash() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  $("board").classList.add("hit");
+  clearTimeout(flashT); flashT = setTimeout(() => $("board").classList.remove("hit"), 160);
+}
+
+function resize() {
+  const w = $("board").clientWidth;
+  cell = Math.max(24, Math.floor(Math.min(w, 620) / W));
+  cv.style.width = (cell * W) + "px";
+  if (state) draw();
+}
+
+function press(dx, dy) {
+  if (!state) return;
+  if (state.aim != null && (dx || dy)) useSkill(state.aim, dx, dy);
+  else if (state.aim != null) cancelAim();
+  else step(dx, dy);
+}
+
+const KEYS = {
+  ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+  w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], " ": [0, 0], ".": [0, 0]
+};
+window.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type === "range") return;
+  if (["INPUT", "BUTTON"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === "r") { newGame(); return; }
+  if (k === "Escape") { cancelAim(); return; }
+  if (k === "1" || k === "2" || k === "3") {
+    e.preventDefault();
+    if (state.dying) inherit(+k - 1); else useSkill(+k - 1, 0, 0);
+    return;
+  }
+  const d = KEYS[k];
+  if (!d) return;
+  e.preventDefault();
+  press(d[0], d[1]);
+});
+document.querySelectorAll(".pad button").forEach(b => b.addEventListener("click", () => {
+  const [dx, dy] = b.dataset.d.split(",").map(Number); press(dx, dy); b.blur();
+}));
+$("skills").addEventListener("click", e => {
+  const b = e.target.closest("button[data-slot]"); if (!b) return;
+  useSkill(+b.dataset.slot, 0, 0); b.blur();
+});
+$("choices").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "again") newGame(); else inherit(+b.dataset.i);
+});
+$("choose").addEventListener("change", e => { settings.choose = e.target.checked; render(); });
+$("restart").addEventListener("click", () => { newGame(); $("restart").blur(); });
+
+function boot(data) {
+  readColors();
+  if (data && data.settings) Object.assign(settings, data.settings);
+  $("choose").checked = settings.choose;
+  resize();
+  if (data && data.state && "clock" in data.state) { state = data.state; lastFlash = state.flash; render(); } else newGame();
+}
+window.claude?.hot?.snapshot?.(() => ({ state, settings }));
+new ResizeObserver(resize).observe($("board"));
+document.fonts?.ready?.then(() => state && draw());
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>

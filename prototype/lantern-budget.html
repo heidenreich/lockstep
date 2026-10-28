@@ -1,0 +1,723 @@
+<title>Lantern Budget</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one dark floor (the board) beside a slim instrument panel; stacks on phones. Single dark look by choice. */
+:root {
+  --bg: #11181b;
+  --panel: #172125;
+  --tile: #1c282c;
+  --tile2: #192428;
+  --wall: #34484d;
+  --line: #2a3b40;
+  --ink: #e6ecea;
+  --muted: #8ea3a2;
+  --player: #f3b54a;
+  --lantern: #ff9a4a;
+  --enemy: #e2654d;
+  --moth: #f1e4b8;
+  --shade: #a18cf0;
+  --danger: #ff7a8a;
+  --good: #7fd3a6;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; margin: 0; line-height: 1; text-wrap: balance; }
+h1 span { color: var(--lantern); }
+.tag { color: var(--muted); margin: 0; max-width: 60ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.board { position: relative; min-width: 0; }
+canvas { display: block; width: 100%; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); touch-action: manipulation; }
+.board.hit canvas { box-shadow: 0 0 0 3px var(--danger); }
+.over {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border-radius: 10px; padding: 16px;
+}
+.over h2 { font-family: var(--f-display); font-size: 30px; margin: 0; }
+.over p { margin: 0; color: var(--muted); }
+.panel { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--f-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hp { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; }
+.hp i { height: 16px; border-radius: 3px; background: var(--line); }
+.hp i.on { background: var(--lantern); }
+.hp i.on.low { background: var(--danger); }
+.hp i.on.dark { background: color-mix(in srgb, var(--lantern) 45%, var(--line)); }
+.meaning { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.meaning b { color: var(--ink); font-weight: 600; }
+.lamp-status { font-family: var(--f-mono); font-size: 13px; color: var(--lantern); }
+.lamp-status.off { color: var(--shade); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { position: relative; width: 44px; height: 24px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 12px; background: var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.switch input:checked + span { background: var(--danger); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--lantern); outline-offset: 2px; }
+input[type=range] { width: 100%; accent-color: var(--lantern); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+button {
+  font: inherit; font-weight: 600; color: var(--bg); background: var(--lantern); border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible { outline: 2px solid var(--player); outline-offset: 2px; }
+.spells { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; }
+.spells li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline; }
+.spells li.dim { opacity: 0.45; }
+.spells .cost { font-family: var(--f-mono); font-size: 12px; color: var(--lantern); }
+.spells .what { color: var(--muted); font-size: 12px; grid-column: 2 / 4; margin-top: -4px; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink); }
+.rules b { color: var(--lantern); font-weight: 600; }
+.rules em { color: var(--player); font-style: normal; font-weight: 600; }
+.rules .m { color: var(--moth); font-weight: 600; }
+.rules .s { color: var(--shade); font-weight: 600; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-height: 7.5em; }
+.log li:first-child { color: var(--ink); }
+.log .t { color: var(--line); filter: brightness(1.8); margin-right: 6px; }
+.pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 44px); gap: 6px; justify-content: center; }
+.pad button, .casts button { padding: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--line); font-family: var(--f-mono); }
+.pad button:active, .casts button:active { background: var(--line); }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .w { grid-column: 2; grid-row: 2; font-size: 11px; }
+.pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; }
+.pad.aiming button:not(.w) { border-color: var(--lantern); color: var(--lantern); }
+.casts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.casts button { height: 40px; font-size: 12px; }
+.casts button.on { border-color: var(--lantern); color: var(--lantern); }
+.keys { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+@media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Lantern <span>Budget</span></h1>
+    <p class="tag">Your light is your health, your mana and your sight. Every spell darkens the room, and the dark has its own residents.</p>
+  </header>
+
+  <div class="game">
+    <div class="board" id="board">
+      <canvas id="cv" aria-label="Game board"></canvas>
+      <div class="over" id="over" hidden>
+        <h2>The lantern went out</h2>
+        <p id="overText"></p>
+        <div><button id="again">Play again</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Floor</span><b id="sFloor">1</b></div>
+          <div class="stat"><span class="label">Turn</span><b id="sTurn">0</b></div>
+          <div class="stat"><span class="label">Score</span><b id="sScore">0</b></div>
+          <div class="stat"><span class="label">Best</span><b id="sBest">0</b></div>
+        </div>
+        <div class="row"><span class="label">Light</span><span class="meaning" id="lightVal"></span></div>
+        <div class="hp" id="hp"></div>
+        <div class="meaning">health · mana · sight</div>
+        <div class="lamp-status" id="lampStatus"></div>
+      </div>
+
+      <div class="card">
+        <span class="label">Spend light</span>
+        <ul class="spells">
+          <li id="spFlare"><kbd>1</kbd><span>Flare</span><span class="cost" id="flareCost">−2</span><span class="what">1 damage to every enemy within 2 tiles. Works from the dark: it relights the lantern for 1 more.</span></li>
+          <li id="spBolt"><kbd>2</kbd><span>Bolt + direction</span><span class="cost">−1</span><span class="what">Hits the first enemy in a line, up to your sight radius.</span></li>
+          <li id="spSnuff"><kbd>F</kbd><span id="snuffName">Snuff</span><span class="cost" id="snuffCost">free</span><span class="what" id="snuffWhat"></span></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label for="bite">Darkness bites (damage ×2 while snuffed)</label>
+          <span class="switch"><input type="checkbox" id="bite" checked><span></span></span>
+        </div>
+        <p class="hint" id="biteHint"></p>
+        <button class="ghost" id="restart">Restart run</button>
+      </div>
+
+      <div class="card">
+        <span class="label">Controls</span>
+        <div class="pad" id="pad">
+          <button class="u" data-d="0,-1" aria-label="Move up">▲</button>
+          <button class="l" data-d="-1,0" aria-label="Move left">◀</button>
+          <button class="w" data-d="0,0" aria-label="Wait" id="padWait">wait</button>
+          <button class="r" data-d="1,0" aria-label="Move right">▶</button>
+          <button class="d" data-d="0,1" aria-label="Move down">▼</button>
+        </div>
+        <div class="casts">
+          <button id="bFlare">1 Flare</button>
+          <button id="bBolt">2 Bolt</button>
+          <button id="bSnuff">F Snuff</button>
+        </div>
+        <p class="keys"><kbd>WASD</kbd> or arrows to move or attack · <kbd>Space</kbd> wait · <kbd>1</kbd> <kbd>2</kbd> spells · <kbd>F</kbd> snuff · <kbd>Esc</kbd> cancel · <kbd>R</kbd> restart</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="game">
+    <div class="card">
+      <span class="label">How it works</span>
+      <ul class="rules">
+        <li>Your <b>light</b> (0–12, start 10) is your health, your mana and how far you see. Hits, spells and the wick all spend it. At 0 the run ends.</li>
+        <li>Lit, you see a circle of radius ⌈light ÷ 2⌉ (Euclidean, tile centres). The wick burns 1 light every 6 lit turns.</li>
+        <li><span class="m">Moths</span> exist only in light. Inside your circle they hunt you and can be hit. Outside it, or while you're snuffed, they hang still and untouchable.</li>
+        <li><span class="s">Shades</span> exist only in darkness. They won't step into your light, but a shade pressed against its edge <b>drinks 1 light every 3 turns</b>. Inside your light they freeze and your hits pass through. Snuff the lantern and they come for you.</li>
+        <li>Everything you kill gives up its glow: <span class="m">moths</span> <b>+1 light</b>, <span class="s">shades</span> <b>+2</b>. Snuffing to hunt shades is how you earn light back.</li>
+        <li><b>F</b> snuffs the lantern: no wick burn, no Bolt, you see only the 8 tiles around you. The dark is cold, though: −1 light every 12 snuffed turns. Relighting costs 1.</li>
+        <li><b>Flare</b> and <b>Bolt</b> hurt both families. Flare works from the dark too: it relights the lantern as it bursts and catches whatever came close. Bumping is free. Each floor has <em>stairs</em> and 1–2 <em>oil</em> (+3 light, max 12). Score: 3 per floor descended, 1 per kill.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="label">Log</span>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = 11, H = 11, MAXL = 12, STARTL = 10, BURN = 6;
+const COST = { flare: 2, bolt: 1, relight: 1 }, FLARE_R = 2;
+const GLOW = { moth: 1, shade: 2 }, SIP_EVERY = 3, CHILL = 12;
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+var settings = { bite: true };
+var state = null;
+let cell = 48, best = 0, aim = false, flashed = -1;
+
+try { best = +localStorage.getItem("lantern-best") || 0; } catch (e) {}
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+function readColors() { for (const k of ["tile", "tile2", "wall", "line", "ink", "muted", "player", "lantern", "moth", "shade", "danger", "good", "bg"]) C[k] = css("--" + k); }
+function hexA(hex, a) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+  return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : `rgba(0,0,0,${a})`;
+}
+
+const rand = n => Math.floor(Math.random() * n);
+const idx = (x, y) => y * W + x;
+const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const isWall = (x, y) => !inB(x, y) || state.walls[idx(x, y)] === 1;
+const enemyAt = (x, y) => state.enemies.find(e => e.x === x && e.y === y);
+const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+const d2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+
+function radius() { return state.lit ? Math.ceil(state.L / 2) : 0; }
+function inLight(x, y, r = radius()) { return state.lit && d2({ x, y }, state.player) <= (r + 0.5) ** 2; }
+function visible(x, y) {
+  const P = state.player;
+  return state.lit ? inLight(x, y) : Math.max(Math.abs(x - P.x), Math.abs(y - P.y)) <= 1;
+}
+// Moths are real only in light, shades only in darkness.
+function awake(e, r = radius()) { return e.type === "moth" ? inLight(e.x, e.y, r) : !inLight(e.x, e.y, r); }
+
+function log(msg) {
+  state.log.unshift({ t: state.turn, msg });
+  state.log.length = Math.min(state.log.length, 7);
+}
+
+function newGame() {
+  state = {
+    v: 2, L: STARTL, lit: true, burn: 0, floor: 0, turn: 0, kills: 0, score: 0, over: false, cause: "",
+    player: { x: 0, y: 0 }, walls: [], seen: [], enemies: [], oil: [], stair: null, fx: null, hitTurn: -1, log: []
+  };
+  nextFloor();
+  log("Your lantern holds 10 light. Find the stairs.");
+  render();
+}
+
+function bfsFrom(x0, y0) {
+  const f = new Map([[x0 + "," + y0, 0]]), q = [[x0, y0]];
+  while (q.length) {
+    const [x, y] = q.shift(), d = f.get(x + "," + y);
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+      if (inB(nx, ny) && !isWall(nx, ny) && !f.has(k)) { f.set(k, d + 1); q.push([nx, ny]); }
+    }
+  }
+  return f;
+}
+
+function nextFloor() {
+  state.floor++;
+  const n = state.floor;
+  let field;
+  for (let tries = 0; tries < 500; tries++) {
+    const walls = new Array(W * H).fill(0);
+    const k = 8 + Math.min(n, 5);
+    for (let i = 0; i < k; i++) {
+      const x = 1 + rand(W - 2), y = 1 + rand(H - 2);
+      walls[idx(x, y)] = 1;
+      if (Math.random() < 0.35) {
+        const [dx, dy] = DIRS[rand(4)], ax = x + dx, ay = y + dy;
+        if (ax >= 1 && ay >= 1 && ax <= W - 2 && ay <= H - 2) walls[idx(ax, ay)] = 1;
+      }
+    }
+    state.walls = walls;
+    const edge = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (x === 0 || y === 0 || x === W - 1 || y === H - 1) edge.push({ x, y });
+    const start = edge[rand(edge.length)];
+    field = bfsFrom(start.x, start.y);
+    if (field.size !== walls.filter(w => !w).length) continue;
+    const far = [...field].filter(([, d]) => d >= 10).map(([key]) => key.split(",").map(Number));
+    if (!far.length) continue;
+    const st = far[rand(far.length)];
+    state.player.x = start.x; state.player.y = start.y;
+    state.stair = { x: st[0], y: st[1] };
+    break;
+  }
+  const S = state.stair, isStair = (x, y) => x === S.x && y === S.y;
+  const tiles = [...field].map(([key, d]) => { const [x, y] = key.split(",").map(Number); return { x, y, d, r: Math.random() }; })
+    .sort((a, b) => a.r - b.r);
+
+  state.oil = [];
+  const oilN = n === 1 ? 2 : 1 + (Math.random() < 0.5 ? 1 : 0);
+  for (const t of tiles) {
+    if (state.oil.length >= oilN) break;
+    if (t.d >= 3 && !isStair(t.x, t.y)) state.oil.push({ x: t.x, y: t.y });
+  }
+  const types = [];
+  for (let i = 0; i < 2 + Math.floor((n - 1) / 2); i++) types.push("moth");
+  for (let i = 0; i < 1 + Math.floor(n / 2); i++) types.push("shade");
+  state.enemies = [];
+  const cand = tiles.filter(t => t.d >= 5 && !isStair(t.x, t.y) && !state.oil.some(o => o.x === t.x && o.y === t.y));
+  for (const type of types) {
+    const c = cand.pop(); if (!c) break;
+    const hp = type === "shade" ? (n >= 3 ? 2 : 1) : (n >= 5 ? 2 : 1);
+    state.enemies.push({ x: c.x, y: c.y, type, hp, max: hp });
+  }
+  state.seen = new Array(W * H).fill(0);
+  state.fx = null;
+  updateSeen();
+  if (n > 1) log(`Floor ${n}: ${types.filter(t => t === "moth").length} moths, ${types.filter(t => t === "shade").length} shades.`);
+}
+
+function updateSeen() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (visible(x, y)) state.seen[idx(x, y)] = 1;
+}
+function updateScore() { state.score = (state.floor - 1) * 3 + state.kills; }
+
+function hitEnemy(e, dmg, how) {
+  e.hp -= dmg;
+  if (e.hp > 0) { log(`${how} a ${e.type}. It holds.`); return; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  state.kills++; updateScore();
+  const before = state.L;
+  state.L = Math.min(MAXL, state.L + GLOW[e.type]);
+  log(`${how} a ${e.type}. It's gone. +1, +${state.L - before} light.`);
+}
+
+function hurt(n, who) {
+  const mult = !state.lit && settings.bite ? 2 : 1, loss = n * mult;
+  state.L = Math.max(0, state.L - loss);
+  state.hitTurn = state.turn;
+  log(`A ${who} hit you. −${loss} light${mult > 1 ? " (dark bite)" : ""}.`);
+  if (state.L <= 0) state.cause = `a ${who}`;
+}
+
+function step(dx, dy) {
+  if (!state || state.over) return;
+  state.turn++; state.fx = null;
+  const P = state.player;
+  if (dx || dy) {
+    const tx = P.x + dx, ty = P.y + dy, e = inB(tx, ty) && enemyAt(tx, ty);
+    if (!inB(tx, ty) || isWall(tx, ty)) {
+      log("Stone. You lose a moment.");
+    } else if (e) {
+      if (awake(e)) hitEnemy(e, 1, "You strike");
+      else if (e.type === "shade") log("The shade is frozen in your light. Your hand passes through.");
+      else log("The moth is only a shadow in the dark. Nothing to hit.");
+    } else {
+      P.x = tx; P.y = ty;
+      const o = state.oil.findIndex(o => o.x === tx && o.y === ty);
+      if (o >= 0) {
+        state.oil.splice(o, 1);
+        const before = state.L;
+        state.L = Math.min(MAXL, state.L + 3);
+        log(`Oil. +${state.L - before} light.`);
+      }
+      if (tx === state.stair.x && ty === state.stair.y) {
+        log(`You take the stairs down. +3`);
+        nextFloor(); updateScore(); render();
+        return;
+      }
+    }
+  }
+  endTurn();
+}
+
+// Flare from the dark relights the lantern as it bursts, so it also pays the relight.
+const spellCost = spell => COST[spell] + (spell === "flare" && !state.lit ? COST.relight : 0);
+
+function spellBlock(spell) {
+  if (!state || state.over) return "The run is over.";
+  if (!state.lit && spell === "bolt") return "Snuffed: Bolt needs a lit lantern. Flare relights it.";
+  const c = spellCost(spell);
+  if (state.L <= c) return `${spell === "flare" ? "Flare" : "Bolt"} costs ${c} and would put you out.`;
+  return "";
+}
+
+function cast(spell, dx = 0, dy = 0) {
+  if (!state || state.over) return false;
+  if (spell !== "flare" && spell !== "bolt") return false;
+  const block = spellBlock(spell);
+  if (block) { log(block); render(); return false; }
+  if (spell === "bolt" && Math.abs(dx) + Math.abs(dy) !== 1) { log("Bolt needs a direction."); render(); return false; }
+  const P = state.player, r = radius(), cost = spellCost(spell), fromDark = !state.lit;
+  state.turn++;
+  state.L -= cost;
+  if (spell === "flare") {
+    state.lit = true;
+    const hit = state.enemies.filter(e => d2(e, P) <= (FLARE_R + 0.5) ** 2);
+    state.fx = { type: "flare", turn: state.turn };
+    log(`${fromDark ? "Flare from the dark, relit" : "Flare"}. −${cost} light. ${hit.length ? hit.length + " caught." : "Nothing caught."}`);
+    for (const e of hit) hitEnemy(e, 1, "Flare burns");
+  } else {
+    let x = P.x, y = P.y, target = null;
+    const path = [];
+    for (let k = 1; k <= r; k++) {
+      x += dx; y += dy;
+      if (isWall(x, y)) break;
+      path.push({ x, y });
+      if ((target = enemyAt(x, y))) break;
+    }
+    state.fx = { type: "bolt", turn: state.turn, path };
+    log(`Bolt. −${COST.bolt} light.${target ? "" : " It fades into the dark."}`);
+    if (target) hitEnemy(target, 1, "Bolt hits");
+  }
+  endTurn();
+  return true;
+}
+
+function snuff() {
+  if (!state || state.over) return false;
+  if (state.lit) {
+    state.lit = false;
+    log("You snuff the lantern. Moths go still. Shades wake.");
+  } else {
+    if (state.L <= COST.relight) { log("Relighting costs 1 and would put you out. Find oil."); render(); return false; }
+    state.L -= COST.relight; state.lit = true;
+    log(`You relight. −${COST.relight} light. Shades in reach freeze.`);
+  }
+  state.turn++; state.fx = null;
+  endTurn();
+  return true;
+}
+
+function endTurn() {
+  enemiesAct();
+  if (state.lit && state.L > 0) {
+    if (++state.burn >= BURN) {
+      state.burn = 0; state.L--;
+      log("The wick burns down. −1 light.");
+      if (state.L <= 0) state.cause = "a burnt-out wick";
+    }
+  } else if (!state.lit && state.L > 0 && (state.chill = (state.chill || 0) + 1) >= CHILL) {
+    state.chill = 0; state.L--;
+    log("The dark is cold. −1 light.");
+    if (state.L <= 0) state.cause = "the cold";
+  }
+  if (state.L <= 0) {
+    state.L = 0; state.over = true;
+    updateScore();
+    if (state.score > best) { best = state.score; try { localStorage.setItem("lantern-best", best); } catch (e) {} }
+    log(`The lantern went out (${state.cause || "darkness"}).`);
+  }
+  updateSeen();
+  render();
+}
+
+function enemyFree(x, y, e, r) {
+  const P = state.player;
+  if (!inB(x, y) || isWall(x, y) || enemyAt(x, y)) return false;
+  if (P.x === x && P.y === y) return false;
+  if (e.type === "shade" && inLight(x, y, r)) return false;
+  return true;
+}
+
+// Walking distance to the player around walls (enemies ignored).
+function pathField() { return bfsFrom(state.player.x, state.player.y); }
+
+function enemiesAct() {
+  const P = state.player, field = pathField(), r = radius();
+  const steps = c => field.get(c.x + "," + c.y) ?? 999;
+  for (const e of [...state.enemies]) {
+    if (!state.enemies.includes(e) || state.L <= 0) continue;
+    if (!awake(e, r)) continue;
+    const d = steps(e);
+    if (d > 1) {
+      const opts = DIRS.map(([dx, dy]) => ({ x: e.x + dx, y: e.y + dy }))
+        .filter(c => enemyFree(c.x, c.y, e, r))
+        .map(c => ({ ...c, d: steps(c), r: Math.random() }))
+        .sort((a, b) => a.d - b.d || a.r - b.r);
+      if (opts.length && (opts[0].d < d || (opts[0].d === d && Math.random() < 0.5))) {
+        e.x = opts[0].x; e.y = opts[0].y;
+      }
+    }
+    if (dist(e, P) === 1 && awake(e, r)) hurt(1, e.type);
+    // Shades pressed against the edge of your light drink from it.
+    if (e.type === "shade" && state.lit && !inLight(e.x, e.y, r) && d2(e, P) <= (r + 1.5) ** 2) {
+      e.sip = (e.sip || 0) + 1;
+      if (e.sip >= SIP_EVERY && state.L > 0) {
+        e.sip = 0; state.L--; state.hitTurn = state.turn;
+        log("A shade drinks from your light. −1.");
+        if (state.L <= 0) state.cause = "a shade's thirst";
+      }
+    } else if (e.type === "shade") e.sip = 0;
+  }
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+function disc(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+
+function drawMoth(x, y, s, e, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = C.moth;
+  for (const side of [-1, 1]) {
+    ctx.beginPath(); ctx.ellipse(x + side * s * 0.15, y - s * 0.05, s * 0.15, s * 0.23, side * 0.55, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x + side * s * 0.11, y + s * 0.15, s * 0.09, s * 0.12, -side * 0.5, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = C.bg; rr(x - s * 0.035, y - s * 0.22, s * 0.07, s * 0.44, 3); ctx.fill();
+  if (e.max > 1) for (let i = 0; i < e.hp; i++) { ctx.fillStyle = C.danger; disc(x - s * 0.08 + i * s * 0.16, y + s * 0.36, s * 0.05); ctx.fill(); }
+  ctx.restore();
+}
+
+function drawShade(x, y, s, e, frozen) {
+  ctx.save();
+  ctx.globalAlpha = frozen ? 0.5 : 1;
+  ctx.fillStyle = C.shade;
+  ctx.beginPath(); ctx.arc(x, y - s * 0.06, s * 0.25, Math.PI, 0);
+  ctx.lineTo(x + s * 0.25, y + s * 0.3); ctx.lineTo(x + s * 0.09, y + s * 0.2); ctx.lineTo(x, y + s * 0.3);
+  ctx.lineTo(x - s * 0.09, y + s * 0.2); ctx.lineTo(x - s * 0.25, y + s * 0.3); ctx.closePath(); ctx.fill();
+  if (frozen) {
+    ctx.globalAlpha = 1; ctx.strokeStyle = C.bg; ctx.lineWidth = 2;
+    for (const sx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + sx * s * 0.13, y - s * 0.07); ctx.lineTo(x + sx * s * 0.04, y - s * 0.07); ctx.stroke(); }
+    ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    disc(x, y + s * 0.02, s * 0.4); ctx.stroke();
+  } else {
+    ctx.fillStyle = C.ink;
+    for (const sx of [-1, 1]) { disc(x + sx * s * 0.09, y - s * 0.07, s * 0.045); ctx.fill(); }
+  }
+  if (e.max > 1) { ctx.setLineDash([]); ctx.globalAlpha = 1; for (let i = 0; i < e.hp; i++) { ctx.fillStyle = C.danger; disc(x - s * 0.08 + i * s * 0.16, y + s * 0.4, s * 0.05); ctx.fill(); } }
+  ctx.restore();
+}
+
+function draw() {
+  const s = cell, dpr = window.devicePixelRatio || 1;
+  cv.width = W * s * dpr; cv.height = H * s * dpr;
+  cv.style.height = (H * s) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = v => v * s + s / 2;
+  const P = state.player, r = radius(), lit = state.lit, px = cx(P.x), py = cx(P.y);
+
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W * s, H * s);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (!state.seen[idx(x, y)]) continue;
+    ctx.fillStyle = (x + y) % 2 ? C.tile : C.tile2;
+    ctx.fillRect(x * s, y * s, s, s);
+    if (isWall(x, y)) {
+      ctx.fillStyle = C.wall; rr(x * s + 3, y * s + 3, s - 6, s - 6, 6); ctx.fill();
+      ctx.fillStyle = C.line; ctx.fillRect(x * s + 6, y * s + s - 5, s - 12, 2);
+    }
+  }
+  const S = state.stair;
+  if (S && state.seen[idx(S.x, S.y)]) {
+    ctx.fillStyle = C.good;
+    for (let i = 0; i < 3; i++) { const w = s * (0.6 - i * 0.16); ctx.fillRect(cx(S.x) - w / 2, S.y * s + s * (0.24 + i * 0.2), w, s * 0.12); }
+  }
+  for (const o of state.oil) {
+    if (!visible(o.x, o.y)) continue;
+    const x = cx(o.x), y = cx(o.y);
+    ctx.fillStyle = C.lantern;
+    ctx.beginPath(); ctx.moveTo(x, y - s * 0.26); ctx.quadraticCurveTo(x + s * 0.22, y + s * 0.02, x, y + s * 0.22);
+    ctx.quadraticCurveTo(x - s * 0.22, y + s * 0.02, x, y - s * 0.26); ctx.fill();
+  }
+
+  // Darkness: remembered tiles dimmed, then a radial falloff around the player.
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (state.seen[idx(x, y)] && !visible(x, y)) { ctx.fillStyle = hexA(C.bg, 0.55); ctx.fillRect(x * s, y * s, s, s); }
+  }
+  const R = lit ? (r + 0.5) * s : 1.6 * s;
+  const g = ctx.createRadialGradient(px, py, s * 0.2, px, py, R * 1.15);
+  if (lit) {
+    g.addColorStop(0, hexA(C.bg, 0)); g.addColorStop(0.55, hexA(C.bg, 0.1));
+    g.addColorStop(0.87, hexA(C.bg, 0.42)); g.addColorStop(1, hexA(C.bg, 0.72));
+  } else {
+    g.addColorStop(0, hexA(C.bg, 0.3)); g.addColorStop(0.7, hexA(C.bg, 0.55)); g.addColorStop(1, hexA(C.bg, 0.82));
+  }
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W * s, H * s);
+  if (lit) {
+    ctx.save(); ctx.globalCompositeOperation = "lighter";
+    const warm = ctx.createRadialGradient(px, py, 0, px, py, R);
+    warm.addColorStop(0, hexA(C.lantern, 0.1 + 0.12 * state.L / MAXL)); warm.addColorStop(1, hexA(C.lantern, 0));
+    ctx.fillStyle = warm; ctx.fillRect(0, 0, W * s, H * s); ctx.restore();
+    ctx.save(); ctx.strokeStyle = C.lantern; ctx.globalAlpha = 0.3; ctx.lineWidth = 1.5; ctx.setLineDash([4, 6]);
+    disc(px, py, R); ctx.stroke(); ctx.restore();
+  }
+
+  const fx = state.fx;
+  if (fx && fx.turn === state.turn) {
+    ctx.save(); ctx.strokeStyle = C.lantern; ctx.lineWidth = 3; ctx.globalAlpha = 0.8;
+    if (fx.type === "flare") { disc(px, py, (FLARE_R + 0.5) * s); ctx.stroke(); }
+    else if (fx.path && fx.path.length) {
+      ctx.beginPath(); ctx.moveTo(px, py);
+      const end = fx.path[fx.path.length - 1]; ctx.lineTo(cx(end.x), cx(end.y)); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if (aim && lit) {
+    ctx.save(); ctx.fillStyle = C.lantern;
+    for (const [dx, dy] of DIRS) {
+      let x = P.x, y = P.y;
+      for (let k = 1; k <= r; k++) {
+        x += dx; y += dy; if (isWall(x, y)) break;
+        ctx.globalAlpha = 0.9 - k * 0.1; disc(cx(x), cx(y), s * 0.07); ctx.fill();
+        if (enemyAt(x, y)) break;
+      }
+    }
+    ctx.restore();
+  }
+
+  const sense = lit ? r + 3 : 3;
+  for (const e of state.enemies) {
+    const x = cx(e.x), y = cx(e.y), vis = visible(e.x, e.y);
+    if (e.type === "moth") { if (vis) drawMoth(x, y, s, e, awake(e, r) ? 1 : 0.28); continue; }
+    if (vis) { drawShade(x, y, s, e, !awake(e, r)); continue; }
+    if (Math.max(Math.abs(e.x - P.x), Math.abs(e.y - P.y)) <= sense) {
+      ctx.save(); ctx.fillStyle = C.shade; ctx.globalAlpha = 0.85;
+      for (const sx of [-1, 1]) { disc(x + sx * s * 0.09, y, s * 0.045); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
+  ctx.save();
+  if (lit) { ctx.fillStyle = hexA(C.lantern, 0.35); disc(px, py, s * 0.4); ctx.fill(); }
+  ctx.fillStyle = C.player; ctx.globalAlpha = lit ? 1 : 0.7; disc(px, py, s * 0.3); ctx.fill();
+  ctx.globalAlpha = 1; ctx.fillStyle = lit ? "#fff4d6" : C.bg; disc(px, py, s * 0.1); ctx.fill();
+  ctx.restore();
+}
+
+function render() {
+  const P = state.player, r = radius();
+  $("sFloor").textContent = state.floor;
+  $("sTurn").textContent = state.turn;
+  $("sScore").textContent = state.score;
+  $("sBest").textContent = Math.max(best, state.score);
+  $("lightVal").innerHTML = `<b>${state.L}</b> / ${MAXL}`;
+  $("hp").innerHTML = Array.from({ length: MAXL }, (_, i) =>
+    `<i class="${i < state.L ? "on" : ""}${state.L <= 3 ? " low" : ""}${!state.lit ? " dark" : ""}"></i>`).join("");
+  const ls = $("lampStatus");
+  ls.classList.toggle("off", !state.lit);
+  ls.textContent = state.lit
+    ? `Lit · sight radius ${r} · wick −1 in ${BURN - state.burn}`
+    : `Snuffed · sight 1 · shades are awake · cold −1 in ${CHILL - (state.chill || 0)}`;
+  $("spFlare").classList.toggle("dim", !!spellBlock("flare"));
+  $("flareCost").textContent = `−${spellCost("flare")}`;
+  $("spBolt").classList.toggle("dim", !!spellBlock("bolt"));
+  $("snuffName").textContent = state.lit ? "Snuff" : "Relight";
+  $("snuffCost").textContent = state.lit ? "free" : `−${COST.relight}`;
+  $("snuffWhat").textContent = state.lit
+    ? "Moths go still, shades wake and come for you. No wick burn, no Bolt."
+    : "Moths in reach wake, shades in reach freeze. Or Flare to relight with a burst.";
+  $("spSnuff").classList.toggle("dim", !state.lit && state.L <= COST.relight);
+  $("bSnuff").textContent = state.lit ? "F Snuff" : "F Relight";
+  $("bBolt").classList.toggle("on", aim);
+  $("pad").classList.toggle("aiming", aim);
+  $("padWait").textContent = aim ? "cancel" : "wait";
+  $("biteHint").textContent = settings.bite
+    ? "Snuffing saves your wick but every hit in the dark costs 2 light."
+    : "Hits cost 1 light whether you're lit or not.";
+  $("log").innerHTML = state.log.map(l => `<li><span class="t">${String(l.t).padStart(3, "0")}</span>${l.msg}</li>`).join("");
+  $("over").hidden = !state.over;
+  if (state.over) $("overText").textContent = `Score ${state.score} · floor ${state.floor} · ${state.kills} kills · ${state.turn} turns`;
+  if (state.hitTurn === state.turn && flashed !== state.turn) { flashed = state.turn; flash(); }
+  draw();
+}
+
+let flashT;
+function flash() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  $("board").classList.add("hit");
+  clearTimeout(flashT); flashT = setTimeout(() => $("board").classList.remove("hit"), 160);
+}
+
+function resize() {
+  const w = $("board").clientWidth;
+  cell = Math.max(24, Math.floor(Math.min(w, 620) / W));
+  cv.style.width = (cell * W) + "px";
+  if (state) draw();
+}
+
+function startAim() {
+  if (spellBlock("bolt")) { aim = false; cast("bolt"); return; }
+  aim = !aim; render();
+}
+function direction(dx, dy) {
+  if (aim) { aim = false; if (dx || dy) cast("bolt", dx, dy); else render(); return; }
+  step(dx, dy);
+}
+
+const KEYS = {
+  ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+  w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], " ": [0, 0], ".": [0, 0]
+};
+window.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type === "range") return;
+  if (["INPUT", "BUTTON"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === "r") { aim = false; newGame(); return; }
+  if (k === "Escape") { if (aim) { aim = false; render(); } return; }
+  if (k === "1") { e.preventDefault(); aim = false; cast("flare"); return; }
+  if (k === "2") { e.preventDefault(); startAim(); return; }
+  if (k === "f") { e.preventDefault(); aim = false; snuff(); return; }
+  const d = KEYS[k];
+  if (!d) return;
+  e.preventDefault();
+  direction(d[0], d[1]);
+});
+document.querySelectorAll(".pad button").forEach(b => b.addEventListener("click", () => {
+  const [dx, dy] = b.dataset.d.split(",").map(Number); direction(dx, dy); b.blur();
+}));
+$("bFlare").addEventListener("click", () => { aim = false; cast("flare"); $("bFlare").blur(); });
+$("bBolt").addEventListener("click", () => { startAim(); $("bBolt").blur(); });
+$("bSnuff").addEventListener("click", () => { aim = false; snuff(); $("bSnuff").blur(); });
+$("bite").addEventListener("change", e => { settings.bite = e.target.checked; render(); });
+$("restart").addEventListener("click", () => { aim = false; newGame(); $("restart").blur(); });
+$("again").addEventListener("click", () => { aim = false; newGame(); });
+
+function boot(data) {
+  readColors();
+  if (data && data.settings) Object.assign(settings, data.settings);
+  $("bite").checked = settings.bite;
+  resize();
+  if (data && data.state && data.state.v === 2) { state = data.state; render(); } else newGame();
+}
+window.claude?.hot?.snapshot?.(() => ({ state, settings }));
+new ResizeObserver(resize).observe($("board"));
+document.fonts?.ready?.then(() => state && draw());
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>

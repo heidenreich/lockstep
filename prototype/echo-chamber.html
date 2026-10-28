@@ -1,0 +1,552 @@
+<title>Echo Chamber</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one stone chamber (the board) beside a slim instrument panel; stacks on phones. Single dark look by choice. */
+:root {
+  --bg: #11181b;
+  --panel: #172125;
+  --tile: #1c282c;
+  --tile2: #192428;
+  --wall: #34484d;
+  --line: #2a3b40;
+  --ink: #e6ecea;
+  --muted: #8ea3a2;
+  --player: #f3b54a;
+  --echo: #b6a4ff;
+  --enemy: #e2654d;
+  --danger: #ff7a8a;
+  --good: #7fd3a6;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.02em; margin: 0; line-height: 1; text-wrap: balance; }
+h1 span { color: var(--echo); }
+.tag { color: var(--muted); margin: 0; max-width: 60ch; }
+.game { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .game { grid-template-columns: minmax(0, 1fr); } }
+.board { position: relative; min-width: 0; }
+canvas { display: block; width: 100%; max-width: 100%; border-radius: 10px; border: 1px solid var(--line); touch-action: manipulation; }
+.board.hit canvas { box-shadow: 0 0 0 3px var(--danger); }
+.over {
+  position: absolute; inset: 0; display: grid; place-content: center; gap: 12px; text-align: center;
+  background: color-mix(in srgb, var(--bg) 82%, transparent); border-radius: 10px; padding: 16px;
+}
+.over h2 { font-family: var(--f-display); font-size: 30px; margin: 0; }
+.over p { margin: 0; color: var(--muted); }
+.panel { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--f-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hp { display: flex; gap: 4px; }
+.hp i { width: 14px; height: 14px; border-radius: 3px; background: var(--line); }
+.hp i.on { background: var(--player); }
+.echo-status { font-family: var(--f-mono); font-size: 13px; color: var(--echo); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.switch { position: relative; width: 44px; height: 24px; flex: none; }
+.switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.switch span { position: absolute; inset: 0; border-radius: 12px; background: var(--line); transition: background .15s; pointer-events: none; }
+.switch span::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform .15s; }
+.switch input:checked + span { background: var(--danger); }
+.switch input:checked + span::after { transform: translateX(20px); }
+.switch input:focus-visible + span { outline: 2px solid var(--echo); outline-offset: 2px; }
+input[type=range] { width: 100%; accent-color: var(--echo); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+button {
+  font: inherit; font-weight: 600; color: var(--bg); background: var(--echo); border: 0; border-radius: 8px; padding: 9px 14px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button:focus-visible { outline: 2px solid var(--player); outline-offset: 2px; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink); }
+.rules b { color: var(--echo); font-weight: 600; }
+.rules em { color: var(--player); font-style: normal; font-weight: 600; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-height: 7.5em; }
+.log li:first-child { color: var(--ink); }
+.log .t { color: var(--line); filter: brightness(1.8); margin-right: 6px; }
+.pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 44px); gap: 6px; justify-content: center; }
+.pad button { padding: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--line); font-family: var(--f-mono); }
+.pad button:active { background: var(--line); }
+.pad .u { grid-column: 2; grid-row: 1; } .pad .l { grid-column: 1; grid-row: 2; } .pad .w { grid-column: 2; grid-row: 2; font-size: 11px; }
+.pad .r { grid-column: 3; grid-row: 2; } .pad .d { grid-column: 2; grid-row: 3; }
+.keys { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+@media (prefers-reduced-motion: reduce) { .switch span, .switch span::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Echo <span>Chamber</span></h1>
+    <p class="tag">Everything you do, your echo does again a few turns later. Lure enemies into its path, and stay out of it yourself.</p>
+  </header>
+
+  <div class="game">
+    <div class="board" id="board">
+      <canvas id="cv" aria-label="Game board"></canvas>
+      <div class="over" id="over" hidden>
+        <h2>The chamber went quiet</h2>
+        <p id="overText"></p>
+        <div><button id="again">Play again</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><span class="label">Turn</span><b id="sTurn">0</b></div>
+          <div class="stat"><span class="label">Wave</span><b id="sWave">1</b></div>
+          <div class="stat"><span class="label">Score</span><b id="sScore">0</b></div>
+          <div class="stat"><span class="label">Best</span><b id="sBest">0</b></div>
+        </div>
+        <div class="row"><span class="label">Health</span><div class="hp" id="hp"></div></div>
+        <div class="echo-status" id="echoStatus"></div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <label for="hurt">Echo can hurt you</label>
+          <span class="switch"><input type="checkbox" id="hurt" checked><span></span></span>
+        </div>
+        <p class="hint" id="hurtHint"></p>
+        <div class="row"><label for="delay">Echo delay</label><span class="echo-status" id="delayVal">6 turns</span></div>
+        <input type="range" id="delay" min="4" max="16" step="1" value="6">
+        <p class="hint" id="delayHint">Applies when you restart.</p>
+        <button class="ghost" id="restart">Restart run</button>
+      </div>
+
+      <div class="card">
+        <span class="label">Controls</span>
+        <div class="pad">
+          <button class="u" data-d="0,-1" aria-label="Move up">▲</button>
+          <button class="l" data-d="-1,0" aria-label="Move left">◀</button>
+          <button class="w" data-d="0,0" aria-label="Wait">wait</button>
+          <button class="r" data-d="1,0" aria-label="Move right">▶</button>
+          <button class="d" data-d="0,1" aria-label="Move down">▼</button>
+        </div>
+        <p class="keys"><kbd>WASD</kbd> or arrows to move or attack · <kbd>Space</kbd> wait · <kbd>R</kbd> restart</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="game">
+    <div class="card">
+      <span class="label">How it works</span>
+      <ul class="rules">
+        <li>Each turn you move one tile, wait, or bump into an enemy to hit it.</li>
+        <li>The chamber is two rooms joined by one doorway. Each wave arrives in the room you're not in, so every enemy has to come through the door.</li>
+        <li>Your <b>echo</b> appears where you stood one delay ago and repeats your moves in order. The violet trail shows its next moves; <b>1</b> is where it goes next.</li>
+        <li>The echo bumps into whatever is in its way, and steps into the tile when it kills. A kill by your echo scores <b>3</b> and heals 1. Your own kills score 1.</li>
+        <li>Enemies chase you, hit you as soon as they reach you, and can't walk through the echo. Get your echo to stand in the doorway and it holds the door. <em>Shades</em> move every turn. <em>Brutes</em> take 2 hits, rest every other turn, and hit for 2.</li>
+        <li>Your echo has <b>3</b> health. Enemies next to it hit it when they can't reach you. If it's destroyed, it re-forms one delay later, back on your path.</li>
+        <li>With the hurt toggle on, if the echo bumps into you, you take 1 damage and it shoves past, swapping places with you.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <span class="label">Log</span>
+      <ul class="log" id="log"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const W = 11, H = 11, MAXHP = 6, ECHO_HP = 3;
+const DOOR = { x: 5, y: 5 };
+const WALLS = new Set(Array.from({ length: H }, (_, y) => `${DOOR.x},${y}`).filter(k => k !== `${DOOR.x},${DOOR.y}`));
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+const settings = { hurt: true, delay: 6 };
+let state = null, cell = 48, best = 0;
+
+try { best = +localStorage.getItem("echo-best") || 0; } catch (e) {}
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = {};
+function readColors() { for (const k of ["tile", "tile2", "wall", "line", "ink", "muted", "player", "echo", "enemy", "danger", "bg"]) C[k] = css("--" + k); }
+
+const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const isWall = (x, y) => WALLS.has(x + "," + y);
+const enemyAt = (x, y) => state.enemies.find(e => e.x === x && e.y === y);
+const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+function log(msg) {
+  state.log.unshift({ t: state.history.length, msg });
+  state.log.length = Math.min(state.log.length, 7);
+}
+
+function newGame() {
+  state = {
+    delay: settings.delay, player: { x: 2, y: 5, hp: MAXHP }, echo: null, respawnAt: null, history: [],
+    enemies: [], wave: 0, score: 0, over: false, log: []
+  };
+  nextWave();
+  log(`Your echo will start replaying after ${state.delay} turns.`);
+  render();
+}
+
+function nextWave() {
+  state.wave++;
+  const n = state.wave;
+  const types = [];
+  for (let i = 0; i < 2 + Math.floor((n - 1) / 2); i++) types.push("shade");
+  for (let i = 0; i < Math.floor((n - 1) / 3); i++) types.push("brute");
+  const P = state.player;
+  // Enemies arrive in the room you're not in, so they have to come through the door.
+  const farSide = P.x < DOOR.x ? 1 : -1;
+  let cand = [];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const edge = x === 0 || y === 0 || x === W - 1 || y === H - 1;
+    if (!edge || isWall(x, y) || Math.sign(x - DOOR.x) !== farSide) continue;
+    if (dist({ x, y }, P) < 5) continue;
+    if (state.echo && state.echo.x === x && state.echo.y === y) continue;
+    cand.push({ x, y });
+  }
+  cand.sort(() => Math.random() - 0.5);
+  for (const t of types) {
+    const c = cand.pop(); if (!c) break;
+    state.enemies.push(t === "brute"
+      ? { x: c.x, y: c.y, type: t, hp: 2, dmg: 2, rest: true }
+      : { x: c.x, y: c.y, type: t, hp: 1, dmg: 1, rest: false });
+  }
+  if (state.wave > 1) log(`Wave ${state.wave}: ${types.length} enemies.`);
+}
+
+function hitEnemy(e, who) {
+  e.hp--;
+  if (e.hp > 0) { log(`${who === "echo" ? "Echo" : "You"} hit a brute.`); return false; }
+  state.enemies.splice(state.enemies.indexOf(e), 1);
+  if (who === "echo") {
+    state.score += 3;
+    state.player.hp = Math.min(MAXHP, state.player.hp + 1);
+    log(`Echo killed a ${e.type}. +3, +1 health.`);
+  } else {
+    state.score += 1;
+    log(`You killed a ${e.type}. +1`);
+  }
+  return true;
+}
+
+function act(who, dx, dy) {
+  const a = who === "player" ? state.player : state.echo, P = state.player;
+  if (!dx && !dy) return;
+  const tx = a.x + dx, ty = a.y + dy;
+  if (!inB(tx, ty) || isWall(tx, ty)) return;
+  const e = enemyAt(tx, ty);
+  if (e) {
+    if (hitEnemy(e, who) && who === "echo") { a.x = tx; a.y = ty; }
+    return;
+  }
+  if (who === "echo" && tx === P.x && ty === P.y && settings.hurt) {
+    P.hp--; flash();
+    P.x = a.x; P.y = a.y; a.x = tx; a.y = ty;
+    log("Your echo shoved past you. −1 health.");
+    return;
+  }
+  a.x = tx; a.y = ty;
+}
+
+function enemyFree(x, y) {
+  const P = state.player, E = state.echo;
+  if (!inB(x, y) || isWall(x, y) || enemyAt(x, y)) return false;
+  if (P.x === x && P.y === y) return false;
+  if (E && E.x === x && E.y === y) return false;
+  return true;
+}
+
+// Walking distance to the player around walls (enemies and the echo ignored).
+function pathField() {
+  const P = state.player, f = new Map([[P.x + "," + P.y, 0]]), q = [[P.x, P.y]];
+  while (q.length) {
+    const [x, y] = q.shift(), d = f.get(x + "," + y);
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+      if (inB(nx, ny) && !isWall(nx, ny) && !f.has(k)) { f.set(k, d + 1); q.push([nx, ny]); }
+    }
+  }
+  return f;
+}
+
+function enemiesAct() {
+  const P = state.player, field = pathField();
+  const steps = c => field.get(c.x + "," + c.y) ?? 999;
+  for (const e of [...state.enemies]) {
+    if (!state.enemies.includes(e)) continue;
+    if (e.type === "brute") {
+      if (e.rest) { e.rest = false; continue; }
+      e.rest = true;
+    }
+    const d = steps(e);
+    if (d > 1) {
+      const opts = DIRS.map(([dx, dy]) => ({ x: e.x + dx, y: e.y + dy }))
+        .filter(c => enemyFree(c.x, c.y))
+        .map(c => ({ ...c, d: steps(c), r: Math.random() }))
+        .sort((a, b) => a.d - b.d || a.r - b.r);
+      if (opts.length && (opts[0].d < d || (opts[0].d === d && Math.random() < 0.5))) {
+        e.x = opts[0].x; e.y = opts[0].y;
+      }
+    }
+    const E = state.echo;
+    if (dist(e, P) === 1) {
+      P.hp -= e.dmg; flash();
+      log(`A ${e.type} hit you. −${e.dmg} health.`);
+    } else if (E && dist(e, E) === 1) {
+      E.hp -= e.dmg;
+      if (E.hp > 0) log(`A ${e.type} hit your echo. −${e.dmg}.`);
+      else {
+        state.echo = null;
+        state.respawnAt = state.history.length + state.delay;
+        log(`A ${e.type} destroyed your echo. It re-forms in ${state.delay} turns.`);
+      }
+    }
+  }
+}
+
+function step(dx, dy) {
+  if (!state || state.over) return;
+  const P = state.player;
+  state.history.push({ x: P.x, y: P.y, dx, dy });
+  act("player", dx, dy);
+
+  const idx = state.history.length - 1 - state.delay;
+  const reforming = state.respawnAt && state.history.length < state.respawnAt;
+  if (idx >= 0 && !reforming) {
+    const h = state.history[idx];
+    if (!state.echo) {
+      state.echo = { x: h.x, y: h.y, hp: ECHO_HP };
+      log(state.respawnAt ? "Your echo has re-formed." : "Your echo has arrived.");
+      state.respawnAt = null;
+      let e;
+      while ((e = enemyAt(h.x, h.y))) hitEnemy(e, "echo");
+      if (P.x === h.x && P.y === h.y && settings.hurt) {
+        P.hp--; flash();
+        log("Your echo appeared on top of you. −1 health.");
+      }
+    }
+    act("echo", h.dx, h.dy);
+  }
+
+  if (P.hp > 0) enemiesAct();
+
+  if (P.hp <= 0) {
+    P.hp = 0; state.over = true;
+    if (state.score > best) { best = state.score; try { localStorage.setItem("echo-best", best); } catch (e) {} }
+    log("You fell.");
+  } else if (!state.enemies.length) {
+    state.score += state.wave * 2;
+    log(`Wave ${state.wave} cleared. +${state.wave * 2}`);
+    nextWave();
+  }
+  render();
+}
+
+// Echo's next moves, simulated against walls only (enemies and you can still block it).
+function forecast() {
+  const T = state.history.length, D = state.delay, hist = state.history;
+  const out = { path: [], spawn: null, spawnIn: 0 };
+  let pos, first = 0;
+  if (state.echo) pos = { x: state.echo.x, y: state.echo.y };
+  else {
+    first = state.respawnAt ? state.respawnAt - 1 - D : 0;
+    pos = T > first ? { x: hist[first].x, y: hist[first].y } : { ...state.player };
+    out.spawn = { ...pos };
+    out.spawnIn = state.respawnAt ? state.respawnAt - T : D - T + 1;
+  }
+  for (let k = Math.max(first, T - D); k < T; k++) {
+    const h = hist[k], nx = pos.x + h.dx, ny = pos.y + h.dy;
+    if (inB(nx, ny) && !isWall(nx, ny)) pos = { x: nx, y: ny };
+    out.path.push({ ...pos, away: k + D - T + 1 });
+  }
+  return out;
+}
+
+function rr(x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+function disc(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+
+function draw() {
+  const s = cell, dpr = window.devicePixelRatio || 1;
+  cv.width = W * s * dpr; cv.height = H * s * dpr;
+  cv.style.height = (H * s) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cx = x => x * s + s / 2;
+
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    ctx.fillStyle = (x + y) % 2 ? C.tile : C.tile2;
+    ctx.fillRect(x * s, y * s, s, s);
+  }
+  for (const k of WALLS) {
+    const [x, y] = k.split(",").map(Number);
+    ctx.fillStyle = C.wall; ctx.fillRect(x * s + 4, y * s, s - 8, s);
+    ctx.fillStyle = C.line; ctx.fillRect(x * s + 4, y * s + s - 2, s - 8, 2);
+  }
+
+  const f = forecast(), D = state.delay;
+  // trail line
+  let prev = state.echo || f.spawn;
+  if (prev && f.path.length) {
+    ctx.save(); ctx.strokeStyle = C.echo; ctx.globalAlpha = 0.35; ctx.lineWidth = 2; ctx.setLineDash([4, 5]);
+    ctx.beginPath(); ctx.moveTo(cx(prev.x), cx(prev.y));
+    for (const p of f.path) ctx.lineTo(cx(p.x), cx(p.y));
+    ctx.stroke(); ctx.restore();
+  }
+  for (let i = f.path.length - 1; i >= 0; i--) {
+    const p = f.path[i];
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.18, 1 - (p.away - 1) / (D + 2));
+    ctx.fillStyle = C.echo;
+    disc(cx(p.x), cx(p.y), p.away === 1 ? s * 0.15 : s * 0.09); ctx.fill();
+    if (p.away <= 3) {
+      ctx.fillStyle = C.bg; ctx.font = `600 ${Math.round(s * 0.2)}px ${css("--f-mono")}`;
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      if (p.away === 1) ctx.fillText("1", cx(p.x), cx(p.y) + 1);
+      else { ctx.fillStyle = C.echo; ctx.fillText(p.away, cx(p.x) + s * 0.27, cx(p.y) - s * 0.27); }
+    }
+    ctx.restore();
+  }
+  const next = f.path.find(p => p.away === 1);
+  if (next && settings.hurt && (state.echo ? (next.x !== state.echo.x || next.y !== state.echo.y) : true)) {
+    ctx.save(); ctx.strokeStyle = C.danger; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    rr(next.x * s + 4, next.y * s + 4, s - 8, s - 8, 6); ctx.stroke(); ctx.restore();
+  }
+
+  if (f.spawn) {
+    ctx.save(); ctx.strokeStyle = C.echo; ctx.lineWidth = 2; ctx.setLineDash([3, 4]);
+    disc(cx(f.spawn.x), cx(f.spawn.y), s * 0.36); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = C.echo; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.font = `600 ${Math.round(s * 0.22)}px ${css("--f-mono")}`;
+    ctx.fillText(f.spawnIn, cx(f.spawn.x), cx(f.spawn.y) + (f.spawn.y === 0 ? s * 0.42 : -s * 0.42));
+    ctx.restore();
+  }
+
+  for (const e of state.enemies) {
+    ctx.save();
+    ctx.globalAlpha = e.rest ? 0.6 : 1;
+    ctx.fillStyle = C.enemy;
+    const x = cx(e.x), y = cx(e.y);
+    if (e.type === "shade") {
+      ctx.beginPath(); ctx.moveTo(x, y - s * 0.3); ctx.lineTo(x + s * 0.26, y); ctx.lineTo(x, y + s * 0.3); ctx.lineTo(x - s * 0.26, y); ctx.closePath(); ctx.fill();
+    } else {
+      rr(x - s * 0.32, y - s * 0.32, s * 0.64, s * 0.64, 6); ctx.fill();
+      ctx.fillStyle = C.bg;
+      for (let i = 0; i < e.hp; i++) { disc(x - s * 0.1 + i * s * 0.2, y, s * 0.06); ctx.fill(); }
+      if (e.rest) {
+        ctx.globalAlpha = 1; ctx.fillStyle = C.muted; ctx.font = `600 ${Math.round(s * 0.2)}px ${css("--f-mono")}`;
+        ctx.textAlign = "center"; ctx.fillText("zz", x + s * 0.3, y - s * 0.28);
+      }
+    }
+    ctx.restore();
+  }
+
+  const P = state.player;
+  ctx.fillStyle = C.player; disc(cx(P.x), cx(P.y), s * 0.3); ctx.fill();
+  ctx.fillStyle = C.bg; disc(cx(P.x), cx(P.y), s * 0.09); ctx.fill();
+
+  if (state.echo) {
+    const x = cx(state.echo.x), y = cx(state.echo.y);
+    ctx.save();
+    ctx.strokeStyle = C.echo; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.3;
+    disc(x, y, s * 0.44); ctx.stroke();
+    ctx.globalAlpha = 0.5; ctx.fillStyle = C.echo; disc(x, y, s * 0.28); ctx.fill();
+    ctx.globalAlpha = 1; ctx.lineWidth = 2; disc(x, y, s * 0.28); ctx.stroke();
+    for (let i = 0; i < ECHO_HP; i++) {
+      ctx.globalAlpha = i < state.echo.hp ? 1 : 0.25;
+      disc(x + (i - 1) * s * 0.16, y + s * 0.4, s * 0.05); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function render() {
+  const P = state.player, T = state.history.length;
+  $("sTurn").textContent = T;
+  $("sWave").textContent = state.wave;
+  $("sScore").textContent = state.score;
+  $("sBest").textContent = Math.max(best, state.score);
+  $("hp").innerHTML = Array.from({ length: MAXHP }, (_, i) => `<i class="${i < P.hp ? "on" : ""}"></i>`).join("");
+  const wait = forecast().spawnIn, turns = `${wait} turn${wait === 1 ? "" : "s"}`;
+  $("echoStatus").textContent = state.echo
+    ? `Echo ${state.echo.hp}/${ECHO_HP} health · replaying your turn ${T - state.delay}.`
+    : state.respawnAt ? `Echo destroyed. It re-forms in ${turns}.` : `Echo arrives in ${turns}.`;
+  $("hurtHint").textContent = settings.hurt
+    ? "Its next tile is outlined in red. Don't stand there."
+    : "The echo passes through you harmlessly.";
+  $("log").innerHTML = state.log.map(l => `<li><span class="t">${String(l.t).padStart(3, "0")}</span>${l.msg}</li>`).join("");
+  const pendingDelay = settings.delay !== state.delay;
+  $("delayHint").textContent = pendingDelay ? `This run uses ${state.delay}. Restart to use ${settings.delay}.` : "Applies when you restart.";
+  $("over").hidden = !state.over;
+  if (state.over) $("overText").textContent = `Score ${state.score} · wave ${state.wave} · ${T} turns`;
+  draw();
+}
+
+let flashT;
+function flash() {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  $("board").classList.add("hit");
+  clearTimeout(flashT); flashT = setTimeout(() => $("board").classList.remove("hit"), 160);
+}
+
+function resize() {
+  const w = $("board").clientWidth;
+  cell = Math.max(24, Math.floor(Math.min(w, 620) / W));
+  cv.style.width = (cell * W) + "px";
+  if (state) draw();
+}
+
+const KEYS = {
+  ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
+  w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], " ": [0, 0], ".": [0, 0]
+};
+window.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type === "range") return;
+  if (["INPUT", "BUTTON"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (k === "r") { newGame(); return; }
+  const d = KEYS[k];
+  if (!d) return;
+  e.preventDefault();
+  step(d[0], d[1]);
+});
+document.querySelectorAll(".pad button").forEach(b => b.addEventListener("click", () => {
+  const [dx, dy] = b.dataset.d.split(",").map(Number); step(dx, dy); b.blur();
+}));
+$("hurt").addEventListener("change", e => { settings.hurt = e.target.checked; render(); });
+$("delay").addEventListener("input", e => {
+  settings.delay = +e.target.value;
+  $("delayVal").textContent = `${settings.delay} turns`;
+  render();
+});
+$("restart").addEventListener("click", () => { newGame(); $("restart").blur(); });
+$("again").addEventListener("click", newGame);
+
+function boot(data) {
+  readColors();
+  if (data && data.settings) Object.assign(settings, data.settings);
+  $("hurt").checked = settings.hurt;
+  $("delay").value = settings.delay;
+  $("delayVal").textContent = `${settings.delay} turns`;
+  resize();
+  if (data && data.state && "respawnAt" in data.state) { state = data.state; render(); } else newGame();
+}
+window.claude?.hot?.snapshot?.(() => ({ state, settings }));
+new ResizeObserver(resize).observe($("board"));
+document.fonts?.ready?.then(() => state && draw());
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
