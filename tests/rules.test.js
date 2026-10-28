@@ -168,6 +168,26 @@ test("riflemen yield once the rest of their line is gone", () => {
   assert.equal(F.over, "win");
 });
 
+test("anything that arrives during a frenzy is already free", () => {
+  const F = fight([
+    ".........",
+    ".........",
+    "....@....",
+    ".........",
+    "........."
+  ]);
+  F.frenzy = true;
+  assert.equal(G.spawn("drone").free, true);
+  assert.equal(G.spawn("rifle").free, false);
+});
+
+test("Cadence 2 brings the frenzy 6 turns sooner, as its text says", () => {
+  G.newRun("recruit", 2, 1);
+  G.startFight("fight");
+  assert.equal(G.R.fight.frenzyAt, G.FRENZY - 6);
+  assert.match(G.CADENCE[2], /6 turns sooner/);
+});
+
 test("the same seed gives the same run", () => {
   const map = seed => { G.newRun("recruit", 0, seed); return JSON.stringify(G.R.map); };
   assert.equal(map(7), map(7));
@@ -185,6 +205,17 @@ test("the preview of a wait shows the enemy that will really arrive", () => {
   const pv = G.preview(() => G.step(0, 0));
   G.step(0, 0);
   assert.deepEqual(pv.enemies, G.R.fight.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })));
+});
+
+test("combining two profile copies keeps progress from both", () => {
+  const local = { runs: 5, wins: 1, deaths: 4, bestAct: 3, beat: { colossus: true }, chars: { drummer: true }, cards: { brace: true }, cad: { recruit: 1 } };
+  const account = { runs: 3, wins: 2, deaths: 1, bestAct: 2, beat: { mirror: true }, chars: { sapper: true }, cards: { quake: true }, cad: { recruit: 0, sapper: 2 } };
+  const p = G.combineProfiles(local, account);
+  assert.equal(p.runs, 5); assert.equal(p.wins, 2); assert.equal(p.deaths, 4); assert.equal(p.bestAct, 3);
+  assert.deepEqual(p.beat, { colossus: true, mirror: true });
+  assert.deepEqual(p.chars, { recruit: true, drummer: true, sapper: true });
+  assert.deepEqual(p.cards, { brace: true, quake: true });
+  assert.deepEqual(p.cad, { recruit: 1, sapper: 2 });
 });
 
 test("shop: a full hand asks which card to replace; no gold, no sale", () => {

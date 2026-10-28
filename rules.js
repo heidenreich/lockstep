@@ -101,7 +101,7 @@ const CHARS = {
 const CADENCE = [
   "Standard rules.",
   "C1: one more enemy in every fight.",
-  "C2: frenzy starts 10 turns sooner.",
+  "C2: frenzy starts 6 turns sooner.",
   "C3: elites have +1 health, and rest heals 2 instead of 3.",
   "C4: bosses have +4 health.",
   "C5: start with 2 less health."
@@ -164,6 +164,16 @@ function unlock(kind, id, label) {
 const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)), d, {
   chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat)
 });
+// Combines two saved copies of a profile (this browser's and the account's) without losing progress from either:
+// unlocks and bosses beaten are kept from both, counts and cadence levels take the higher value.
+function combineProfiles(a, b) {
+  const x = mergeProfile(a || {}), y = mergeProfile(b || {}), out = mergeProfile({});
+  for (const k of ["runs", "wins", "deaths", "bestAct"]) out[k] = Math.max(x[k] || 0, y[k] || 0);
+  for (const k of ["beat", "chars", "cards"]) out[k] = Object.assign({}, x[k], y[k]);
+  for (const id of new Set([...Object.keys(x.cad), ...Object.keys(y.cad)])) out.cad[id] = Math.max(x.cad[id] || 0, y.cad[id] || 0);
+  return out;
+}
+
 /* ---------- Run state ---------- */
 var R = null, SIM = false;
 let FX = [], SFX = [];
@@ -301,7 +311,8 @@ function spawn(type, boss) {
   let hp = d.hp;
   if (d.elite && R.cad >= 3) hp += 1;
   if (d.boss && R.cad >= 4) hp += 4;
-  const e = { id: F.nextId++, type, x: c.x, y: c.y, hp, max: hp, blocked: 0, free: !!d.chaser, chased: 0, skip: false, dir: [0, 1] };
+  // Anything that turns up during a frenzy arrives already broken free.
+  const e = { id: F.nextId++, type, x: c.x, y: c.y, hp, max: hp, blocked: 0, free: !!d.chaser || (F.frenzy && !d.fixed && !d.boss), chased: 0, skip: false, dir: [0, 1] };
   if (d.rifle) e.load = RELOAD;
   F.enemies.push(e);
   fx("spawn", e.x, e.y);
@@ -850,7 +861,7 @@ if (typeof module === "object" && module.exports) {
     get SFX() { return SFX; }, set SFX(v) { SFX = v; },
     hooks, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, DIRS, BELT, ROOMS, ACT_ROOMS, BOSS_ROOMS,
     FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
-    room, setDims, rng, rand, pickOne, shuffle, cardPool, unlock, mergeProfile, hasO,
+    room, setDims, rng, rand, pickOne, shuffle, cardPool, unlock, mergeProfile, combineProfiles, hasO,
     newRun, genMap, openNodes, enterNode, startFight, setGoal, spawn,
     inB, kegAt, isWall, hazard, beltAt, roomPit, trapAt, isPit, enemyAt, dist, foe, alive, isLocked, floorFree,
     hurtPlayer, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, chasersAct, endTurn,

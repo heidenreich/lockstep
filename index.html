@@ -322,9 +322,10 @@ async function initStore() {
     if (db) {
       const ref = db.doc("data/users/" + id + "/profile");
       store = { kind: "db", ref };
+      // Keep progress from both copies: this browser's (and anything earned while the account loaded) and the account's.
       const snap = await ref.get();
-      if (snap.exists) P = mergeProfile(snap.data());
-      else saveProfile();
+      if (snap.exists) P = combineProfiles(P, snap.data());
+      saveProfile();
     }
   } catch (e) { store = { kind: "local" }; }
   if (R == null) renderTitle();

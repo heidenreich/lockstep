@@ -16,14 +16,14 @@ Keep this doc in step with the code: change the numbers here in the same commit 
 
 ## Core rules (bot-tested, carried over from prototype v4)
 
-- 11×11 grid, one room per fight. Each turn: Step (WASD/arrows), wait, or play a card.
+- One hand-made room per fight (7×7 to 11×9; see the pace pass below). Each turn: Step (WASD/arrows), wait, or play a card.
 - **Lockstep:** when you Step in a direction, every locked drone and heavy tries to move that way; contrarians move the opposite way. Leaders move first.
 - An enemy that moves into your tile hits you; a locked enemy that ends its move beside you strikes too.
 - Enemies that step into a **pit** die (+gold). Each pit holds 2 per fight, then fills.
 - Blocked 3 turns in a row (wall, edge, enemy) → the enemy **breaks free** and chases (BFS, ties broken by straight-line distance). A chaser 4+ tiles away for 4 turns falls back into step.
 - Waiting: every enemy chases one step and a new enemy arrives.
 - Arrivals: one every 8 turns while 2+ enemies remain, at most 2 per fight.
-- **Frenzy:** a normal fight that runs 40 turns makes every enemy break free.
+- **Frenzy:** a normal fight that runs 30 turns makes every enemy break free. Anything that arrives during a frenzy (for example from waiting) arrives already free.
 
 Why these numbers: see the bot findings at the end.
 
@@ -59,7 +59,7 @@ Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, m
 Bosses (one twist each; a pit deals 3 damage and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
 2. **Mirror**: locked contrarian, 8 HP; every 5 turns the cadence flips (everyone reverses) for 5 turns, telegraphed.
-3. **Warden**: never locked, 12 HP, hits 2, chases every other turn; two drones arrive every 7 turns. Only cards can put it in a pit.
+3. **Warden**: never locked, 9 HP, hits 2, chases every other turn; two drones arrive every 7 turns. Only cards can put it in a pit.
 
 ## Meta (unlocks only)
 
@@ -67,7 +67,7 @@ Saved per player through the artifact's private per-user storage (`db`, `data/us
 
 - **Characters:** Recruit (start: Sidestep, Stomp; 8 HP). Drummer, unlocked by beating the Colossus (Double Time, About Face; 7 HP; 4 slots). Sapper, unlocked by winning a run (Quake, Shove; 9 HP; pits hold 3).
 - **Cards:** start pool is Sidestep, Stomp, Double Time, About Face, Lunge, Shove and Trapdoor; Quake (beat the Colossus), Magnet (reach act 2), Recall (beat the Mirror), Brace (die three times).
-- **Cadence ladder (difficulty):** win at Cadence N to unlock N+1, up to 5. Each level bundles changes, Slay the Spire 2 style: C1 +1 enemy per fight; C2 frenzy 10 turns sooner; C3 elites +1 HP and rest heals 2; C4 bosses +4 HP; C5 start with 2 less HP.
+- **Cadence ladder (difficulty):** win at Cadence N to unlock N+1, up to 5. Each level bundles changes, Slay the Spire 2 style: C1 +1 enemy per fight; C2 frenzy 6 turns sooner; C3 elites +1 HP and rest heals 2; C4 bosses +4 HP; C5 start with 2 less HP.
 
 ## Presentation
 
@@ -79,7 +79,7 @@ Saved per player through the artifact's private per-user storage (`db`, `data/us
 
 - Waves that refilled forever → arrivals capped; frenzy timer stops corner camping (30 turns too short, 80 started stalls, 60 in the arena prototype → 40 here because fights are single-roster).
 - Pits filling at 2 per wave stopped planners farming them.
-- "Spiked walls" as a passive was a 110-kill engine → anything that damages blocked enemies must be limited (Quake has a 4-turn cooldown).
+- "Spiked walls" as a passive was a 110-kill engine → anything that damages blocked enemies must be limited (Quake has a 5-turn cooldown and only hurts enemies already pinned).
 - Chase tie-break bug let a chaser mirror you forever → fixed with straight-line tie-break.
 - Skill gap in v2: corner 4 / naive 8 / pad-numbers 17 / 2-ply planner 32.
 
@@ -142,3 +142,17 @@ Same rule on a side-on stage with gravity (walk, jump, wait; the line copies wal
 - Is reading the room's vector legible enough that people find two-push pit setups?
 - Do cooldown cards feel like a build, or like a menu?
 - Is 3 acts the right length (~25 minutes)?
+
+## Engineering pass (2026-10-28)
+
+- Rules moved out of `index.html` into `rules.js`; the harness requires it directly instead of cutting the script out of the page, and every `sim/` script now finds its page relative to the repo.
+- Seeded RNG. The hover preview of a wait now shows the enemy that will really arrive (it used to roll a different one).
+- Rule tests (`tests/rules.test.js`): lockstep and contrarians, pit drops and fill, breaking free and falling back into step, keg chains and combos, belts, rifle line of sight, rifleman yield, frenzy arrivals, Cadence 2, seeding, preview, profile merge, shop.
+- Fixed: enemies that arrived during a frenzy came in locked, which could leave a fight with a drone that copies you forever (a source of bot stalls).
+- Fixed: the account profile overwrote this browser's on load, so unlocks earned while signed out were lost. The two are now combined (unlocks from both, highest counts).
+- Fixed: the Cadence 2 text said frenzy comes 10 turns sooner; the code does 6 (kept, text changed).
+- Rest and shop actions are rule functions now (`restHeal`, `buyCard`, ...), so the page and the bots share them.
+
+Bot check (1-ply, C0, 30 runs per row): about the same as v10, 17–57% wins by row against 13–37% on the old code; 30 runs per row is noisy.
+
+Open: **anchors yield** when the rest of their line is gone, so an anchor elite is effectively "clear the normal enemies". Making anchors fight on (only riflemen yield) dropped the 1-ply win rate from about 33% to about 12% across characters, with elites becoming the top cause of death, so it was not changed. Options: anchors don't yield but drop to 2 HP; or a lone anchor leaves its post and chases (so it can be pitted); or keep yielding and call it intended.
