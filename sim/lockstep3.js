@@ -1,12 +1,12 @@
 // Lockstep v3 (rooms + upgrade draft) bot harness. usage: node lockstep3.js [N] [section]
 const { loadGame } = require("./load.js");
-const DIR = "/private/tmp/claude-501/-Users-todd-ClaudeStuff/e5c38a7a-9fa2-4f41-8417-cb3f2f17ddbd/scratchpad/";
+const DIR = require("path").join(__dirname, "../prototype/");
 const N = +process.argv[2] || 200, SECTION = process.argv[3] || "all";
 const clone = s => JSON.parse(JSON.stringify(s));
 const q = (arr, p) => { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
 const hist = arr => { const d = {}; for (const v of arr) d[v] = (d[v] || 0) + 1; return JSON.stringify(d); };
-const G = loadGame(DIR + "lockstep.html", ["state", "settings", "newGame", "step", "preview", "pick", "settle", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "dist", "ROOMS", "UPGRADES"]);
+const G = loadGame(DIR + "lockstep-v4.html", ["state", "settings", "newGame", "step", "preview", "pick", "settle", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "dist", "ROOMS", "UPGRADES"]);
 const pass = (x, y) => G.inB(x, y) && !G.isWall(x, y) && !G.isPit(x, y);
 function bfs(sx, sy) { const f = new Map([[sx + "," + sy, 0]]), qq = [[sx, sy]]; while (qq.length) { const [x, y] = qq.shift(), d = f.get(x + "," + y); for (const [dx, dy] of G.DIRS) { const nx = x + dx, ny = y + dy, k = nx + "," + ny; if (pass(nx, ny) && !f.has(k)) { f.set(k, d + 1); qq.push([nx, ny]); } } } return f; }
 const ACTS = [[0, 0], ...G.DIRS];

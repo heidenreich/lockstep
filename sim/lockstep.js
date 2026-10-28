@@ -1,12 +1,12 @@
 // Lockstep bots. usage: node lockstep.js [N]
 const { loadGame } = require("./load.js");
-const DIR = "/private/tmp/claude-501/-Users-todd-ClaudeStuff/e5c38a7a-9fa2-4f41-8417-cb3f2f17ddbd/scratchpad/";
+const DIR = require("path").join(__dirname, "../prototype/");
 const N = +process.argv[2] || 200, NG = Math.max(20, Math.floor(N / 5));
 const clone = s => JSON.parse(JSON.stringify(s));
 const q = (arr, p) => { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
 const hist = arr => { const d = {}; for (const v of arr) d[v] = (d[v] || 0) + 1; return JSON.stringify(d); };
-const G = loadGame(DIR + "lockstep.html", ["state", "settings", "newGame", "step", "preview", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "dist"]);
+const G = loadGame(DIR + "lockstep-v4.html", ["state", "settings", "newGame", "step", "preview", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "dist"]);
 const pass = (x, y) => G.inB(x, y) && !G.isWall(x, y) && !G.isPit(x, y);
 function bfs(sx, sy, passable) {
   const f = new Map([[sx + "," + sy, 0]]), qq = [[sx, sy]];

@@ -1,6 +1,5 @@
 // Trace stalled normal/elite fights with the 1-ply bot across a run.
-const { loadGame } = require("./load.js");
-const G = loadGame("/Users/todd/lockstep/index.html", ["R", "SIM", "newRun", "openNodes", "enterNode", "step", "play", "cardBlock", "fightReward", "takeCard", "leaveNode", "endRun", "CARDS", "FOES", "ROOMS", "enemyAt", "isWall", "isPit", "inB", "DIRS", "dist", "EVENTS"]);
+const G = require("../rules.js");
 G.SIM = true;
 const clone = s => JSON.parse(JSON.stringify(s));
 function actions() { const out = [{ kind: "step", dx: 0, dy: 0 }]; for (const [dx, dy] of G.DIRS) out.push({ kind: "step", dx, dy }); G.R.hand.forEach((c, slot) => { if (c.cd > 0) return; if (G.CARDS[c.id].dir) { for (const [dx, dy] of G.DIRS) if (!G.cardBlock(slot, dx, dy)) out.push({ kind: "card", slot, dx, dy }); } else if (!G.cardBlock(slot, 0, 0)) out.push({ kind: "card", slot, dx: 0, dy: 0 }); }); return out; }

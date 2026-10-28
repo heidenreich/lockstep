@@ -1,7 +1,6 @@
 // Lockstep roguelite (index.html) bot harness.
-// usage: node run4.js <section> [N]   sections: base | cards | bosses
-const { loadGame } = require("./load.js");
-const G = loadGame(process.env.GAME || "/Users/todd/lockstep/index.html", ["R", "P", "SIM", "newRun", "openNodes", "enterNode", "step", "play", "cardBlock", "fightReward", "takeCard", "upgradeCard", "leaveNode", "endRun", "CARDS", "CHARS", "FOES", "ROOMS", "BOSSES", "enemyAt", "isWall", "isPit", "inB", "DIRS", "dist", "foe", "isLocked", "floorFree", "EVENTS", "takeOrder", "buyOrder", "ORDERS", "GOALS"]);
+// usage: node sim/run4.js <section> [N]   sections: base | cards | bosses | new
+const G = require("../rules.js");
 const SECTION = process.argv[2] || "base", N = +process.argv[3] || 40;
 const clone = s => JSON.parse(JSON.stringify(s));
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
@@ -101,13 +100,13 @@ function runOne(bot, { char = "recruit", cad = 0, policy = { draft: "random" }, 
       if (rw.upgrade) { const i = R.hand.findIndex(c => !c.up); if (i >= 0) G.upgradeCard(i); }
       G.leaveNode(); st.act = R.act; continue;
     }
-    if (R.screen === "rest") { if (R.hp <= R.maxhp - 3 || R.hand.every(c => c.up)) { R.hp = Math.min(R.maxhp, R.hp + (R.cad >= 3 ? 2 : 3)); st.heals++; } else G.upgradeCard(R.hand.findIndex(c => !c.up)); G.leaveNode(); continue; }
+    if (R.screen === "rest") { if ((R.hp <= R.maxhp - 3 || R.hand.every(c => c.up)) && G.restHeal()) st.heals++; else if (!G.restUpgrade(R.hand.findIndex(c => !c.up))) G.leaveNode(); continue; }
     if (R.screen === "shop") {
       const sh = R.shop;
-      if (R.hp <= R.maxhp - 3 && R.gold >= sh.healPrice) { R.gold -= sh.healPrice; R.hp = Math.min(R.maxhp, R.hp + 3); st.goldSpent += sh.healPrice; st.heals++; }
+      if (R.hp <= R.maxhp - 3 && G.buyHeal()) { st.goldSpent += sh.healPrice; st.heals++; }
       if (policy.orders !== "none" && sh.order && !sh.order.sold && R.gold >= sh.order.price) { st.goldSpent += sh.order.price; if (G.buyOrder()) st.orders++; }
-      for (const o of sh.cards) { if (o.sold || R.gold < o.price) continue; const id = draft([o.id], policy); if (!id) continue; if (R.hand.length < R.slots) { R.hand.push({ id, cd: 0, up: false }); R.gold -= o.price; o.sold = true; st.goldSpent += o.price; } }
-      const ui = R.hand.findIndex(c => !c.up); if (ui >= 0 && R.gold >= sh.upPrice) { R.gold -= sh.upPrice; G.upgradeCard(ui); st.goldSpent += sh.upPrice; }
+      sh.cards.forEach((o, i) => { if (o.sold || R.gold < o.price || R.hand.length >= R.slots || !draft([o.id], policy)) return; if (G.buyCard(i)) st.goldSpent += o.price; });
+      const ui = R.hand.findIndex(c => !c.up); if (ui >= 0 && G.buyUpgrade(ui)) st.goldSpent += sh.upPrice;
       G.leaveNode(); continue;
     }
     if (R.screen === "event") {

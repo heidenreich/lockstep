@@ -1,7 +1,7 @@
 // Head-to-head bot harness for echo-chamber.html (v4), the-heir.html and lantern-budget.html.
 // usage: node compare.js echo|heir|lantern [N]
 const { loadGame } = require("./load.js");
-const DIR = "/private/tmp/claude-501/-Users-todd-ClaudeStuff/e5c38a7a-9fa2-4f41-8417-cb3f2f17ddbd/scratchpad/";
+const DIR = require("path").join(__dirname, "../prototype/");
 const clone = s => JSON.parse(JSON.stringify(s));
 const which = process.argv[2], N = +process.argv[3] || 200, NG = Math.max(20, Math.floor(N / 5));
 

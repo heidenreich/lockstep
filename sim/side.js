@@ -1,6 +1,7 @@
 // Side-view Lockstep prototype bots. usage: node side.js [N]
+const path = require("path");
 const { loadGame } = require("./load.js");
-const G = loadGame("/Users/todd/lockstep/prototype/side-view.html", ["state", "SIM", "newGame", "step", "STAGES", "enemyAt", "solid", "grounded", "W", "H"]);
+const G = loadGame(path.join(__dirname, "../prototype/side-view.html"), ["state", "SIM", "newGame", "step", "STAGES", "enemyAt", "solid", "grounded", "W", "H"]);
 const N = +process.argv[2] || 100;
 const clone = s => JSON.parse(JSON.stringify(s));
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;

@@ -1,6 +1,7 @@
 // Per-stage degenerate checks: does waiting / jump-spam alone clear a stage, and how fast?
+const path = require("path");
 const { loadGame } = require("./load.js");
-const G = loadGame("/Users/todd/lockstep/prototype/side-view.html", ["state", "SIM", "newGame", "step", "loadStage", "STAGES"]);
+const G = loadGame(path.join(__dirname, "../prototype/side-view.html"), ["state", "SIM", "newGame", "step", "loadStage", "STAGES"]);
 const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
 for (let st = 0; st < 3; st++) for (const [name, seq] of [["wait", ["W"]], ["jump", ["J"]], ["R-spam", ["R"]], ["L-spam", ["L"]], ["jump+wait", ["J", "W"]], ["R,J", ["R", "J"]]]) {
   const res = [];

@@ -4,6 +4,16 @@ Turn-based tactical roguelite. **The room copies your every move.** You steer en
 
 Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-act map**; meta = **unlocks only** (no permanent stat power); repo = `~/lockstep`.
 
+## Code layout
+
+- `rules.js`: all game rules and state (data, map, fights, cards, rewards, shop and rest, unlocks). No DOM. The page loads it as a plain script; Node loads it with `require`.
+- `index.html`: the page (rendering, sound, input, profile storage). Publish it together with `rules.js`.
+- `tests/`: rule tests. `npm test` (Node 18+).
+- `sim/run4.js`: the bot harness for the current game, `node sim/run4.js base|cards|bosses|new [N]`. The other `sim/` scripts drive the old prototypes in `prototype/`.
+- Randomness is seeded (`newRun(char, cad, seed)`); the RNG state lives in the run, so saved runs, the hover preview and bot replays see the same rolls as the real game.
+
+Keep this doc in step with the code: change the numbers here in the same commit as a balance change.
+
 ## Core rules (bot-tested, carried over from prototype v4)
 
 - 11×11 grid, one room per fight. Each turn: Step (WASD/arrows), wait, or play a card.

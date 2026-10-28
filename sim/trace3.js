@@ -1,6 +1,6 @@
 const { loadGame } = require("./load.js");
-const DIR = "/private/tmp/claude-501/-Users-todd-ClaudeStuff/e5c38a7a-9fa2-4f41-8417-cb3f2f17ddbd/scratchpad/";
-const G = loadGame(DIR + "lockstep.html", ["state", "newGame", "step", "preview", "pick", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "ROOMS"]);
+const DIR = require("path").join(__dirname, "../prototype/");
+const G = loadGame(DIR + "lockstep-v4.html", ["state", "newGame", "step", "preview", "pick", "enemyAt", "isWall", "isPit", "inB", "DIRS", "W", "H", "ROOMS"]);
 const pass = (x, y) => G.inB(x, y) && !G.isWall(x, y) && !G.isPit(x, y);
 function bfs(sx, sy) { const f = new Map([[sx + "," + sy, 0]]), qq = [[sx, sy]]; while (qq.length) { const [x, y] = qq.shift(), d = f.get(x + "," + y); for (const [dx, dy] of G.DIRS) { const nx = x + dx, ny = y + dy, k = nx + "," + ny; if (pass(nx, ny) && !f.has(k)) { f.set(k, d + 1); qq.push([nx, ny]); } } } return f; }
 const toward = (tx, ty) => { const P = G.state.player, g = bfs(tx, ty); let best = null, bv = 1e9; for (const [dx, dy] of G.DIRS) { const nx = P.x + dx, ny = P.y + dy; if (!pass(nx, ny) || G.enemyAt(nx, ny)) continue; const v = g.get(nx + "," + ny); if (v != null && v < bv) { bv = v; best = [dx, dy]; } } return best; };
