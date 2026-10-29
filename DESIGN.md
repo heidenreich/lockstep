@@ -53,6 +53,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 - 3 acts. Each act is a map of 6 rows (3–4 nodes wide) plus a boss; paths branch and merge. Row 6 is always Rest.
 - Node types: **Fight**, **Elite** (from row 3; harder roster + an elite, better reward), **Rest** (heal 3 or upgrade a card), **Shop** (cards, upgrades, healing), **Event** (a small choice), **Boss**.
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
+- Shop extras: Rations (+1 max HP, 45 gold, +25 each), Field dressing (heal 3, 25), Restock (new cards and drill order, 15 gold, +10 each use). The campfire before each boss has a supply wagon (Rations and Field dressing). Every rest can also be skipped (March on).
 - Each act uses its own room pool (Crossroads, Gallery, Moat, Lanes, Funnel) and a stronger roster.
 
 Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, moves every other turn). Elites: **Runner** (moves 2 per shift), **Anchor** (never moves, 3 HP, strikes adjacent; once the rest of its line is gone it leaves its post and falls into step). Riflemen yield when the rest of their line is gone.

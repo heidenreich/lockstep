@@ -233,7 +233,11 @@ function enterNode(k) {
   R.pos = k;
   const t = R.map.nodes[k].t;
   if (t === "fight" || t === "elite" || t === "boss") startFight(t);
-  else if (t === "rest") R.screen = "rest";
+  else if (t === "rest") {
+    R.screen = "rest";
+    // The campfire before the boss has a supply wagon: rations and dressings at shop prices.
+    if (R.map.nodes[k].r === 5) R.shop = Object.assign(makeShop(), { wagon: true, cards: [], order: null });
+  }
   else if (t === "shop") { R.shop = makeShop(); R.screen = "shop"; }
   else if (t === "event") { R.event = rand(EVENTS.length); R.screen = "event"; }
   return true;
@@ -810,14 +814,25 @@ function leaveNode() {
   R.reward = null; R.shop = null; R.event = null;
   R.screen = "map";
 }
-function makeShop() {
-  const owned = new Set(R.hand.map(c => c.id));
-  const m = hasO("quarter") ? 0.75 : 1, p = n => Math.round(n * m / 5) * 5, oid = orderOffer(1)[0];
+const shopPrice = n => Math.round(n * (hasO("quarter") ? 0.75 : 1) / 5) * 5;
+// Fresh card and drill-order offers (used when the shop opens and when it restocks).
+function shopStock() {
+  const owned = new Set(R.hand.map(c => c.id)), oid = orderOffer(1)[0];
   return {
-    cards: shuffle(cardPool().filter(id => !owned.has(id))).slice(0, 3).map(id => ({ id, price: p(30 + rand(4) * 5), sold: false })),
-    upPrice: p(40), healPrice: p(25), hpPrice: p(45), pending: null,
-    order: oid ? { id: oid, price: p(75 + rand(4) * 5), sold: false } : null
+    cards: shuffle(cardPool().filter(id => !owned.has(id))).slice(0, 3).map(id => ({ id, price: shopPrice(30 + rand(4) * 5), sold: false })),
+    order: oid ? { id: oid, price: shopPrice(75 + rand(4) * 5), sold: false } : null
   };
+}
+function makeShop() {
+  return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(45), restockPrice: shopPrice(15), pending: null });
+}
+// Restock: new cards and a new drill order, for a price that rises each time in this shop.
+function restock() {
+  const sh = R.shop;
+  if (R.gold < sh.restockPrice) return false;
+  R.gold -= sh.restockPrice; sh.restockPrice += 10;
+  Object.assign(sh, shopStock(), { pending: null });
+  return true;
 }
 const restHealAmount = () => (R.cad >= 3 ? 2 : 3);
 function restHeal() {
@@ -839,7 +854,7 @@ function buyHeal() {
 function buyHp() {
   const sh = R.shop;
   if (R.gold < sh.hpPrice) return false;
-  R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; sh.hpPrice += 15;
+  R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; sh.hpPrice += 25;
   return true;
 }
 // Buys shop card idx. With a full hand it needs a slot to replace: without one it marks the card pending and returns false.
@@ -890,7 +905,7 @@ if (typeof module === "object" && module.exports) {
     inB, kegAt, isWall, hazard, beltAt, roomPit, trapAt, isPit, enemyAt, dist, foe, alive, fixed, isLocked, floorFree,
     hurtPlayer, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, chasersAct, endTurn,
     sightLine, riflesFire, stepPlayer, step, cardBlock, play, preview,
-    fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, makeShop,
+    fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, makeShop, shopStock, restock,
     restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun
   };
 }

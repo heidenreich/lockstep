@@ -329,3 +329,22 @@ test("bonus orders: Clean drill fails on the first block, Parade order has a tur
   G.play(0, 0, -1);
   assert.equal(F.goal.ok, false);
 });
+
+test("shop restock and the pre-boss supply wagon", () => {
+  G.newRun("recruit", 0, 3);
+  G.R.shop = G.makeShop(); G.R.screen = "shop"; G.R.gold = 40;
+  const before = JSON.stringify(G.R.shop.cards);
+  assert.equal(G.restock(), true);
+  assert.equal(G.R.gold, 25);
+  assert.equal(G.R.shop.restockPrice, 25);
+  assert.notEqual(JSON.stringify(G.R.shop.cards), before);
+  G.leaveNode();
+  const k = Object.keys(G.R.map.nodes).find(k => G.R.map.nodes[k].r === 5);
+  G.R.map.nodes[k].t = "rest"; G.R.pos = null; G.R.map.edges.push("x>" + k); G.R.pos = "x";
+  assert.equal(G.enterNode(k), true);
+  assert.equal(G.R.screen, "rest");
+  assert.equal(G.R.shop.wagon, true);
+  G.R.gold = 100;
+  assert.equal(G.buyHp(), true);
+  assert.equal(G.R.shop.hpPrice, 70);
+});

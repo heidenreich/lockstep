@@ -100,13 +100,28 @@ function runOne(bot, { char = "recruit", cad = 0, policy = { draft: "random" }, 
       if (rw.upgrade) { const i = R.hand.findIndex(c => !c.up); if (i >= 0) G.upgradeCard(i); }
       G.leaveNode(); st.act = R.act; continue;
     }
-    if (R.screen === "rest") { if ((R.hp <= R.maxhp - 3 || R.hand.every(c => c.up)) && G.restHeal()) st.heals++; else if (!G.restUpgrade(R.hand.findIndex(c => !c.up))) G.leaveNode(); continue; }
+    if (R.screen === "rest") {
+      if (R.shop && R.shop.wagon) {  // pre-boss supply wagon: patch up, then spend the rest on Rations
+        if (R.hp <= R.maxhp - 3 && G.buyHeal()) { st.goldSpent += R.shop.healPrice; st.heals++; }
+        for (let p = R.shop.hpPrice; R.gold >= p && G.buyHp(); p = R.shop.hpPrice) st.goldSpent += p;
+      }
+      if ((R.hp <= R.maxhp - 3 || R.hand.every(c => c.up)) && G.restHeal()) st.heals++;
+      else if (!G.restUpgrade(R.hand.findIndex(c => !c.up))) G.leaveNode();
+      continue;
+    }
     if (R.screen === "shop") {
       const sh = R.shop;
       if (R.hp <= R.maxhp - 3 && G.buyHeal()) { st.goldSpent += sh.healPrice; st.heals++; }
       if (policy.orders !== "none" && sh.order && !sh.order.sold && R.gold >= sh.order.price) { st.goldSpent += sh.order.price; if (G.buyOrder()) st.orders++; }
       sh.cards.forEach((o, i) => { if (o.sold || R.gold < o.price || R.hand.length >= R.slots || !draft([o.id], policy)) return; if (G.buyCard(i)) st.goldSpent += o.price; });
       const ui = R.hand.findIndex(c => !c.up); if (ui >= 0 && G.buyUpgrade(ui)) st.goldSpent += sh.upPrice;
+      // A rich bot whose order is gone restocks once for another shot at one.
+      if (sh.order && sh.order.sold && R.gold >= sh.restockPrice + 80 && G.restock()) {
+        st.goldSpent += sh.restockPrice - 10; st.restocks = (st.restocks || 0) + 1;
+        if (sh.order && R.gold >= sh.order.price) { st.goldSpent += sh.order.price; if (G.buyOrder()) st.orders++; }
+      }
+      // Spare gold (keeping a reserve for the next shop's order) goes on Rations, as a person would.
+      for (let p = sh.hpPrice; R.gold >= p + 40 && G.buyHp(); p = sh.hpPrice) st.goldSpent += p;
       G.leaveNode(); continue;
     }
     if (R.screen === "event") {
@@ -195,6 +210,6 @@ if (SECTION === "check") {
     const rs = many(ply1, N, { char, policy: { draft: "random" } });
     const goals = {}; for (const r of rs) for (const [k, [t, ok]] of Object.entries(r.goals)) { goals[k] = goals[k] || [0, 0]; goals[k][0] += t; goals[k][1] += ok; }
     console.log(summary(char, rs));
-    console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${(100 * ok / t).toFixed(0)}%`).join(", ")} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)}`);
+    console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${(100 * ok / t).toFixed(0)}%`).join(", ")} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)} (winners ${mean(rs.filter(r => r.won).map(r => r.gold)).toFixed(0)}, incl. 60 from the last boss) | restocks/run ${mean(rs.map(r => r.restocks || 0)).toFixed(1)}`);
   }
 }

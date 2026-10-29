@@ -564,7 +564,12 @@ function renderStage() {
     const heal = restHealAmount();
     s.innerHTML = `<div class="eyebrow">Campfire</div><h2>Rest</h2><p class="note">Do one thing before you march on.</p>
       <button class="choice" data-act="heal"${R.hp >= R.maxhp ? " disabled" : ""}><b>Rest</b><span>Heal ${heal} health (${R.hp}/${R.maxhp}).</span></button>
-      <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Or drill: upgrade a card</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up }).replace('class="card', 'data-restup="' + i + '" class="card')).join("")}</div></div>`;
+      <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Or drill: upgrade a card</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up }).replace('class="card', 'data-restup="' + i + '" class="card')).join("")}</div></div>
+      ${R.shop && R.shop.wagon ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Supply wagon · you have ${R.gold} gold</div><div class="offers">
+        <button class="choice" data-act="buyHeal"${R.gold < R.shop.healPrice || R.hp >= R.maxhp ? " disabled" : ""}><b>Field dressing</b><span>Heal 3.</span><span class="price">${R.shop.healPrice} gold</span></button>
+        <button class="choice" data-act="buyHp"${R.gold < R.shop.hpPrice ? " disabled" : ""}><b>Rations</b><span>+1 maximum health, and heal 1. Each one costs 25 more.</span><span class="price">${R.shop.hpPrice} gold</span></button>
+      </div></div>` : ""}
+      <div class="row"><button class="btn ghost" data-act="leave">March on</button></div>`;
   } else if (R.screen === "shop") {
     const sh = R.shop;
     const pend = sh.pending ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Hand full: replace a card with ${esc(CARDS[sh.pending.id].name)}</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" }).replace('class="card', 'data-shopreplace="' + i + '" class="card')).join("")}</div><div><button class="btn ghost" data-act="cancelShop">Cancel</button></div></div>` : "";
@@ -573,11 +578,11 @@ function renderStage() {
       ${pend}
       <div class="offers">
         <button class="choice" data-act="buyHeal"${R.gold < sh.healPrice || R.hp >= R.maxhp ? " disabled" : ""}><b>Field dressing</b><span>Heal 3.</span><span class="price">${sh.healPrice} gold</span></button>
-        <button class="choice" data-act="buyHp"${R.gold < sh.hpPrice ? " disabled" : ""}><b>Rations</b><span>+1 maximum health, and heal 1. Each one costs 15 more.</span><span class="price">${sh.hpPrice} gold</span></button>
+        <button class="choice" data-act="buyHp"${R.gold < sh.hpPrice ? " disabled" : ""}><b>Rations</b><span>+1 maximum health, and heal 1. Each one costs 25 more.</span><span class="price">${sh.hpPrice} gold</span></button>
         ${sh.order ? (sh.order.sold ? `<div class="choice" style="opacity:.4"><b>Sold</b></div>` : orderOfferHTML(sh.order.id, `data-act="buyOrder"${R.gold < sh.order.price ? " disabled" : ""}`, `drill order · ${sh.order.price} gold`)) : ""}
       </div>
       <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Drill a card · ${sh.upPrice} gold</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up || R.gold < sh.upPrice }).replace('class="card', 'data-buyup="' + i + '" class="card')).join("")}</div></div>
-      <div class="row"><button class="btn" data-act="leave">Leave</button></div>`;
+      <div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and order · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
   } else if (R.screen === "event") {
     const ev = EVENTS[R.event];
     s.innerHTML = `<div class="eyebrow">Along the way</div><h2>${esc(ev.title)}</h2><p class="note">${esc(ev.text)}</p>
@@ -1310,6 +1315,7 @@ document.addEventListener("click", ev => {
   if (a.act === "buyHeal") { buyHeal(); render(); return; }
   if (a.act === "buyHp") { buyHp(); render(); return; }
   if (a.act === "cancelShop") { R.shop.pending = null; render(); return; }
+  if (a.act === "restock") { if (restock()) toast("The quartermaster brings out new stock."); render(); return; }
   if (a.act === "buyOrder") { if (buyOrder()) toast(`${ORDERS[R.shop.order.id].name}: in effect for the rest of the run.`); render(); return; }
   if (a.order) { if (!R.reward.tookOrder && takeOrder(a.order)) { R.reward.tookOrder = true; toast(`${ORDERS[a.order].name}: in effect for the rest of the run.`); } render(); return; }
   if (a.take) { takeCard(a.take); render(); return; }
