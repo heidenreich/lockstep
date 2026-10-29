@@ -89,7 +89,8 @@ Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/prof
 ## Code
 
 - `rules.js`: data tables and pure helpers as globals; a run lives in a game from `makeGame(run, { profile, hooks, sim })`. `game.fork()` is a sim copy for bot lookahead; `game.preview(g => g.step(dx, dy))` reports a move without touching the run. Randomness is seeded (`game.newRun(char, cad, seed)`), with RNG state in the run.
-- `index.html`: holds one game (`useRun`, `startRun`) and the profile `P`. `styles.css`: every page style (theme tokens on `:root`, act moods, cards, slate, phone layout). Publish all three together.
+- `index.html`: holds one game (`useRun`, `startRun`) and the profile `P`. `styles.css`: every page style (theme tokens on `:root`, act moods, cards, slate, phone layout). The page script lives in `js/` as plain scripts sharing one global scope, loaded in order: `store.js` (game, profile, play tally), `audio.js`, `screens.js` (HTML helpers and the non-fight screens), `onboarding.js`, `board.js` (fight screen and canvas: pieces, marks, draw loop), `input.js` (handlers and boot). A file may only run code at load that uses earlier files. Publish the page with `rules.js`, `styles.css` and every `js/` file.
+- Frame cost (2026-10-29, busy act 3 fight, 11 enemies, on the Mac): about 0.3 ms per frame to draw on desktop and at phone size (2× pixels), 0.1 ms per move preview, 0.6 ms to rebuild the fight panel. No optimisation needed; measure again before optimising.
 - `sim/run4.js check|base|cards|bosses|econ|new [N]`; `BOT=2ply`, `CAD=n`. `sim/trace4*.js` trace stalled fights.
 
 ## Open questions only playtests answer
