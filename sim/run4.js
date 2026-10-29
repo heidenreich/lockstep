@@ -205,9 +205,11 @@ if (SECTION === "new") {
   }
 }
 if (SECTION === "check") {
-  // Quick balance check: normal play (random drafts, orders on), one line per character. node sim/run4.js check [N] [char]
+  // Quick balance check: normal play (random drafts, orders on), one line per character.
+  // node sim/run4.js check [N] [char]; BOT=2ply for the 2-ply bot, CAD=n for a cadence level.
+  const bot = process.env.BOT === "2ply" ? ply2 : ply1, cad = +process.env.CAD || 0;
   for (const char of process.argv[4] ? [process.argv[4]] : ["recruit", "drummer", "sapper"]) {
-    const rs = many(ply1, N, { char, policy: { draft: "random" } });
+    const rs = many(bot, N, { char, cad, policy: { draft: "random" } });
     const goals = {}; for (const r of rs) for (const [k, [t, ok]] of Object.entries(r.goals)) { goals[k] = goals[k] || [0, 0]; goals[k][0] += t; goals[k][1] += ok; }
     console.log(summary(char, rs));
     console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${(100 * ok / t).toFixed(0)}%`).join(", ")} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)} (winners ${mean(rs.filter(r => r.won).map(r => r.gold)).toFixed(0)}, incl. 60 from the last boss) | restocks/run ${mean(rs.map(r => r.restocks || 0)).toFixed(1)}`);
