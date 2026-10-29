@@ -308,3 +308,24 @@ test("the Warden marches in step on the turns it doesn't chase, so it can be ste
   G.step(1, 0);  // a march turn: it copies your step, into the pit
   assert.equal(w.hp, G.FOES.warden.hp - 3);
 });
+
+test("bonus orders: Clean drill fails on the first block, Parade order has a turn limit", () => {
+  let F = fight([
+    "D#.......",
+    ".........",
+    "@........"
+  ]);
+  G.setGoal("line");
+  G.step(1, 0);
+  assert.equal(F.goal.ok, false);
+
+  F = fight([
+    ".........",
+    "....@....",
+    "........D"
+  ]);
+  G.setGoal("unhurt");
+  F.turn = G.GOALS.unhurt.by - 1;
+  G.play(0, 0, -1);
+  assert.equal(F.goal.ok, false);
+});

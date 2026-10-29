@@ -59,8 +59,8 @@ const RELOAD = 2;
 const GOALS = {
   colours: { name: "Take the colours", text: "Step onto the flag before the room is clear, and before an enemy does.", gold: 20 },
   pits: { name: "Pit drill", text: "Put 3 enemies into pits.", gold: 20, need: 3 },
-  line: { name: "Hold the line", text: "Win without any enemy breaking step.", gold: 10 },
-  unhurt: { name: "Parade order", text: "Win without taking any damage.", gold: 20 },
+  line: { name: "Clean drill", text: "Win without any enemy ever being blocked (by a wall, the edge or another piece).", gold: 15 },
+  unhurt: { name: "Parade order", text: "Win without taking any damage, by turn 14.", gold: 20, by: 14 },
   quick: { name: "Quick march", text: "Clear the room by turn 10.", gold: 15, by: 10 }
 };
 // Drill orders: passives for the run, from bosses and the shop.
@@ -449,7 +449,8 @@ function roomShift(dx, dy, opts) {
         if (kegAt(tx, ty)) { explode(tx, ty); if (!alive(e)) break; }
         // Quake only hurts enemies that were already pinned before this turn.
         if (o.quake && e.blocked >= 1 && !o.hitSet.has(e)) { o.hitSet.add(e); if (!damage(e, 1, "The quake slams")) break; }
-        if (!marching(e) && ++e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
+        if (!marching(e) && ++e.blocked >= 1) goalFail("line", `A ${foe(e).name} is blocked.`);
+        if (!marching(e) && e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
         break;
       }
       e.x = tx; e.y = ty; e.blocked = 0; e.dir = [vx, vy];
@@ -587,7 +588,7 @@ function endTurn(played) {
   if (!g || !g.ok) return;
   if (g.id === "colours" && !g.took && F.p.x === g.flag.x && F.p.y === g.flag.y) { g.took = true; log("You take the colours."); }
   if (g.id === "colours" && !g.took && enemyAt(g.flag.x, g.flag.y)) goalFail("colours", "An enemy tramples the colours.");
-  else if (g.id === "quick" && !F.over && F.turn >= G.by) goalFail("quick", "Too slow.");
+  else if ((g.id === "quick" || g.id === "unhurt") && !F.over && F.turn >= G.by) goalFail(g.id, "Too slow.");
   else if (F.over === "win" && (g.id !== "pits" || F.pitKills >= G.need) && (g.id !== "colours" || g.took)) { g.paid = true; F.gold += G.gold; log(`${G.name}: done. +${G.gold} gold`); }
 }
 
