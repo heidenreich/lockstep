@@ -89,7 +89,7 @@ Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/prof
 ## Code
 
 - `rules.js`: data tables and pure helpers as globals; a run lives in a game from `makeGame(run, { profile, hooks, sim })`. `game.fork()` is a sim copy for bot lookahead; `game.preview(g => g.step(dx, dy))` reports a move without touching the run. Randomness is seeded (`game.newRun(char, cad, seed)`), with RNG state in the run.
-- `index.html`: holds one game (`useRun`, `startRun`) and the profile `P`. Publish it together with `rules.js`.
+- `index.html`: holds one game (`useRun`, `startRun`) and the profile `P`. `styles.css`: every page style (theme tokens on `:root`, act moods, cards, slate, phone layout). Publish all three together.
 - `sim/run4.js check|base|cards|bosses|econ|new [N]`; `BOT=2ply`, `CAD=n`. `sim/trace4*.js` trace stalled fights.
 
 ## Open questions only playtests answer

@@ -4,7 +4,7 @@ A turn-based tactical roguelite where **the room copies your every move**. Step,
 
 ## Run it
 
-Open `index.html` through any local web server (it loads `rules.js` next to it):
+Open `index.html` through any local web server (it loads `rules.js` and `styles.css` next to it):
 
 ```bash
 python3 -m http.server 8000
@@ -23,6 +23,7 @@ CI runs both on every PR and push to `main`.
 |---|---|
 | `rules.js` | All game rules, no DOM |
 | `index.html` | The page: drawing, sound, input, saved profile |
+| `styles.css` | All page styles: theme colours, layout, cards, slate, phone layout |
 | `tests/` | Rule tests |
 | `sim/` | Bot harness and stall traces |
 | `design/` | Visual mockups |
