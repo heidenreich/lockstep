@@ -1,0 +1,9 @@
+{
+  "name": "lockstep",
+  "private": true,
+  "description": "Turn-based tactical roguelite: the room copies your every move.",
+  "scripts": {
+    "test": "node --test",
+    "sim": "node sim/run4.js"
+  }
+}

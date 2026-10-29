@@ -4,16 +4,27 @@ Turn-based tactical roguelite. **The room copies your every move.** You steer en
 
 Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-act map**; meta = **unlocks only** (no permanent stat power); repo = `~/lockstep`.
 
+## Code layout
+
+- `rules.js`: all game rules. The data tables and pure helpers are plain globals; everything that reads or changes a run lives in a game from `makeGame(run, { profile, hooks, sim })`. A game owns its run, its effect queues and its sim flag. `game.fork()` is a sim copy (bots look ahead on forks) and `game.preview(g => g.step(dx, dy))` reports what a move would do without touching the run. No DOM.
+- `index.html`: the page (rendering, sound, input, profile storage). It holds one game at a time (`useRun`, `startRun`) and the player's profile `P`. Publish it together with `rules.js`.
+- `tests/`: rule tests. `npm test` (Node 18+).
+- `sim/run4.js`: the bot harness, `node sim/run4.js check|base|cards|bosses|econ|new [N]` (`check` is the quick balance read: one line per character). `sim/trace4*.js` trace stalled fights.
+- `archive/`: the earlier prototypes (`archive/prototype/`) and the harnesses that drove them (`archive/sim/`). Kept for reference; nothing current depends on them.
+- Randomness is seeded (`game.newRun(char, cad, seed)`); the RNG state lives in the run, so saved runs, the hover preview and bot replays see the same rolls as the real game.
+
+Keep this doc in step with the code: change the numbers here in the same commit as a balance change.
+
 ## Core rules (bot-tested, carried over from prototype v4)
 
-- 11×11 grid, one room per fight. Each turn: Step (WASD/arrows), wait, or play a card.
+- One hand-made room per fight (7×7 to 11×9; see the pace pass below). Each turn: Step (WASD/arrows), wait, or play a card.
 - **Lockstep:** when you Step in a direction, every locked drone and heavy tries to move that way; contrarians move the opposite way. Leaders move first.
 - An enemy that moves into your tile hits you; a locked enemy that ends its move beside you strikes too.
 - Enemies that step into a **pit** die (+gold). Each pit holds 2 per fight, then fills.
 - Blocked 3 turns in a row (wall, edge, enemy) → the enemy **breaks free** and chases (BFS, ties broken by straight-line distance). A chaser 4+ tiles away for 4 turns falls back into step.
 - Waiting: every enemy chases one step and a new enemy arrives.
 - Arrivals: one every 8 turns while 2+ enemies remain, at most 2 per fight.
-- **Frenzy:** a normal fight that runs 40 turns makes every enemy break free.
+- **Frenzy:** a normal fight that runs 30 turns makes every enemy break free. Anything that arrives during a frenzy (for example from waiting) arrives already free. Every third frenzy turn the broken line **runs** (two steps; bosses excepted, the slate warns), so a chaser can't be outpaced forever.
 
 Why these numbers: see the bot findings at the end.
 
@@ -31,7 +42,7 @@ Step is always available. Cards are extra actions with **cooldowns** (Shogun Sho
 | Shove | Hit an adjacent enemy for 1, knock it back 2 (pits count). Room holds | 2 | Knock back 3 |
 | Quake | You stay; the room moves 1; every enemy already pinned (blocked last turn) takes 1 | 5 | CD 4 |
 | Magnet | You stay; every locked enemy steps 1 toward you | 4 | CD 3 |
-| Recall | Every free enemy falls back into step. Room holds | 6 | CD 4 |
+| Recall | Every free enemy falls back into step (in a frenzy, for 4 turns). Room holds | 6 | CD 4 |
 | Trapdoor | Open a hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
 | Brace | You stay; you take no damage until your next turn. Room holds | 4 | CD 3 |
 
@@ -42,14 +53,15 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 - 3 acts. Each act is a map of 6 rows (3–4 nodes wide) plus a boss; paths branch and merge. Row 6 is always Rest.
 - Node types: **Fight**, **Elite** (from row 3; harder roster + an elite, better reward), **Rest** (heal 3 or upgrade a card), **Shop** (cards, upgrades, healing), **Event** (a small choice), **Boss**.
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
+- Shop extras: Rations (+1 max HP, 45 gold, +25 each), Field dressing (heal 3, 25), Restock (new cards and drill order, 15 gold, +10 each use). The campfire before each boss has a supply wagon (Rations and Field dressing). Every rest can also be skipped (March on).
 - Each act uses its own room pool (Crossroads, Gallery, Moat, Lanes, Funnel) and a stronger roster.
 
-Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, moves every other turn). Elites: **Runner** (moves 2 per shift), **Anchor** (never moves, 3 HP, strikes adjacent).
+Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, moves every other turn). Elites: **Runner** (moves 2 per shift), **Anchor** (never moves, 3 HP, strikes adjacent; once the rest of its line is gone it leaves its post and falls into step). Riflemen yield when the rest of their line is gone.
 
 Bosses (one twist each; a pit deals 3 damage and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
-2. **Mirror**: locked contrarian, 8 HP; every 5 turns the cadence flips (everyone reverses) for 5 turns, telegraphed.
-3. **Warden**: never locked, 12 HP, hits 2, chases every other turn; two drones arrive every 7 turns. Only cards can put it in a pit.
+2. **Mirror**: locked contrarian, 9 HP; every 5 turns the cadence flips (everyone reverses) for 5 turns, telegraphed. Any pit it climbs out of shatters and is sealed for the fight.
+3. **Warden**: 12 HP, hits 2; it chases every other turn and on the turns between it marches in step with the room (the slate says which), so it can be stepped into a pit like anything else. Two drones arrive every 7 turns.
 
 ## Meta (unlocks only)
 
@@ -57,7 +69,7 @@ Saved per player through the artifact's private per-user storage (`db`, `data/us
 
 - **Characters:** Recruit (start: Sidestep, Stomp; 8 HP). Drummer, unlocked by beating the Colossus (Double Time, About Face; 7 HP; 4 slots). Sapper, unlocked by winning a run (Quake, Shove; 9 HP; pits hold 3).
 - **Cards:** start pool is Sidestep, Stomp, Double Time, About Face, Lunge, Shove and Trapdoor; Quake (beat the Colossus), Magnet (reach act 2), Recall (beat the Mirror), Brace (die three times).
-- **Cadence ladder (difficulty):** win at Cadence N to unlock N+1, up to 5. Each level bundles changes, Slay the Spire 2 style: C1 +1 enemy per fight; C2 frenzy 10 turns sooner; C3 elites +1 HP and rest heals 2; C4 bosses +4 HP; C5 start with 2 less HP.
+- **Cadence ladder (difficulty):** win at Cadence N to unlock N+1, up to 5. Each level bundles changes, Slay the Spire 2 style: C1 +1 enemy per fight; C2 frenzy 6 turns sooner; C3 elites +1 HP and rest heals 2; C4 bosses +4 HP; C5 start with 2 less HP.
 
 ## Presentation
 
@@ -65,11 +77,11 @@ Saved per player through the artifact's private per-user storage (`db`, `data/us
 - Feel: tweened movement, hit flashes, particles on pit falls, floating damage, light screen shake (off under reduced motion), small synth sounds with a mute toggle.
 - **Intent preview:** hovering the board or a direction shows ghost markers where every enemy will end up, and damage you'd take. This replaces the old per-button numbers, which taught naive play.
 
-## Bot findings that shaped this (prototype v1–v4, Fable's harness in `sim/`)
+## Bot findings that shaped this (prototype v1–v4, Fable's harness, now in `archive/sim/`)
 
 - Waves that refilled forever → arrivals capped; frenzy timer stops corner camping (30 turns too short, 80 started stalls, 60 in the arena prototype → 40 here because fights are single-roster).
 - Pits filling at 2 per wave stopped planners farming them.
-- "Spiked walls" as a passive was a 110-kill engine → anything that damages blocked enemies must be limited (Quake has a 4-turn cooldown).
+- "Spiked walls" as a passive was a 110-kill engine → anything that damages blocked enemies must be limited (Quake has a 5-turn cooldown and only hurts enemies already pinned).
 - Chase tie-break bug let a chaser mirror you forever → fixed with straight-line tie-break.
 - Skill gap in v2: corner 4 / naive 8 / pad-numbers 17 / 2-ply planner 32.
 
@@ -110,7 +122,7 @@ From a look at Into the Breach, Hitman GO, Inscryption, Patapon, Frozen Synapse 
 From a comparison with the genre's favourites: the core rule held up, but build depth, enemy variety and room asks were thin. Three borrowings:
 
 - **Rifleman** (Hoplite's archer). It stands its ground, reloads for 2 turns, then fires along its row or column as soon as you're in line. Walls stop the shot; anything else in the way (an enemy, a keg) takes it instead, so you can steer your own line in front of it. Red dashed lanes and an "aim!" note mark a loaded one; the preview counts the shot. It appears in all three acts and yields with the rest of the line. A first version that marched in lockstep almost never fired: a locked piece keeps its offset from you, so it stayed out of line about 93% of the time.
-- **Bonus orders** (Into the Breach). Every non-boss room has one, worth 10–20 gold: *Take the colours* (step on a far flag before the room is clear and before an enemy does), *Pit drill* (3 pit drops), *Hold the line* (nobody breaks step), *Parade order* (take no damage), *Quick march* (clear by turn 10). They're shown on the slate.
+- **Bonus orders** (Into the Breach). Every non-boss room has one, worth 10–20 gold: *Take the colours* (step on a far flag before the room is clear and before an enemy does), *Pit drill* (3 pit drops), *Clean drill* (no enemy is ever blocked; was *Hold the line*, nobody breaks step), *Parade order* (take no damage by turn 14; was no turn limit), *Quick march* (clear by turn 10). They're shown on the slate.
 - **Drill orders** (relics). Twelve run-long passives, such as Fixed bayonets (bump for 2), Iron ranks (first hit each fight is blocked), Steady drum (break at 4), Deep pits, Sappers' pride (pit drops cool cards) and Reserve slot. Bosses offer 1 of 3; each shop sells one for 75–90 gold. That gives about 3.5 per run and a use for the gold.
 
 Bot check (1-ply, C0, 60 runs each, `node sim/run4.js new 60`):
@@ -123,7 +135,7 @@ Bot check (1-ply, C0, 60 runs each, `node sim/run4.js new 60`):
 
 v9 was about 28% on the same bot. Bonus success: Hold the line 85–95% and Parade order 85–96% (too easy for a bot), Quick march about 65%, Take the colours about 50%, Pit drill about 38%. Riflemen land about 0.3 shots per run on the bot, which reads the preview and sidesteps them. Humans will feel them more, but if playtests agree, shorten the reload or add more riflemen. Stalls (about 10 in 60) were already there in v9 and are not fixed. The 2-ply bot was not re-run.
 
-## Side-view experiment (2026-10-28, `prototype/side-view.html`, Fable's `sim/side.js`)
+## Side-view experiment (2026-10-28, `archive/prototype/side-view.html`, Fable's `archive/sim/side.js`)
 
 Same rule on a side-on stage with gravity (walk, jump, wait; the line copies walks and jumps). Verdict: **weaker as the core**. No bot won; 1–2-ply bots died to gap jumps (a 4-input plan), stages 1–2 could be cleared by pressing Wait because chasers walk off ledges, frenzy drops could be farmed from a safe platform, and jump-spam beat a 3-ply planner. Lockstep itself rarely mattered (enemies died before ever breaking step). Possible future: one side-view act inside the roguelite, if chasers become ledge-aware, frenzy drops stop scoring, and jumps become 2-input arcs.
 
@@ -132,3 +144,37 @@ Same rule on a side-on stage with gravity (walk, jump, wait; the line copies wal
 - Is reading the room's vector legible enough that people find two-push pit setups?
 - Do cooldown cards feel like a build, or like a menu?
 - Is 3 acts the right length (~25 minutes)?
+
+## Engineering pass (2026-10-28)
+
+- Rules moved out of `index.html` into `rules.js`; the harness requires it directly instead of cutting the script out of the page, and every `sim/` script now finds its page relative to the repo.
+- Seeded RNG. The hover preview of a wait now shows the enemy that will really arrive (it used to roll a different one).
+- Rule tests (`tests/rules.test.js`): lockstep and contrarians, pit drops and fill, breaking free and falling back into step, keg chains and combos, belts, rifle line of sight, rifleman yield, frenzy arrivals, Cadence 2, seeding, preview, profile merge, shop.
+- Fixed: enemies that arrived during a frenzy came in locked, which could leave a fight with a drone that copies you forever (a source of bot stalls).
+- Fixed: the account profile overwrote this browser's on load, so unlocks earned while signed out were lost. The two are now combined (unlocks from both, highest counts).
+- Fixed: the Cadence 2 text said frenzy comes 10 turns sooner; the code does 6 (kept, text changed).
+- Rest and shop actions are rule functions now (`restHeal`, `buyCard`, ...), so the page and the bots share them.
+
+Bot check (1-ply, C0, 30 runs per row): about the same as v10, 17–57% wins by row against 13–37% on the old code; 30 runs per row is noisy.
+
+Anchors (decided in the next pass): they used to yield with the rest of their line gone, which made an anchor elite "clear the normal enemies". Making them fight on dropped the 1-ply win rate from about 33% to about 12%. They now leave their post and fall into step instead, so the core rule finishes them (no change in win rate).
+
+## Balance pass 2 (2026-10-29)
+
+Changes, each its own commit with bot numbers in the message:
+- **Stalls:** in a frenzy the broken line runs (two steps) every third turn; a Recall during a frenzy holds for 4 turns. Nearly every stall was one chaser the player could outpace forever, or a frenzy Recall that relocked enemies for good.
+- **Mirror** seals any pit it climbs out of; 9 HP. **Warden** marches in step on the turns it doesn't chase (so it can be stepped into a pit; it was a draft check); back to 12 HP.
+- **Anchors** fall into step when their line is gone (they used to yield).
+- **Bonus orders:** Parade order now needs no damage *by turn 14*; Hold the line became *Clean drill* (no enemy ever blocked). All bonuses now land 36–70% for the 1-ply bot.
+- **Gold:** supply wagon at the pre-boss campfire, shop Restock, Rations +25 each. Unspent gold ~220 → ~75.
+- Lunge hurts on spikes it dashes across; winning on the turn you'd fall leaves you on 1; rests can be skipped (a full-health, fully upgraded hand used to soft-lock the rest screen).
+
+Bot check, win % per character (recruit / drummer / sapper), 150 runs (1-ply) or 60 (2-ply) each:
+
+| | v10 1-ply | now 1-ply | v10 2-ply | now 2-ply |
+|---|---|---|---|---|
+| C0 | 26 / 46 / 31 | 48 / 59 / 49 | 58 / 73 / 48 | 82 / 88 / 83 |
+| C3 | 17 / 32 / 25 | 34 / 43 / 45 | 48 / 72 / 63 | 72 / 83 / 80 |
+| C5 | 9 / 11 / 11 | 7 / 20 / 13 | 20 / 55 / 32 | 52 / 77 / 53 |
+
+Stalls per 150 1-ply runs went from 12–36 to 1–6. The game is clearly **easier** now, mostly because the Warden is no longer a draft check and spare gold turns into max health. No difficulty target is written down yet; set one from playtests, then tune with the obvious levers (Rations price, wagon contents, Warden HP, Cadence steps). The 2-ply bot still beats the Mirror 100% of the time (13–22 turns), so it remains the softest boss.
