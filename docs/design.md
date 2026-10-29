@@ -59,6 +59,12 @@ Bosses (a pit deals 3 and the boss climbs back out at an edge):
 - **Drill orders** (run-long passives): bosses offer 1 of 3, shops sell one. Sappers' pride, Fixed bayonets, Iron ranks, Steady drum, Deep pits, Short fuses, Hobnail boots, Field surgeon, Crossfire, Rally, Quartermaster's friend, Reserve slot (texts in `ORDERS`).
 - Winning a fight on the turn you'd fall leaves you on 1.
 
+## Onboarding
+
+- **Training drill:** a player's first run opens with a fixed lesson room (Training ground, 7×6: one pit, one wall, three drones). A sergeant's note walks five steps: step and watch the line, step left twice to drop a drone into the pit, pin one on the edge until it breaks free, play your first card, clear the room. Each step lights once done, in any order. No bonus, arrivals, frenzy or wait spawns; it can't take you below 1 health, it ends at full health on the act 1 map with no reward, and it doesn't count as a fight. Skippable; replayable from the title screen.
+- **First-time notes:** the first time something turns up (each enemy type and boss, kegs, ice, spikes, belts, the bonus order, breaking free, frenzy, a combo, a full pit, a card cooldown) the same note box explains it in one line. Seen notes are kept in the profile (`seen`) and merged like unlocks.
+- **How to play:** a dialog from the top bar (and from any note): the rules in six lines, the line drawn as tin soldiers, how to read the board and the keys.
+
 ## Meta (unlocks only)
 
 Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/profile`), merged with browser storage for signed-out play.

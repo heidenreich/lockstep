@@ -420,3 +420,31 @@ test("a real game queues effects and saves through its hooks; its forks don't", 
   assert.equal(saves, 1);
   assert.deepEqual(f.drainSfx(), []);
 });
+
+test("the training drill: two steps left drop a drone, pinning breaks one free, it can't kill you, and it ends on the map", () => {
+  newRun("recruit", 0, 1);
+  g.startDrill();
+  const F = g.run.fight;
+  assert.equal(F.kind, "drill");
+  g.step(-1, 0); g.step(-1, 0);
+  assert.equal(F.pitKills, 1);
+  for (let i = 0; i < 6 && !F.enemies.some(e => e.free); i++) g.step(1, 0);
+  assert.ok(F.enemies.some(e => e.free));
+  g.run.hp = 1; g.hurtPlayer(F.enemies[0], "hits you");
+  assert.equal(g.run.hp, 1);
+  const n = F.enemies.length;
+  for (let t = 0; t < 40 && !F.over; t++) g.step(0, 0);
+  assert.ok(F.enemies.length <= n);
+  assert.equal(F.frenzy, false);
+  g.fightReward();
+  assert.equal(g.run.screen, "map");
+  assert.equal(g.run.hp, g.run.maxhp);
+  assert.equal(g.run.stats.fights, 0);
+  assert.equal(g.profile.drilled, true);
+});
+
+test("combining profiles keeps the drill and every first-time note seen on either copy", () => {
+  const p = K.combineProfiles({ drilled: true, seen: { keg: true } }, { seen: { rifle: true } });
+  assert.equal(p.drilled, true);
+  assert.deepEqual(p.seen, { keg: true, rifle: true });
+});

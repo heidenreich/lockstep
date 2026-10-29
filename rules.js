@@ -33,10 +33,13 @@ const ROOMS = [
   room("Gatehouse", [".........", ".o.~~~.o.", "...~~~...", ".#.....#.", "..K...K..", ".#.....#.", "...^^^...", ".o.^^^.o.", "........."]),
   room("Battlements", ["...........", ".o..>>>..o.", "..#.....#..", "...........", "..#.....#..", ".o..<<<..o.", "..........."]),
   room("The keep", [".........", ".~~...~~.", ".~o...o~.", "...#K#...", ".........", "...#K#...", ".~o...o~.", ".~~...~~.", "........."]),
-  room("Warden's yard", ["...........", ".o.......o.", "...~~~~~...", "..#.....#..", ".....^.....", "..#.....#..", "...~~~~~...", ".o.......o.", "..........."])
+  room("Warden's yard", ["...........", ".o.......o.", "...~~~~~...", "..#.....#..", ".....^.....", "..#.....#..", "...~~~~~...", ".o.......o.", "..........."]),
+  room("Training ground", [".......", ".......", ".o.....", ".......", "......#", "......."])
 ];
 const ACT_ROOMS = [[0, 1, 2], [4, 5, 6], [8, 9, 10]];
 const BOSS_ROOMS = [3, 7, 11];
+// The training drill: a first-run lesson room with a fixed line, no bonus, arrivals or frenzy. The page coaches it.
+const DRILL_ROOM = 12, DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]], DRILL_START = { x: 3, y: 4 };
 const CHAIN = ["", "", "Double drop", "Triple drop", "Quad drop", "Rout"];
 const FOES = {
   drone: { name: "drone", hp: 1, dmg: 1 },
@@ -126,7 +129,7 @@ const EVENTS = [
 ];
 
 /* ---------- Profile (unlocks only) ---------- */
-const BLANK_PROFILE = { v: 1, runs: 0, wins: 0, deaths: 0, bestAct: 0, beat: {}, chars: { recruit: true }, cards: {}, cad: { recruit: 0 } };
+const BLANK_PROFILE = { v: 1, runs: 0, wins: 0, deaths: 0, bestAct: 0, beat: {}, chars: { recruit: true }, cards: {}, cad: { recruit: 0 }, drilled: false, seen: {} };
 const newSeed = () => (Math.random() * 4294967296) >>> 0;
 const UNLOCKS = [
   { what: "Drummer (cadet)", how: "Beat the Colossus", has: p => p.chars.drummer },
@@ -137,14 +140,15 @@ const UNLOCKS = [
   { what: "Brace (card)", how: "Fall three times", has: p => p.cards.brace }
 ];
 const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)), d, {
-  chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat)
+  chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen)
 });
 // Combines two saved copies of a profile (this browser's and the account's) without losing progress from either:
 // unlocks and bosses beaten are kept from both, counts and cadence levels take the higher value.
 function combineProfiles(a, b) {
   const x = mergeProfile(a || {}), y = mergeProfile(b || {}), out = mergeProfile({});
   for (const k of ["runs", "wins", "deaths", "bestAct"]) out[k] = Math.max(x[k] || 0, y[k] || 0);
-  for (const k of ["beat", "chars", "cards"]) out[k] = Object.assign({}, x[k], y[k]);
+  for (const k of ["beat", "chars", "cards", "seen"]) out[k] = Object.assign({}, x[k], y[k]);
+  out.drilled = !!(x.drilled || y.drilled);
   for (const id of new Set([...Object.keys(x.cad), ...Object.keys(y.cad)])) out.cad[id] = Math.max(x.cad[id] || 0, y.cad[id] || 0);
   return out;
 }
@@ -267,9 +271,9 @@ function makeGame(run, opts = {}) {
   }
 
   /* ---------- Fight setup ---------- */
-  function startFight(kind) {
-    const act = R.act, roomIdx = kind === "boss" ? BOSS_ROOMS[act - 1] : pickOne(ACT_ROOMS[act - 1]), rm = ROOMS[roomIdx];
-    const F = R.fight = {
+  function newFight(kind, roomIdx) {
+    const rm = ROOMS[roomIdx];
+    R.fight = {
       kind, room: roomIdx, turn: 0, arrivals: 0, pitFill: {}, traps: [], kegs: [...rm.kegs], frenzy: false,
       frenzyAt: FRENZY - (R.cad >= 2 ? 6 : 0), flip: 0, flipIn: 5, brace: false, enemies: [], nextId: 1,
       p: { x: rm.w >> 1, y: rm.h >> 1 }, log: [], over: null, gold: 0, lastHurt: 0, actKills: 0, bestChain: 0,
@@ -277,6 +281,11 @@ function makeGame(run, opts = {}) {
     };
     setDims();
     settlePlayer();
+    R.screen = "fight";
+    return R.fight;
+  }
+  function startFight(kind) {
+    const act = R.act, F = newFight(kind, kind === "boss" ? BOSS_ROOMS[act - 1] : pickOne(ACT_ROOMS[act - 1])), rm = ROOMS[F.room];
     const weights = act === 1 ? ["drone", "drone", "drone", "contra", "contra", "heavy", "rifle"]
       : act === 2 ? ["drone", "drone", "contra", "contra", "heavy", "heavy", "rifle", "rifle"] : ["drone", "drone", "contra", "contra", "heavy", "heavy", "heavy", "rifle", "rifle"];
     if (kind !== "boss") setGoal(pickOne(Object.keys(GOALS)));
@@ -293,8 +302,14 @@ function makeGame(run, opts = {}) {
       for (let i = 1; i < n; i++) spawn(pickOne(weights));
       log(`${ROOMS[F.room].name}. ${F.enemies.length} enemies.`);
     }
-    R.screen = "fight";
     R.stats.fights++;
+  }
+  // The drill can't hurt you below 1 health, and you leave it at full health with no reward.
+  function startDrill() {
+    const F = newFight("drill", DRILL_ROOM);
+    F.p = { ...DRILL_START }; F.frenzyAt = 999;
+    for (const [type, x, y] of DRILL_LINE) F.enemies.push({ id: F.nextId++, type, x, y, hp: 1, max: 1, blocked: 0, free: false, chased: 0, skip: false, dir: [0, 1] });
+    log("Training ground. The line copies your every step.");
   }
   function settlePlayer() {
     const F = R.fight, open = (x, y) => inB(x, y) && !isWall(x, y) && !isPit(x, y);
@@ -367,7 +382,7 @@ function makeGame(run, opts = {}) {
     const F = R.fight, d = foe(e).dmg;
     if (F.brace) { log(`A ${foe(e).name} ${how}, but you're braced.`); fx("block", F.p.x, F.p.y); return; }
     if (F.iron) { F.iron = false; log(`A ${foe(e).name} ${how}, but your iron ranks hold.`); fx("block", F.p.x, F.p.y); return; }
-    R.hp -= d; F.lastHurt += d; goalFail("unhurt", "You're hit.");
+    R.hp = F.kind === "drill" ? Math.max(1, R.hp - d) : R.hp - d; F.lastHurt += d; goalFail("unhurt", "You're hit.");
     log(`A ${foe(e).name} ${how}. −${d}`);
     fx("hurt", F.p.x, F.p.y, { n: d }); sfx("hurt");
   }
@@ -584,7 +599,7 @@ function makeGame(run, opts = {}) {
         for (let i = 0; i < n; i++) { const e = spawn(boss.type === "mirror" ? "contra" : "drone"); if (e && enraged) e.free = true; }
         log(`The ${foe(boss).name} calls in reinforcements.`);
       }
-    } else if (F.kind !== "boss") {
+    } else if (F.kind !== "drill") {
       if (!F.frenzy && F.enemies.length >= 2 && F.arrivals < MAX_ARRIVALS && F.turn % ARRIVE_EVERY === 0) {
         const e = spawn(pickOne(["drone", "drone", "contra", "heavy"])); if (e) { F.arrivals++; log(`A ${foe(e).name} joins the line.`); }
       }
@@ -660,7 +675,7 @@ function makeGame(run, opts = {}) {
     if (dx || dy) F.pdir = [dx, dy];
     if (!dx && !dy) {
       chasersAct(true);
-      if (F.kind !== "boss" && F.enemies.length < 10) { const e = spawn(pickOne(["drone", "contra"])); log(e ? `You wait. The line catches up, and a ${foe(e).name} arrives.` : "You wait. The line catches up."); }
+      if (F.kind !== "boss" && F.kind !== "drill" && F.enemies.length < 10) { const e = spawn(pickOne(["drone", "contra"])); log(e ? `You wait. The line catches up, and a ${foe(e).name} arrives.` : "You wait. The line catches up."); }
       else log("You wait. The line catches up.");
       endTurn(null);
       return true;
@@ -771,6 +786,7 @@ function makeGame(run, opts = {}) {
   /* ---------- After the fight ---------- */
   function fightReward() {
     const F = R.fight, kind = F.kind;
+    if (kind === "drill") { prof().drilled = true; save(); R.hp = R.maxhp; R.fight = null; R.screen = "map"; return; }
     const gold = F.gold + (kind === "elite" ? 35 + rand(11) : kind === "boss" ? 60 : 12 + rand(9));
     R.gold += gold;
     const owned = new Set(R.hand.map(c => c.id));
@@ -906,7 +922,7 @@ function makeGame(run, opts = {}) {
   return {
     get run() { return R; }, get W() { return W; }, get H() { return H; }, get sim() { return SIM; },
     get profile() { return prof(); },
-    newRun, genMap, openNodes, enterNode, startFight, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
+    newRun, genMap, openNodes, enterNode, startFight, startDrill, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
     trapAt, isPit, enemyAt, alive, floorFree, hasO, cardPool, unlock, hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, runTurn, chasersAct, endTurn, sightLine, riflesFire, stepPlayer, step, cardBlock,
     play, preview, fork, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle
   };
