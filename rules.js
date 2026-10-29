@@ -586,8 +586,10 @@ function endTurn(played) {
       else { e.loose = true; e.blocked = 0; e.free = F.frenzy; log(`With its line gone, the ${foe(e).name} leaves its post and falls into step.`); }
     }
   }
-  if (R.hp <= 0) { R.hp = 0; F.over = "lose"; }
-  else if (!F.over && F.kind !== "boss" && !F.enemies.length) F.over = "win";
+  if (!F.over && F.kind !== "boss" && !F.enemies.length) F.over = "win";
+  // Winning the fight on the turn you'd fall leaves you standing on 1.
+  if (R.hp <= 0 && F.over === "win") { R.hp = 1; log("You stagger off the field, but the day is yours."); }
+  else if (R.hp <= 0) { R.hp = 0; F.over = "lose"; }
   const g = F.goal, G = g && GOALS[g.id];
   if (!g || !g.ok) return;
   if (g.id === "colours" && !g.took && F.p.x === g.flag.x && F.p.y === g.flag.y) { g.took = true; log("You take the colours."); }
@@ -690,6 +692,8 @@ function play(slot, dx, dy) {
         if (e) { damage(e, c.up ? 3 : 2, "Your lunge hits"); break; }
         if (inB(tx, ty) && kegAt(tx, ty)) { explode(tx, ty); break; }
         if (!inB(tx, ty) || isWall(tx, ty) || isPit(tx, ty)) break;
+        // Dashing on past a spike tile still hurts (the tile you stop on is handled by arrive).
+        if (dashed && hazard(P.x, P.y) === "spike" && !hasO("boots")) hurtSelf(1, "Spikes");
         P.x = tx; P.y = ty; dashed = true;
       }
       if (dashed) arrive(P, dx, dy);
@@ -903,7 +907,7 @@ if (typeof module === "object" && module.exports) {
     room, setDims, rng, rand, pickOne, shuffle, cardPool, unlock, mergeProfile, combineProfiles, hasO,
     newRun, genMap, openNodes, enterNode, startFight, setGoal, spawn,
     inB, kegAt, isWall, hazard, beltAt, roomPit, trapAt, isPit, enemyAt, dist, foe, alive, fixed, isLocked, floorFree,
-    hurtPlayer, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, chasersAct, endTurn,
+    hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, chasersAct, endTurn,
     sightLine, riflesFire, stepPlayer, step, cardBlock, play, preview,
     fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, makeShop, shopStock, restock,
     restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun

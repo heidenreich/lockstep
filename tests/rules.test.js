@@ -348,3 +348,30 @@ test("shop restock and the pre-boss supply wagon", () => {
   assert.equal(G.buyHp(), true);
   assert.equal(G.R.shop.hpPrice, 70);
 });
+
+test("a lunge across spikes hurts", () => {
+  fight([
+    ".......",
+    "@^.....",
+    ".......",
+    "......D"
+  ]);
+  G.R.hand[0] = { id: "lunge", cd: 0, up: false };
+  G.play(0, 1, 0);
+  assert.deepEqual(G.R.fight.p, { x: 2, y: 1 });
+  assert.equal(G.R.hp, 7);
+});
+
+test("winning on the turn you'd fall leaves you on 1", () => {
+  const F = fight([
+    ".......",
+    "...@...",
+    "......D"
+  ]);
+  G.R.hp = 1;
+  G.hurtSelf(1, "test");
+  G.kill(F.enemies[0], "test");
+  G.endTurn(null);
+  assert.equal(F.over, "win");
+  assert.equal(G.R.hp, 1);
+});
