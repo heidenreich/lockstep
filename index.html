@@ -397,7 +397,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
     <li><b>The room copies your every move.</b> Step, and every enemy still in step moves the same way. Contrarians move the opposite way.</li>
     <li><b>Steer them into trouble.</b> An enemy that steps into a pit is gone (each pit holds 2, then fills). Walls, the edge and other pieces stop them.</li>
     <li><b>Don't get stepped on.</b> An enemy that moves into you, or lands beside you while in step, hits you. Bump an enemy to hit it for 1.</li>
-    <li><b>Blocked 3 turns running, an enemy breaks free</b> and chases you (red dots count the turns). Get 4 tiles away for 4 turns and it falls back into step.</li>
+    <li><b>Blocked 3 turns running, an enemy breaks free</b> and chases you (red tally marks beside its head count the turns). Get 4 tiles away for 4 turns and it falls back into step.</li>
     <li><b>Cards break the rule</b>: move without the room, move the room without you, and more. Each one goes on cooldown after use; Step is always free.</li>
     <li><b>Finish fast.</b> At turn 30 a frenzy frees every enemy. Waiting is a move too, but every enemy chases and a new one arrives.</li>
   </ol>
@@ -762,9 +762,9 @@ function renderStage() {
 /* ---------- Onboarding ---------- */
 // Training drill steps. Progress lives on the fight (so it survives a reload) and each step stays done once done.
 const DRILL_STEPS = [
-  { id: "step", text: () => "The room copies your every move. Take a step and watch.", how: "Arrow keys or WASD, or tap a tile beside you." },
+  { id: "step", text: () => "You're the blue cadet on the brass tile. Take a step: the line copies you.", how: "Arrow keys or WASD, or tap a tile beside you." },
   { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", how: "Each pit holds 2 per fight, then fills." },
-  { id: "free", text: () => "Step right until a drone is pinned on the edge. At 3 red dots it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
+  { id: "free", text: () => "Step right until a drone is pinned on the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
   { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
   { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: "Real fights turn into a frenzy at turn 30." }
 ];
@@ -825,16 +825,16 @@ function renderCoach() {
     <p>${esc(NOTES[k][1])}</p><div class="row"><button class="btn ghost" data-act="helpOpen">How to play</button><button class="btn" data-act="noteOk">Got it</button></div>`;
 }
 // How to play: the rules in six lines and the line drawn as tin soldiers.
-const LEGEND = [["cadet", "You", "Blue, with a brass ring."], ["drone", "Drone", "Steps with you. 1 health."], ["contra", "Contrarian", "Steps the opposite way. 1 health."],
-  ["heavy", "Heavy", "Hits for 2, moves every other turn. 2 health."], ["rifle", "Rifleman", "Stands still; fires along its row or column."],
-  ["runner", "Runner", "Elite. Moves 2 per step."], ["anchor", "Anchor", "Elite. Never moves; strikes beside it."]];
+const LEGEND = [["cadet", "You", "Blue coat, on the brass tile under the brass arrow."], ["drone", "Drone", "Steps with you. 1 health."], ["contra", "Contrarian", "Sideways bicorne, back turned: steps the opposite way."],
+  ["heavy", "Heavy", "Hits for 2, moves every other turn. 2 health."], ["rifle", "Rifleman", "Feathered hat, kneeling. Rifle up: reloading. Level: fires its row and column."],
+  ["runner", "Runner", "Elite hussar in a busby, mid-stride. Moves 2 per step."], ["anchor", "Anchor", "Elite in a crested helmet on a stone block. Never moves; strikes beside it."]];
 function openHelp() {
   const lg = $("helpLegend");
   if (!lg.childElementCount) {
     lg.innerHTML = LEGEND.map(([t, n, d]) => `<div><canvas data-tin="${t}" width="88" height="112"></canvas><span><b>${n}</b>${d}</span></div>`).join("");
     for (const c of lg.querySelectorAll("canvas")) {
       const g = c.getContext("2d"), t = c.dataset.tin, el = FOES[t] && FOES[t].elite;
-      g.scale(2, 2); tin(g, 22, 50, t === "heavy" || t === "anchor" ? 0.42 : 0.5, TIN[t], { ring: t === "cadet" || el ? "#e0ac45" : null, mirror: t === "contra" });
+      g.scale(2, 2); tin(g, 22, 50, t === "heavy" || t === "anchor" ? 0.42 : 0.5, TIN[t], { ring: t === "cadet" ? "#e0ac45" : null, elite: el, mirror: t === "contra", reloading: t === "rifle" });
     }
   }
   $("helpDrill").hidden = !!(R && R.screen !== "end");
@@ -965,43 +965,70 @@ function hexRgba(hex, a) {
 // Tin soldiers. Contrarians are cast facing backwards; bosses are the big display pieces.
 const TIN = {
   drone: { coat: "#b8322b", dark: "#8a2520", legs: "#f2eee4", plume: "#f2c14e" },
-  contra: { coat: "#5d3fa6", dark: "#46307e", legs: "#2b2b3a", plume: "#c9b8ff", back: true },
+  contra: { coat: "#5d3fa6", dark: "#46307e", legs: "#2b2b3a", plume: "#c9b8ff", back: true, hat: "bicorne" },
   heavy: { coat: "#c4651f", dark: "#934a14", legs: "#f2eee4", plume: "#e8e2d2", bear: true, big: 1.15 },
-  runner: { coat: "#2f7a4a", dark: "#225a36", legs: "#e8e2d2", plume: "#f2c14e", elite: true },
-  anchor: { coat: "#5b6577", dark: "#434b59", legs: "#3a3f4a", plume: "#f0c050", bear: true, big: 1.2, elite: true },
-  rifle: { coat: "#2b5a3a", dark: "#1d3d27", legs: "#1c2420", plume: "#a8e070" },
-  colossus: { coat: "#c4651f", dark: "#934a14", legs: "#f2eee4", plume: "#f0c050", bear: true, big: 1.55 },
-  mirror: { coat: "#5d3fa6", dark: "#46307e", legs: "#2b2b3a", plume: "#e6e9f0", back: true, big: 1.5 },
-  warden: { coat: "#24262d", dark: "#16171c", legs: "#3a3d46", plume: "#e2483d", bear: true, big: 1.5 },
+  runner: { coat: "#a8326a", dark: "#7c234d", legs: "#e8e2d2", plume: "#f4f0e6", elite: true, stride: true, hat: "busby" },
+  anchor: { coat: "#5b6577", dark: "#434b59", legs: "#3a3f4a", plume: "#f0c050", bear: true, big: 1.2, elite: true, block: true, hat: "helmet" },
+  rifle: { coat: "#2b5a3a", dark: "#1d3d27", legs: "#1c2420", plume: "#a8e070", kneel: true, belts: "#141a16", hat: "jager" },
+  colossus: { coat: "#c4651f", dark: "#934a14", legs: "#f2eee4", plume: "#f0c050", bear: true, big: 1.55, prop: "mace" },
+  mirror: { coat: "#5d3fa6", dark: "#46307e", legs: "#2b2b3a", plume: "#e6e9f0", back: true, big: 1.5, prop: "glass", hat: "bicorne", hatBig: 1.35 },
+  warden: { coat: "#24262d", dark: "#16171c", legs: "#3a3d46", plume: "#e2483d", bear: true, big: 1.5, prop: "lantern", facings: "#e9e4d8", hat: "spike" },
   cadet: { coat: "#2457a6", dark: "#1b4380", legs: "#f2eee4", plume: "#e0ac45" }
 };
 function tin(g, x, y, k, look, o) {
   o = o || {};
   k *= look.big || 1;
-  const L = y - 6 * k, back = look.back;
+  // A kneeling rifleman sits 12 lower; a running hussar's legs swing apart.
+  const LL = y - (look.block ? 13 : 6) * k, L = LL + (look.kneel ? 12 * k : 0), back = look.back;
   const R_ = (x0, y0, w, h, r, fill) => { g.fillStyle = fill; g.beginPath(); if (g.roundRect && r) g.roundRect(x0, y0, w, h, r); else g.rect(x0, y0, w, h); g.fill(); };
   const E_ = (cx, cy, rx, ry, fill) => { g.fillStyle = fill; g.beginPath(); g.ellipse(cx, cy, Math.max(0.1, rx), Math.max(0.1, ry), 0, 0, Math.PI * 2); g.fill(); };
   g.save();
+  // Rings: solid brass is yours alone; elites get a dashed silver ring, bosses a double ring (dark outside, bone inside).
+  const ring = (rx, ry, color, w, dash) => { g.save(); g.strokeStyle = color; g.lineWidth = w; if (dash) g.setLineDash(dash); g.beginPath(); g.ellipse(x, y - 2 * k, rx, ry, 0, 0, Math.PI * 2); g.stroke(); g.restore(); };
   if (o.ring) { E_(x, y, 30 * k, 12 * k, hexRgba(o.ring, 0.3)); }
   E_(x + 6 * k, y + 3 * k, 21 * k, 8 * k, "rgba(0,0,0,0.3)");
   if (o.tilt) { g.translate(x, y); g.rotate(o.tilt); g.translate(-x, -y); }
-  E_(x, y, 17 * k, 7 * k, "#2f4229");
-  R_(x - 17 * k, y - 4 * k, 34 * k, 4 * k, 0, "#2f4229");
-  E_(x, y - 4 * k, 17 * k, 7 * k, "#55704a");
-  if (o.ring) { g.strokeStyle = o.ring; g.lineWidth = 2.6 * k; g.beginPath(); g.ellipse(x, y - 2 * k, 21 * k, 8.6 * k, 0, 0, Math.PI * 2); g.stroke(); }
+  if (look.block) {
+    // Rooted: a stone block with sandbags instead of a green base.
+    R_(x - 19 * k, y - 8 * k, 38 * k, 11 * k, 1.5 * k, "#4b4f57"); R_(x - 19 * k, y - 14 * k, 38 * k, 7 * k, 1.5 * k, "#8a8f99");
+    g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 1; g.beginPath(); g.moveTo(x - 6 * k, y - 7 * k); g.lineTo(x - 6 * k, y + 3 * k); g.moveTo(x + 8 * k, y - 7 * k); g.lineTo(x + 8 * k, y + 3 * k); g.stroke();
+    E_(x - 9 * k, y + 2 * k, 8 * k, 4 * k, "#c9b48a"); E_(x + 7 * k, y + 2.5 * k, 8 * k, 4 * k, "#bba67c");
+  } else {
+    E_(x, y, 17 * k, 7 * k, "#2f4229");
+    R_(x - 17 * k, y - 4 * k, 34 * k, 4 * k, 0, "#2f4229");
+    E_(x, y - 4 * k, 17 * k, 7 * k, "#55704a");
+  }
+  if (o.boss) { ring(24 * k, 10 * k, "#1d140e", 3.6 * k); ring(20.5 * k, 8.2 * k, "#efe6d2", 2 * k); }
+  else if (o.elite) ring(22 * k, 9 * k, "#e4e8ef", 2.4 * k, [4 * k, 3 * k]);
+  else if (o.ring) ring(21 * k, 8.6 * k, o.ring, 2.6 * k);
   if (o.mirror) { g.translate(x, 0); g.scale(-1, 1); g.translate(-x, 0); }
-  R_(x - 7 * k, L - 26 * k, 6 * k, 26 * k, 0, look.legs); R_(x + 1 * k, L - 26 * k, 6 * k, 26 * k, 0, look.legs);
-  R_(x - 7.5 * k, L - 8 * k, 7 * k, 8 * k, 1.5 * k, "#15120f"); R_(x + 0.5 * k, L - 8 * k, 7 * k, 8 * k, 1.5 * k, "#15120f");
+  if (look.kneel) {
+    R_(x - 1 * k, LL - 17 * k, 12 * k, 6 * k, 2 * k, look.legs); R_(x + 6 * k, LL - 16 * k, 6 * k, 16 * k, 0, look.legs);
+    R_(x + 5.5 * k, LL - 6 * k, 8 * k, 6 * k, 1.5 * k, "#15120f");
+    R_(x - 7 * k, LL - 17 * k, 6 * k, 12 * k, 0, look.legs); R_(x - 18 * k, LL - 6 * k, 14 * k, 5 * k, 1.5 * k, look.legs);
+    R_(x - 21 * k, LL - 7 * k, 5 * k, 6 * k, 1.5 * k, "#15120f");
+  } else if (look.stride) {
+    for (const [hx, a] of [[-4, 0.45], [4, -0.45]]) {
+      g.save(); g.translate(x + hx * k, L - 26 * k); g.rotate(a);
+      R_(-3 * k, 0, 6 * k, 26 * k, 0, look.legs); R_(-3.5 * k, 19 * k, 8 * k, 7 * k, 1.5 * k, "#15120f");
+      g.restore();
+    }
+  } else {
+    R_(x - 7 * k, L - 26 * k, 6 * k, 26 * k, 0, look.legs); R_(x + 1 * k, L - 26 * k, 6 * k, 26 * k, 0, look.legs);
+    R_(x - 7.5 * k, L - 8 * k, 7 * k, 8 * k, 1.5 * k, "#15120f"); R_(x + 0.5 * k, L - 8 * k, 7 * k, 8 * k, 1.5 * k, "#15120f");
+  }
   R_(x - 14 * k, L - 50 * k, 5 * k, 22 * k, 2.5 * k, look.dark); R_(x + 9 * k, L - 50 * k, 5 * k, 22 * k, 2.5 * k, look.dark);
   R_(x - 10 * k, L - 52 * k, 20 * k, 27 * k, 5 * k, look.coat);
   E_(x - 11.5 * k, L - 27 * k, 2.6 * k, 2.6 * k, "#f0c7a0"); E_(x + 11.5 * k, L - 27 * k, 2.6 * k, 2.6 * k, "#f0c7a0");
   if (back) {
-    R_(x - 8 * k, L - 50 * k, 16 * k, 17 * k, 2.5 * k, "#6b4a2b");
-    E_(x, L - 51 * k, 9 * k, 3 * k, "#a39780");
+    R_(x - 8 * k, L - 50 * k, 16 * k, 17 * k, 2.5 * k, "#efe2bf");
+    R_(x - 8 * k, L - 44 * k, 16 * k, 2.4 * k, 0, "#8a6a46");
+    E_(x, L - 51 * k, 9 * k, 3 * k, "#c9b48a");
   } else {
-    g.strokeStyle = "#f4f0e6"; g.lineWidth = 2.2 * k; g.beginPath();
+    g.strokeStyle = look.belts || "#f4f0e6"; g.lineWidth = 2.2 * k; g.beginPath();
     g.moveTo(x - 9 * k, L - 50 * k); g.lineTo(x + 9 * k, L - 31 * k); g.moveTo(x + 9 * k, L - 50 * k); g.lineTo(x - 9 * k, L - 31 * k); g.stroke();
-    R_(x - 10 * k, L - 31 * k, 20 * k, 3 * k, 0, "#f4f0e6");
+    R_(x - 10 * k, L - 31 * k, 20 * k, 3 * k, 0, look.belts || "#f4f0e6");
+    if (look.facings) { R_(x - 10 * k, L - 52 * k, 4 * k, 21 * k, 1 * k, look.facings); R_(x + 6 * k, L - 52 * k, 4 * k, 21 * k, 1 * k, look.facings); R_(x - 10 * k, L - 53 * k, 20 * k, 3 * k, 1 * k, look.facings); }
   }
   R_(x - 8 * k, L - 49 * k, 2 * k, 18 * k, 1 * k, "rgba(255,255,255,0.3)");
   if (o.drum) {
@@ -1012,6 +1039,31 @@ function tin(g, x, y, k, look, o) {
   } else if (o.spade) {
     R_(x + 12 * k, L - 70 * k, 2.6 * k, 42 * k, 0, "#6a4524");
     g.fillStyle = "#c9ced6"; g.beginPath(); g.moveTo(x + 9 * k, L - 70 * k); g.lineTo(x + 17.6 * k, L - 70 * k); g.lineTo(x + 13.3 * k, L - 82 * k); g.closePath(); g.fill();
+  } else if (look.prop === "mace") {
+    R_(x + 12 * k, L - 84 * k, 2.6 * k, 58 * k, 0, "#3a2414");
+    E_(x + 13.3 * k, L - 86 * k, 5 * k, 5 * k, "#e0ac45"); E_(x + 12 * k, L - 87.5 * k, 1.8 * k, 1.8 * k, "#fff3c4");
+    g.strokeStyle = "#e0ac45"; g.lineWidth = 1.2 * k; g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(x + 12 * k, L - (78 - i * 12) * k); g.lineTo(x + 14.6 * k, L - (72 - i * 12) * k); } g.stroke();
+  } else if (look.prop === "glass") {
+    R_(x + 12.5 * k, L - 52 * k, 2.4 * k, 22 * k, 1 * k, "#8a6a46");
+    E_(x + 13.7 * k, L - 62 * k, 8 * k, 10 * k, "#e0ac45"); E_(x + 13.7 * k, L - 62 * k, 6 * k, 8 * k, "#d9e6f2");
+    g.strokeStyle = "rgba(255,255,255,0.85)"; g.lineWidth = 1.4 * k; g.beginPath(); g.moveTo(x + 10 * k, L - 64 * k); g.lineTo(x + 14 * k, L - 68 * k); g.stroke();
+  } else if (look.prop === "lantern") {
+    R_(x + 13 * k, L - 50 * k, 1.6 * k, 10 * k, 0, "#2b2b2b");
+    E_(x + 13.8 * k, L - 34 * k, 9 * k, 9 * k, "rgba(255,200,90,0.35)");
+    R_(x + 9 * k, L - 41 * k, 9.6 * k, 12 * k, 1.5 * k, "#2b2b2b"); R_(x + 10.4 * k, L - 39.5 * k, 6.8 * k, 9 * k, 1 * k, "#ffd36a");
+  } else if (look.kneel) {
+    if (o.reloading) {
+      // Reloading: rifle upright, butt on the knee, ramrod in the barrel.
+      R_(x + 11 * k, L - 74 * k, 3 * k, 52 * k, 1 * k, "#6a4524"); R_(x + 10 * k, L - 26 * k, 5 * k, 7 * k, 1.5 * k, "#4e321a");
+      g.strokeStyle = "#c9ced6"; g.lineWidth = 1.2 * k; g.beginPath(); g.moveTo(x + 15.5 * k, L - 84 * k); g.lineTo(x + 15.5 * k, L - 66 * k); g.stroke();
+    } else {
+      R_(x - 6 * k, L - 46 * k, 40 * k, 3.2 * k, 1 * k, "#6a4524"); R_(x - 9 * k, L - 47 * k, 7 * k, 6 * k, 1.5 * k, "#4e321a");
+      R_(x + 34 * k, L - 45.5 * k, 9 * k, 2 * k, 0, "#c9ced6");
+    }
+  } else if (back) {
+    // Arms reversed: the musket is carried muzzle down.
+    R_(x + 12 * k, L - 52 * k, 2.6 * k, 48 * k, 0, "#6a4524"); R_(x + 11 * k, L - 54 * k, 4.6 * k, 7 * k, 1.5 * k, "#4e321a");
+    g.strokeStyle = "#c9ced6"; g.lineWidth = 1.5 * k; g.beginPath(); g.moveTo(x + 13.3 * k, L - 4 * k); g.lineTo(x + 13.3 * k, L + 6 * k); g.stroke();
   } else {
     R_(x + 12 * k, L - 76 * k, 2.6 * k, 48 * k, 0, "#6a4524");
     g.strokeStyle = "#c9ced6"; g.lineWidth = 1.5 * k; g.beginPath(); g.moveTo(x + 13.3 * k, L - 76 * k); g.lineTo(x + 13.3 * k, L - 88 * k); g.stroke();
@@ -1022,9 +1074,43 @@ function tin(g, x, y, k, look, o) {
     E_(x - 2.6 * k, L - 58.5 * k, 1.1 * k, 1.1 * k, "#1b1b1b"); E_(x + 2.6 * k, L - 58.5 * k, 1.1 * k, 1.1 * k, "#1b1b1b");
     E_(x - 4.3 * k, L - 55.5 * k, 1.8 * k, 1.8 * k, "rgba(226,128,111,0.6)"); E_(x + 4.3 * k, L - 55.5 * k, 1.8 * k, 1.8 * k, "rgba(226,128,111,0.6)");
   }
-  if (look.bear) {
+  // Hats: shako (the line and you), bearskin (heavies), bicorne worn sideways (contrarians), Jäger hat with a feather
+  // (riflemen), busby with a hanging bag (hussars), crested helmet (anchors), spiked helmet (the Warden).
+  const P_ = (pts, fill) => { g.fillStyle = fill; g.beginPath(); pts.forEach(([px, py], i) => i ? g.lineTo(x + px * k, L - py * k) : g.moveTo(x + px * k, L - py * k)); g.closePath(); g.fill(); };
+  const hat = look.hat || (look.bear ? "bear" : "shako");
+  if (hat === "bear") {
     E_(x, L - 73 * k, 10 * k, 13 * k, "#1b1714"); E_(x - 3 * k, L - 79 * k, 3 * k, 5 * k, "#3a332d");
     E_(x + 8 * k, L - 76 * k, 2.6 * k, 5 * k, look.plume);
+  } else if (hat === "bicorne") {
+    // Worn side to side: a wide black crescent with a white cockade, the outline nobody else has.
+    const hb = look.hatBig || 1;
+    P_([[-17, 63], [-12, 70], [-4, 74], [4, 74], [12, 70], [17, 63], [8, 66], [-8, 66]].map(([px, py]) => [px * hb, 63 + (py - 63) * hb]), "#18181b");
+    E_(x, L - 69 * k, 2.6 * k, 2.6 * k, "#f4f0e6"); E_(x, L - 69 * k, 1.2 * k, 1.2 * k, look.coat);
+    g.strokeStyle = "#e0ac45"; g.lineWidth = 1 * k; g.beginPath(); g.moveTo(x - 15 * k, L - 64 * k); g.quadraticCurveTo(x, L - 69 * k, x + 15 * k, L - 64 * k); g.stroke();
+  } else if (hat === "jager") {
+    // Low round hat with a brim and a long feather sweeping back.
+    E_(x, L - 64 * k, 12 * k, 3 * k, "#141a16");
+    R_(x - 6.5 * k, L - 75 * k, 13 * k, 11 * k, 4 * k, "#1d2a20");
+    R_(x - 6.5 * k, L - 68 * k, 13 * k, 2 * k, 0, "#3b4a2a");
+    g.strokeStyle = look.plume; g.lineWidth = 2.4 * k; g.lineCap = "round"; g.beginPath(); g.moveTo(x + 4 * k, L - 70 * k); g.quadraticCurveTo(x + 14 * k, L - 80 * k, x + 7 * k, L - 92 * k); g.stroke();
+  } else if (hat === "busby") {
+    // Fur busby, the coloured bag hanging off one side, a tall white plume.
+    R_(x - 7.5 * k, L - 79 * k, 15 * k, 16 * k, 4 * k, "#3a2a1e");
+    P_([[-7, 78], [-14, 74], [-15, 64], [-11, 64], [-9, 72]], look.coat);
+    R_(x - 7.5 * k, L - 66 * k, 15 * k, 2.4 * k, 0, "#e0ac45");
+    E_(x + 2 * k, L - 87 * k, 2.6 * k, 8 * k, look.plume);
+  } else if (hat === "helmet") {
+    // Steel helmet with a brass band and a black horsehair crest down the back.
+    E_(x, L - 68 * k, 9 * k, 8.5 * k, "#9aa1ab"); E_(x - 3 * k, L - 71 * k, 3 * k, 3 * k, "#c9ced6");
+    R_(x - 9 * k, L - 65 * k, 18 * k, 3 * k, 1 * k, "#e0ac45");
+    g.strokeStyle = "#141414"; g.lineWidth = 4 * k; g.lineCap = "round"; g.beginPath(); g.moveTo(x + 2 * k, L - 78 * k); g.quadraticCurveTo(x - 8 * k, L - 80 * k, x - 12 * k, L - 62 * k); g.stroke();
+  } else if (hat === "spike") {
+    // Black spiked helmet with a brass plate; the plume stays as its red hackle.
+    E_(x, L - 68 * k, 9.5 * k, 9 * k, "#141416");
+    P_([[-1.6, 76], [1.6, 76], [0, 88]], "#c9ced6"); E_(x, L - 76.5 * k, 2.6 * k, 1.4 * k, "#c9ced6");
+    if (!back) E_(x, L - 69 * k, 3.4 * k, 3.4 * k, "#e0ac45");
+    E_(x + 8 * k, L - 72 * k, 2.4 * k, 4.5 * k, look.plume);
+    R_(x - 9.5 * k, L - 63.5 * k, 19 * k, 2 * k, 1 * k, "#0e0e10");
   } else {
     R_(x - 7.5 * k, L - 80 * k, 15 * k, 17 * k, 1.5 * k, "#18181b");
     E_(x, L - 80 * k, 7.5 * k, 2.5 * k, "#2c2c33");
@@ -1034,18 +1120,24 @@ function tin(g, x, y, k, look, o) {
   g.restore();
   return L - 90 * k;
 }
-// Marks above a piece: hit pips, blocked count, sleeping heavies.
+// Marks above a piece: health as a brass bar, blocked turns as red tally strokes beside the head, sleeping heavies.
 function tinMarks(g, e, x, top, k) {
-  const d = FOES[e.type];
+  const d = FOES[e.type], box = (x0, y0, w, h, r) => { g.beginPath(); if (g.roundRect) g.roundRect(x0, y0, w, h, r); else g.rect(x0, y0, w, h); };
   if (e.max > 1) {
-    const n = e.max, w = Math.min(9 * k, 46 * k / n);
-    for (let i = 0; i < n; i++) {
-      g.fillStyle = i < e.hp ? "#e0ac45" : "rgba(40,30,20,0.55)"; g.strokeStyle = "rgba(0,0,0,0.5)"; g.lineWidth = 1;
-      g.beginPath(); g.arc(x - (n - 1) * w / 2 + i * w, top - 4 * k, Math.max(2, w * 0.38), 0, Math.PI * 2); g.fill(); g.stroke();
-    }
+    const n = e.max, gap = 1.5 * k, w = Math.min(9 * k, 46 * k / n) - gap, h = Math.max(3, 4.5 * k), x0 = x - (n * (w + gap) - gap) / 2;
+    g.fillStyle = "rgba(40,30,20,0.7)"; box(x0 - 1.5, top - 6 * k - 1.5, n * (w + gap) - gap + 3, h + 3, 2); g.fill();
+    for (let i = 0; i < n; i++) { g.fillStyle = i < e.hp ? "#e0ac45" : "rgba(120,100,70,0.5)"; box(x0 + i * (w + gap), top - 6 * k, w, h, 1); g.fill(); }
   }
-  if (e.blocked > 0 && !fixed(e) && !e.free && !d.chaser) for (let i = 0; i < e.blocked; i++) {
-    g.fillStyle = "#e2483d"; g.beginPath(); g.arc(x - (e.blocked - 1) * 5 * k + i * 10 * k, top - 14 * k, 3.4 * k, 0, Math.PI * 2); g.fill();
+  if (e.blocked > 0 && !fixed(e) && !e.free && !d.chaser) {
+    // One slot per blocked turn it takes to break free; the filled ones are red, so "one more" is plain.
+    const n = game && game.hasO("steady") ? BREAK + 1 : BREAK;
+    g.save(); g.lineWidth = Math.max(2, 3 * k); g.lineCap = "round";
+    for (let i = 0; i < n; i++) {
+      const tx = x - 20 * k - (n - 1 - i) * 6 * k;
+      g.strokeStyle = i < e.blocked ? "#d63a2f" : "rgba(60,40,30,0.3)";
+      g.beginPath(); g.moveTo(tx + 1.5 * k, top + 12 * k); g.lineTo(tx - 1.5 * k, top + 26 * k); g.stroke();
+    }
+    g.restore();
   }
   if (d.rifle) {
     const ready = e.load <= 0;
@@ -1053,7 +1145,7 @@ function tinMarks(g, e, x, top, k) {
     g.lineWidth = 3; g.strokeStyle = "rgba(255,250,240,0.9)"; const tx = ready ? "aim!" : String(e.load);
     g.strokeText(tx, x + 20 * k, top + 6 * k); g.fillStyle = ready ? "#c0392b" : "#3a3a3a"; g.fillText(tx, x + 20 * k, top + 6 * k);
   }
-  if (e.skip && d.slow) { g.fillStyle = "#fffaf0"; g.font = `700 ${Math.round(16 * k)}px ${HAND}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("zz", x + 16 * k, top + 4 * k); }
+  if (e.skip && d.slow && !d.march) { g.fillStyle = "#fffaf0"; g.font = `700 ${Math.round(16 * k)}px ${HAND}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("zz", x + 16 * k, top + 4 * k); }
 }
 const HAND = '"Caveat", "Segoe Print", cursive';
 // Broken step: the piece tips off true and gets a red grease-pencil scribble.
@@ -1067,13 +1159,26 @@ function drawUnit(g, e, x, y, k, t) {
   const d = FOES[e.type], look = TIN[e.type] || TIN.drone;
   const free = e.free && !d.chaser;
   const tilt = free ? (reduced() ? -0.3 : -0.3 + Math.sin(t * 6 + e.id) * 0.06) : 0;
+  // A chaser (the Warden) gets the scribble only on the turns it chases; on its march turns it looks like the line.
   if (free) scribble(g, x, y, k, t);
-  const top = tin(g, x, y, k, look, { tilt, mirror: e.dir && e.dir[0] < 0, ring: d.boss ? "#e2483d" : d.elite ? "#e0ac45" : null });
-  if (d.chaser) { g.save(); g.strokeStyle = "#e2483d"; g.setLineDash([5, 4]); g.lineWidth = 2; g.beginPath(); g.ellipse(x, y, 34 * k * (look.big || 1), 13 * k * (look.big || 1), 0, 0, Math.PI * 2); g.stroke(); g.restore(); }
+  const top = tin(g, x, y, k, look, { tilt, mirror: e.dir && e.dir[0] < 0, boss: d.boss, elite: d.elite, reloading: d.rifle && e.load > 0 });
+  if (d.chaser && !(d.march && e.skip)) scribble(g, x, y, k * (look.big || 1) * 1.25, t);
   tinMarks(g, e, x, top, k);
 }
+// A brass chevron bobbing over your cadet; early in a fight (and all through the drill) it carries a "you" tag.
+function drawYouMarker(g, x, top, k, t, label) {
+  const bob = reduced() ? 0 : Math.sin(t * 4) * 3 * k * 4, s = Math.max(7, 26 * k), y = top - s * 0.9 + bob;
+  g.save();
+  g.fillStyle = "#f0c25e"; g.strokeStyle = "#5a3f12"; g.lineWidth = Math.max(1.5, s * 0.14); g.lineJoin = "round";
+  g.beginPath(); g.moveTo(x - s * 0.6, y - s * 0.55); g.lineTo(x + s * 0.6, y - s * 0.55); g.lineTo(x, y + s * 0.2); g.closePath(); g.stroke(); g.fill();
+  if (label) {
+    g.font = `700 ${Math.round(Math.max(13, s * 0.95))}px ${HAND}`; g.textAlign = "center"; g.textBaseline = "alphabetic";
+    g.lineWidth = Math.max(3, s * 0.22); g.strokeStyle = "#2b1d12"; g.strokeText("you", x, y - s * 0.75); g.fillStyle = "#ffe7a8"; g.fillText("you", x, y - s * 0.75);
+  }
+  g.restore();
+}
 function drawCadetTin(g, x, y, k, dir, braced) {
-  tin(g, x, y, k, TIN.cadet, { ring: braced ? C.good : "#e0ac45", mirror: dir && dir[0] < 0, drum: R.char === "drummer", spade: R.char === "sapper" });
+  return tin(g, x, y, k, TIN.cadet, { ring: braced ? C.good : "#e0ac45", mirror: dir && dir[0] < 0, drum: R.char === "drummer", spade: R.char === "sapper" });
 }
 
 // Each act's setting around the diorama, and the plinth's paint.
@@ -1338,8 +1443,16 @@ function draw(dt) {
     }
     ctx.restore();
   }
-  // Pieces, back to front, so nearer rows stand in front of further ones.
+  // Your tile: a brass square with a slow pulse, so you can find yourself at a glance.
   const vp = vis.p || F.p;
+  { const pulse = reduced() ? 0.5 : 0.5 + Math.sin(now * 3) * 0.5;
+    ctx.save(); tileSpace(ctx, vp.x, vp.y);
+    ctx.fillStyle = `rgba(214,148,30,${0.42 + pulse * 0.16})`; rr(-0.46, -0.46, 0.92, 0.92, 0.1); ctx.fill();
+    ctx.strokeStyle = "rgba(90,55,10,0.8)"; ctx.lineWidth = 0.09; rr(-0.46, -0.46, 0.92, 0.92, 0.1); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,222,140,${0.75 + pulse * 0.25})`; ctx.lineWidth = 0.04; rr(-0.4, -0.4, 0.8, 0.8, 0.08); ctx.stroke();
+    ctx.restore(); }
+  // Pieces, back to front, so nearer rows stand in front of further ones.
+  let youAt = null;
   const occupied = new Set(F.enemies.map(e => e.x + "," + e.y).concat([F.p.x + "," + F.p.y]));
   const items = [];
   for (const key of R0.walls) { const [x, y] = key.split(",").map(Number); items.push({ y, x, wall: true }); }
@@ -1361,7 +1474,7 @@ function draw(dt) {
       const hop = Math.sin(Math.min(1, md) * Math.PI) * tw * 0.14 * sc, sq = Math.min(0.16, md * 0.3);
       ctx.translate(x, y); ctx.scale(1 - sq * 0.5, 1 + sq); ctx.translate(-x, -y); y -= hop;
     }
-    if (it.p) drawCadetTin(ctx, x, y, kk, F.pdir, F.brace); else drawUnit(ctx, it.e, x, y, kk, now);
+    if (it.p) youAt = [x, drawCadetTin(ctx, x, y, kk, F.pdir, F.brace), kk]; else drawUnit(ctx, it.e, x, y, kk, now);
     ctx.restore();
   }
   // Enemies toppling into pits: slide to the hole, then tip over and drop out of sight.
@@ -1378,6 +1491,7 @@ function draw(dt) {
   fallers = fallers.filter(f => f.life > 0);
   ctx.restore();
   drawLight(ctx, act, now);
+  if (youAt) drawYouMarker(ctx, youAt[0], youAt[1], youAt[2], now, F.turn < 3 || F.kind === "drill");
   // The preview's grease-pencil note, combo banners, particles and numbers sit above the light.
   if (pv && pv.ok) {
     const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : "";
