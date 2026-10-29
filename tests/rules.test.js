@@ -270,3 +270,36 @@ test("a recall during a frenzy only holds the line for a few turns", () => {
   G.step(1, 0);
   assert.equal(d.free, true);
 });
+
+test("the Mirror seals a pit it climbs out of", () => {
+  const F = fight([
+    "o........",
+    ".........",
+    "....@....",
+    ".........",
+    "........."
+  ], { kind: "boss" });
+  const m = put("mirror", 1, 0);
+  G.fall(m, 0, 0);
+  assert.equal(m.hp, G.FOES.mirror.hp - 3);
+  assert.equal(G.isPit(0, 0), false);
+});
+
+test("the Warden marches in step on the turns it doesn't chase, so it can be stepped into a pit", () => {
+  const F = fight([
+    "...........",
+    "...........",
+    "...........",
+    "...........",
+    "@.........."
+  ], { kind: "boss" });
+  const w = put("warden", 8, 1);
+  G.ROOMS[F.room].pits.add("9,1");
+  G.step(0, -1);  // a chase turn: it closes in
+  assert.equal(w.skip, true);
+  const before = [w.x, w.y];
+  assert.notDeepEqual(before, [8, 1]);
+  w.x = 8; w.y = 1;
+  G.step(1, 0);  // a march turn: it copies your step, into the pit
+  assert.equal(w.hp, G.FOES.warden.hp - 3);
+});

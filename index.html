@@ -602,6 +602,7 @@ function renderFight() {
   const boss = F.enemies.find(e => foe(e).boss);
   const lines = [`<span>${esc(ROOMS[F.room].name)} · turn <b>${F.turn}</b></span>`];
   if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= 30 ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${30 - F.turn}</b>`}</span>`);
+  if (boss && foe(boss).march) lines.push(`<span>${boss.skip ? "This turn it <b>marches in step</b>" : "This turn it <b>chases</b>"}</span>`);
   else {
     // In a frenzy the line runs (two steps) every RUN_EVERY turns; warn when.
     const runIn = F.frenzy && F.frenzySince != null ? (RUN_EVERY - 1 - (F.turn - F.frenzySince) % RUN_EVERY) : null;
@@ -1038,7 +1039,7 @@ function draw(dt) {
   // Pits are holes cut in the board; trapdoors have a brass rim and a countdown.
   const pits = [...R0.pits].map(k2 => k2.split(",").map(Number)).concat(F.traps.map(t => [t.x, t.y, t.t]));
   for (const [x, y, tt] of pits) {
-    const filled = tt == null && F.kind !== "boss" && (F.pitFill[x + "," + y] || 0) >= R.pitHold;
+    const filled = tt == null && !roomPit(x, y);
     ctx.save(); tileSpace(ctx, x, y);
     if (filled) {
       ctx.fillStyle = "rgba(90,67,48,0.55)"; rr(-0.4, -0.4, 0.8, 0.8, 0.12); ctx.fill();

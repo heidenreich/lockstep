@@ -59,8 +59,8 @@ Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, m
 
 Bosses (one twist each; a pit deals 3 damage and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
-2. **Mirror**: locked contrarian, 8 HP; every 5 turns the cadence flips (everyone reverses) for 5 turns, telegraphed.
-3. **Warden**: never locked, 9 HP, hits 2, chases every other turn; two drones arrive every 7 turns. Only cards can put it in a pit.
+2. **Mirror**: locked contrarian, 9 HP; every 5 turns the cadence flips (everyone reverses) for 5 turns, telegraphed. Any pit it climbs out of shatters and is sealed for the fight.
+3. **Warden**: 12 HP, hits 2; it chases every other turn and on the turns between it marches in step with the room (the slate says which), so it can be stepped into a pit like anything else. Two drones arrive every 7 turns.
 
 ## Meta (unlocks only)
 

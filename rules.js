@@ -49,8 +49,8 @@ const FOES = {
   anchor: { name: "anchor", hp: 3, dmg: 1, elite: true, fixed: true },
   rifle: { name: "rifleman", hp: 1, dmg: 1, rifle: true, fixed: true },
   colossus: { name: "Colossus", hp: 8, dmg: 2, boss: true, slow: true },
-  mirror: { name: "Mirror", hp: 8, dmg: 1, boss: true, contra: true },
-  warden: { name: "Warden", hp: 9, dmg: 2, boss: true, slow: true, chaser: true }
+  mirror: { name: "Mirror", hp: 9, dmg: 1, boss: true, contra: true, seals: true },
+  warden: { name: "Warden", hp: 12, dmg: 2, boss: true, slow: true, chaser: true, march: true }
 };
 const BOSSES = ["colossus", "mirror", "warden"];
 // Riflemen stand their ground and fire along their row and column once loaded; the first thing in the way takes the shot.
@@ -327,7 +327,8 @@ const isWall = (x, y) => ROOMS[R.fight.room].walls.has(x + "," + y) || kegAt(x, 
 const hazard = (x, y) => ROOMS[R.fight.room].tiles[x + "," + y] || null;
 const beltAt = (x, y) => BELT[hazard(x, y)] || null;
 // Boss fights never fill their pits: they're the boss's main weakness.
-const roomPit = (x, y) => ROOMS[R.fight.room].pits.has(x + "," + y) && (R.fight.kind === "boss" || (R.fight.pitFill[x + "," + y] || 0) < R.pitHold);
+// The Mirror shatters any pit it climbs out of (F.sealed).
+const roomPit = (x, y) => ROOMS[R.fight.room].pits.has(x + "," + y) && !(R.fight.sealed || []).includes(x + "," + y) && (R.fight.kind === "boss" || (R.fight.pitFill[x + "," + y] || 0) < R.pitHold);
 const trapAt = (x, y) => R.fight.traps.some(t => t.x === x && t.y === y);
 const isPit = (x, y) => roomPit(x, y) || trapAt(x, y);
 const enemyAt = (x, y) => R.fight.enemies.find(e => e.x === x && e.y === y);
@@ -406,6 +407,7 @@ function fall(e, x, y) {
     e.hp -= 3;
     log(`The ${foe(e).name} plunges into a pit. −3`);
     if (e.hp <= 0) { kill(e, `The ${foe(e).name} doesn't climb out.`); return; }
+    if (foe(e).seals && roomPit(x, y)) { (F.sealed = F.sealed || []).push(x + "," + y); log(`The ${foe(e).name} shatters the pit on its way out.`); }
     const c = edgeTile(3); if (c) { e.x = c.x; e.y = c.y; } e.blocked = 0;
     fx("spawn", e.x, e.y);
     return;
@@ -429,11 +431,13 @@ function roomShift(dx, dy, opts) {
   const flip = F.flip > 0 ? -1 : 1;
   const vec = e => { const s = (foe(e).contra ? -1 : 1) * flip; return [dx * s, dy * s]; };
   const lead = e => { const [vx, vy] = vec(e); return e.x * vx + e.y * vy; };
-  const lock = F.enemies.filter(isLocked).sort((a, b) => lead(b) - lead(a));
+  // The Warden chases every other turn; on the turns between (e.skip set: its chase step will rest) it marches in step.
+  const marching = e => foe(e).march && e.skip;
+  const lock = F.enemies.filter(e => isLocked(e) || marching(e)).sort((a, b) => lead(b) - lead(a));
   const acted = [];
   let moved = false;
   for (const e of lock) {
-    if (!alive(e) || resting(e)) continue;
+    if (!alive(e) || (!marching(e) && resting(e))) continue;
     const passes = foe(e).fast ? 2 : 1;
     for (let i = 0; i < passes && alive(e); i++) {
       const [vx, vy] = vec(e), tx = e.x + vx, ty = e.y + vy;
@@ -443,7 +447,7 @@ function roomShift(dx, dy, opts) {
         if (kegAt(tx, ty)) { explode(tx, ty); if (!alive(e)) break; }
         // Quake only hurts enemies that were already pinned before this turn.
         if (o.quake && e.blocked >= 1 && !o.hitSet.has(e)) { o.hitSet.add(e); if (!damage(e, 1, "The quake slams")) break; }
-        if (++e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
+        if (!marching(e) && ++e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
         break;
       }
       e.x = tx; e.y = ty; e.blocked = 0; e.dir = [vx, vy];
