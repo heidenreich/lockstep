@@ -9,7 +9,8 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 - `rules.js`: all game rules and state (data, map, fights, cards, rewards, shop and rest, unlocks). No DOM. The page loads it as a plain script; Node loads it with `require`.
 - `index.html`: the page (rendering, sound, input, profile storage). Publish it together with `rules.js`.
 - `tests/`: rule tests. `npm test` (Node 18+).
-- `sim/run4.js`: the bot harness for the current game, `node sim/run4.js base|cards|bosses|new [N]`. The other `sim/` scripts drive the old prototypes in `prototype/`.
+- `sim/run4.js`: the bot harness, `node sim/run4.js check|base|cards|bosses|econ|new [N]` (`check` is the quick balance read: one line per character). `sim/trace4*.js` trace stalled fights.
+- `archive/`: the earlier prototypes (`archive/prototype/`) and the harnesses that drove them (`archive/sim/`). Kept for reference; nothing current depends on them.
 - Randomness is seeded (`newRun(char, cad, seed)`); the RNG state lives in the run, so saved runs, the hover preview and bot replays see the same rolls as the real game.
 
 Keep this doc in step with the code: change the numbers here in the same commit as a balance change.
@@ -75,7 +76,7 @@ Saved per player through the artifact's private per-user storage (`db`, `data/us
 - Feel: tweened movement, hit flashes, particles on pit falls, floating damage, light screen shake (off under reduced motion), small synth sounds with a mute toggle.
 - **Intent preview:** hovering the board or a direction shows ghost markers where every enemy will end up, and damage you'd take. This replaces the old per-button numbers, which taught naive play.
 
-## Bot findings that shaped this (prototype v1–v4, Fable's harness in `sim/`)
+## Bot findings that shaped this (prototype v1–v4, Fable's harness, now in `archive/sim/`)
 
 - Waves that refilled forever → arrivals capped; frenzy timer stops corner camping (30 turns too short, 80 started stalls, 60 in the arena prototype → 40 here because fights are single-roster).
 - Pits filling at 2 per wave stopped planners farming them.
@@ -133,7 +134,7 @@ Bot check (1-ply, C0, 60 runs each, `node sim/run4.js new 60`):
 
 v9 was about 28% on the same bot. Bonus success: Hold the line 85–95% and Parade order 85–96% (too easy for a bot), Quick march about 65%, Take the colours about 50%, Pit drill about 38%. Riflemen land about 0.3 shots per run on the bot, which reads the preview and sidesteps them. Humans will feel them more, but if playtests agree, shorten the reload or add more riflemen. Stalls (about 10 in 60) were already there in v9 and are not fixed. The 2-ply bot was not re-run.
 
-## Side-view experiment (2026-10-28, `prototype/side-view.html`, Fable's `sim/side.js`)
+## Side-view experiment (2026-10-28, `archive/prototype/side-view.html`, Fable's `archive/sim/side.js`)
 
 Same rule on a side-on stage with gravity (walk, jump, wait; the line copies walks and jumps). Verdict: **weaker as the core**. No bot won; 1–2-ply bots died to gap jumps (a 4-input plan), stages 1–2 could be cleared by pressing Wait because chasers walk off ledges, frenzy drops could be farmed from a safe platform, and jump-spam beat a 3-ply planner. Lockstep itself rarely mattered (enemies died before ever breaking step). Possible future: one side-view act inside the roguelite, if chasers become ledge-aware, frenzy drops stop scoring, and jumps become 2-input arcs.
 

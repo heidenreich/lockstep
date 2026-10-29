@@ -189,3 +189,12 @@ if (SECTION === "new") {
     console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${ok}/${t} (${(100 * ok / t).toFixed(0)}%)`).join(", ")} | orders/run ${mean(rs.map(r => r.orders)).toFixed(1)} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)} | rifle shots/run at you ${mean(rs.map(r => r.shotsTaken)).toFixed(1)}, stray ${mean(rs.map(r => r.shotsStray)).toFixed(1)}`);
   }
 }
+if (SECTION === "check") {
+  // Quick balance check: normal play (random drafts, orders on), one line per character. node sim/run4.js check [N] [char]
+  for (const char of process.argv[4] ? [process.argv[4]] : ["recruit", "drummer", "sapper"]) {
+    const rs = many(ply1, N, { char, policy: { draft: "random" } });
+    const goals = {}; for (const r of rs) for (const [k, [t, ok]] of Object.entries(r.goals)) { goals[k] = goals[k] || [0, 0]; goals[k][0] += t; goals[k][1] += ok; }
+    console.log(summary(char, rs));
+    console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${(100 * ok / t).toFixed(0)}%`).join(", ")} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)}`);
+  }
+}
