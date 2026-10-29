@@ -289,7 +289,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .help { max-width: 640px; width: calc(100% - 32px); max-height: calc(100% - 32px); background: var(--panel); color: var(--ink); border: 1px solid var(--chalk); border-radius: 14px; padding: 20px; box-shadow: 0 30px 80px -20px #000; }
 .help[open] { display: grid; gap: 14px; }
 .help::backdrop { background: rgba(5, 7, 10, .7); }
-.helphead { display: flex; justify-content: space-between; align-items: center; }
+.helphead { display: flex; justify-content: space-between; align-items: center; position: sticky; top: -20px; margin: -20px -20px 0; padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--chalk); z-index: 1; }
+.helphead .btn { padding: 6px 14px; }
 .rules { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; font-size: 14.5px; }
 .rules.plain { list-style: disc; color: var(--muted); }
 .rules b { color: var(--brass); font-weight: 600; }
@@ -388,7 +389,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 </div>
 <div class="toast" id="toast" hidden></div>
 <dialog class="help" id="help" aria-labelledby="helpTitle">
-  <div class="helphead"><h2 id="helpTitle">How to play</h2><button class="iconbtn" id="helpClose">Close</button></div>
+  <div class="helphead"><h2 id="helpTitle">How to play</h2><button class="btn" id="helpClose" aria-label="Close How to play">✕ Close</button></div>
   <ol class="rules">
     <li><b>The room copies your every move.</b> Step, and every enemy still in step moves the same way. Contrarians move the opposite way.</li>
     <li><b>Steer them into trouble.</b> An enemy that steps into a pit is gone (each pit holds 2, then fills). Walls, the edge and other pieces stop them.</li>
@@ -423,6 +424,7 @@ function startRun(char, cad, drill) {
   const first = !P.drilled && !P.runs;
   game = makeGame(null, GAME_OPTS); R = game.newRun(char, cad);
   if (drill || first) game.startDrill();
+  tally("run", { char, cad, drill: !!(drill || first) });
   return R;
 }
 
@@ -449,14 +451,22 @@ async function initStore() {
     const db = id ? await window.claude.use("db") : null;
     if (db) {
       const ref = db.doc("data/users/" + id + "/profile");
-      store = { kind: "db", ref };
+      store = { kind: "db", ref, db, owner: !!(await user.isOwner().catch(() => false)) };
       // Keep progress from both copies: this browser's (and anything earned while the account loaded) and the account's.
       const snap = await ref.get();
       if (snap.exists) P = combineProfiles(P, snap.data());
       saveProfile();
+      tally("open");
     }
   } catch (e) { store = { kind: "local" }; }
   if (R == null) renderTitle();
+}
+// Anonymous play counter: one small shared document per event, with no player id (the owner's own plays are
+// flagged so they can be left out). Read it back with the artifact's database; nothing on the page shows it.
+function tally(k, extra) {
+  if (store.kind !== "db") return;
+  const id = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  store.db.doc("tally/" + id).set(Object.assign({ k, day: new Date().toISOString().slice(0, 10), owner: store.owner }, extra || {})).catch(() => {});
 }
 
 /* ---------- Audio ---------- */
@@ -736,6 +746,7 @@ function renderStage() {
       + `<div class="offers">${ev.opts.map((o, i) => itemHTML({ attrs: `data-ev="${i}"`, ico: "event", name: o.label, text: o.text })).join("")}</div>`;
   } else if (R.screen === "end") {
     const e = R.end, got = e.stats.unlocked || [], next = UNLOCKS.find(u => !u.has(P));
+    if (!e.tallied) { e.tallied = true; tally(e.won ? "win" : "loss", { char: e.char, cad: e.cad, act: e.act, fights: e.stats.fights }); }
     const unl = got.length ? `<p class="got">Unlocked this run: <b>${got.map(esc).join(", ")}</b></p>` : "";
     const nx = next ? `<p>Next unlock: <b>${esc(next.what)}</b> · ${esc(next.how)}</p>` : `<p>Everything is unlocked.</p>`;
     s.innerHTML = sceneHead("slatehead", e.won ? "Victory" : "Run over", e.won ? "The citadel falls" : `Fell in act ${e.act}`, unl + nx)
@@ -1533,6 +1544,8 @@ $("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === 
 $("drillBtn").addEventListener("click", () => { startRun(pickChar, pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);
 for (const id of ["helpClose", "helpOk"]) $(id).addEventListener("click", () => $("help").close());
+// A click on the dimmed backdrop (outside the dialog box) closes it too; Esc already does.
+$("help").addEventListener("click", ev => { const r = $("help").getBoundingClientRect(); if (ev.target === $("help") && (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom)) $("help").close(); });
 $("helpDrill").addEventListener("click", () => { $("help").close(); startRun(pickChar, pickCad, true); render(); });
 $("muteBtn").addEventListener("click", () => { muted = !muted; try { localStorage.setItem("lockstep-muted", muted ? "1" : "0"); } catch (e) {} renderBar(); });
 
@@ -1545,8 +1558,8 @@ document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act],[data-take],[data-replace],[data-up],[data-restup],[data-buy],[data-buyup],[data-shopreplace],[data-ev],[data-order]");
   if (!b || b.disabled || !R) return;
   const a = b.dataset;
-  if (a.act === "claim") { game.fightReward(); render(); return; }
-  if (a.act === "skipDrill") { game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
+  if (a.act === "claim") { if (R.fight && R.fight.kind === "drill") tally("drill"); game.fightReward(); render(); return; }
+  if (a.act === "skipDrill") { tally("drillSkip", { step: Object.keys(R.fight.coach || {}).length }); game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
   if (a.act === "noteOk") { noteQueue.shift(); render(); return; }
   if (a.act === "fallen") { game.endRun(false); render(); return; }
   if (a.act === "title") { useRun(null); render(); return; }

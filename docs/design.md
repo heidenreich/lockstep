@@ -65,6 +65,10 @@ Bosses (a pit deals 3 and the boss climbs back out at an edge):
 - **First-time notes:** the first time something turns up (each enemy type and boss, kegs, ice, spikes, belts, the bonus order, breaking free, frenzy, a combo, a full pit, a card cooldown) the same note box explains it in one line. Seen notes are kept in the profile (`seen`) and merged like unlocks.
 - **How to play:** a dialog from the top bar (and from any note): the rules in six lines, the line drawn as tin soldiers, how to read the board and the keys.
 
+## Play counter
+
+Anonymous: each page open, run start, drill finish or skip, and run end writes one small shared document to `tally/` (event, day, character, Cadence, act reached; no player id, the owner's own flagged `owner: true`). Read it with the artifact database (`tally` collection). Players below Contributor (Viewer, Commenter) can't write, so they aren't counted and don't save progress to their account either.
+
 ## Meta (unlocks only)
 
 Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/profile`), merged with browser storage for signed-out play.
