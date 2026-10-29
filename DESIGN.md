@@ -24,7 +24,7 @@ Keep this doc in step with the code: change the numbers here in the same commit 
 - Blocked 3 turns in a row (wall, edge, enemy) → the enemy **breaks free** and chases (BFS, ties broken by straight-line distance). A chaser 4+ tiles away for 4 turns falls back into step.
 - Waiting: every enemy chases one step and a new enemy arrives.
 - Arrivals: one every 8 turns while 2+ enemies remain, at most 2 per fight.
-- **Frenzy:** a normal fight that runs 30 turns makes every enemy break free. Anything that arrives during a frenzy (for example from waiting) arrives already free.
+- **Frenzy:** a normal fight that runs 30 turns makes every enemy break free. Anything that arrives during a frenzy (for example from waiting) arrives already free. Every third frenzy turn the broken line **runs** (two steps; bosses excepted, the slate warns), so a chaser can't be outpaced forever.
 
 Why these numbers: see the bot findings at the end.
 
@@ -42,7 +42,7 @@ Step is always available. Cards are extra actions with **cooldowns** (Shogun Sho
 | Shove | Hit an adjacent enemy for 1, knock it back 2 (pits count). Room holds | 2 | Knock back 3 |
 | Quake | You stay; the room moves 1; every enemy already pinned (blocked last turn) takes 1 | 5 | CD 4 |
 | Magnet | You stay; every locked enemy steps 1 toward you | 4 | CD 3 |
-| Recall | Every free enemy falls back into step. Room holds | 6 | CD 4 |
+| Recall | Every free enemy falls back into step (in a frenzy, for 4 turns). Room holds | 6 | CD 4 |
 | Trapdoor | Open a hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
 | Brace | You stay; you take no damage until your next turn. Room holds | 4 | CD 3 |
 

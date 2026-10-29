@@ -236,3 +236,37 @@ test("shop: a full hand asks which card to replace; no gold, no sale", () => {
   G.R.hp = G.R.maxhp - 3;
   assert.equal(G.buyHeal(), false);
 });
+
+test("in a frenzy the broken line runs two steps every third turn", () => {
+  const F = fight([
+    ".........",
+    ".........",
+    "@.....D..",
+    "........."
+  ]);
+  const d = F.enemies[0];
+  d.free = true; F.frenzy = true; F.frenzySince = F.turn - 1;
+  G.play(0, 0, -1);  // Sidestep: the room holds, only chasers move
+  assert.equal(G.dist(d, F.p), 6, "an ordinary frenzy turn: one step");
+  assert.equal(G.runTurn(), true);
+  G.R.hand[0].cd = 0;
+  G.play(0, 0, 1);
+  assert.equal(G.dist(d, F.p), 3, "a run turn: two steps");
+});
+
+test("a recall during a frenzy only holds the line for a few turns", () => {
+  const F = fight([
+    "D........",
+    ".........",
+    "....@....",
+    "........."
+  ]);
+  const d = F.enemies[0];
+  d.free = true; F.frenzy = true; F.frenzySince = F.turn;
+  G.R.hand[0] = { id: "recall", cd: 0, up: false };
+  G.play(0, 0, 0);
+  assert.equal(d.free, false);
+  for (let i = 1; i < G.RECALL_HOLD; i++) { G.step(i % 2 ? 1 : -1, 0); assert.equal(d.free, false); }
+  G.step(1, 0);
+  assert.equal(d.free, true);
+});

@@ -602,7 +602,12 @@ function renderFight() {
   const boss = F.enemies.find(e => foe(e).boss);
   const lines = [`<span>${esc(ROOMS[F.room].name)} · turn <b>${F.turn}</b></span>`];
   if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= 30 ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${30 - F.turn}</b>`}</span>`);
-  else lines.push(`<span>Enemies <b>${F.enemies.length}</b>${F.frenzy ? "" : ` · frenzy in <b>${Math.max(0, F.frenzyAt - F.turn)}</b>`}</span>`);
+  else {
+    // In a frenzy the line runs (two steps) every RUN_EVERY turns; warn when.
+    const runIn = F.frenzy && F.frenzySince != null ? (RUN_EVERY - 1 - (F.turn - F.frenzySince) % RUN_EVERY) : null;
+    const tail = !F.frenzy ? ` · frenzy in <b>${Math.max(0, F.frenzyAt - F.turn)}</b>` : runIn == null ? "" : runIn === 0 ? ` · <span class="warn">they run this turn</span>` : ` · they run in <b>${runIn}</b>`;
+    lines.push(`<span>Enemies <b>${F.enemies.length}</b>${tail}</span>`);
+  }
   const loose = F.enemies.filter(e => e.free && !foe(e).chaser).length;
   if (loose) lines.push(`<span class="warn"><b>${loose}</b> broken free</span>`);
   if (F.goal) lines.push(goalLine(F));

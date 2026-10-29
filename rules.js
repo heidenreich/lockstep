@@ -88,7 +88,7 @@ const CARDS = {
   shove: { name: "Shove", cd: 2, cdUp: 2, dir: true, text: "Hit an adjacent enemy for 1 and knock it back 2. Room holds.", textUp: "Hit an adjacent enemy for 1 and knock it back 3. Room holds." },
   quake: { name: "Quake", cd: 5, cdUp: 4, dir: true, text: "You stay. The room moves 1; every enemy already pinned against something takes 1." },
   magnet: { name: "Magnet", cd: 4, cdUp: 3, dir: false, text: "You stay. Every locked enemy steps 1 toward you." },
-  recall: { name: "Recall", cd: 6, cdUp: 4, dir: false, text: "Every enemy that broke free falls back into step. Room holds." },
+  recall: { name: "Recall", cd: 6, cdUp: 4, dir: false, text: "Every enemy that broke free falls back into step (in a frenzy, for 4 turns). Room holds." },
   trapdoor: { name: "Trapdoor", cd: 6, cdUp: 4, dir: true, text: "Open a hidden pit beside you for 4 turns. Chasers don't see it coming. Room holds." },
   brace: { name: "Brace", cd: 4, cdUp: 3, dir: false, text: "You stay and take no damage this turn. Room holds." }
 };
@@ -486,13 +486,18 @@ function chaseStep(e, field) {
   hurtPlayer(e, "hits you");
   return true;
 }
+const RUN_EVERY = 3, RECALL_HOLD = 4;
+// True on the turns a frenzied line runs (takes two steps). Counted from the start of the frenzy.
+const runTurn = () => { const F = R.fight; return F.frenzy && F.frenzySince != null && (F.turn - F.frenzySince) % RUN_EVERY === RUN_EVERY - 1; };
 function chasersAct(everyone) {
   const F = R.fight, field = pathField();
   for (const e of [...F.enemies]) {
     if (!alive(e) || foe(e).fixed) continue;
     if (!everyone && isLocked(e)) continue;
     if (resting(e)) continue;
-    const hit = chaseStep(e, field);
+    let hit = chaseStep(e, field);
+    // In a frenzy the broken line breaks into a run every third turn, so nobody can be outpaced forever.
+    if (!hit && alive(e) && e.free && runTurn() && !foe(e).boss) hit = chaseStep(e, field);
     if (!alive(e)) continue;
     if (!e.free || foe(e).chaser) continue;
     if (hit || dist(e, F.p) < RELOCK || F.frenzy) e.chased = 0;
@@ -529,6 +534,10 @@ function endTurn(played) {
     log(`${CHAIN[Math.min(n, 5)]}! +${bonus} gold, and every card is a turn closer.`);
     fx("combo", F.p.x, F.p.y, { n }); sfx("combo");
   }
+  for (const e of F.enemies) if (e.heldUntil != null && F.turn >= e.heldUntil) {
+    delete e.heldUntil;
+    if (F.frenzy && isLocked(e)) { e.free = true; e.chased = 0; log(`The frenzy takes the ${foe(e).name} again.`); }
+  }
   const boss = F.enemies.find(e => foe(e).boss);
   if (boss && boss.type === "mirror") {
     if (F.flip > 0) { if (--F.flip === 0) log("The cadence settles. Everyone moves the usual way."); }
@@ -538,7 +547,7 @@ function endTurn(played) {
     // After turn 30 the boss enrages and calls help every 3 turns, so a boss fight can't be stalled.
     const enraged = F.turn >= 30, every = enraged ? 3 : boss.type === "colossus" ? 6 : 7;
     if (F.turn === 30) {
-      F.frenzy = true;
+      F.frenzy = true; F.frenzySince = F.turn;
       for (const e of F.enemies) if (!foe(e).boss && !foe(e).fixed) e.free = true;
       log(`The ${foe(boss).name} enrages. Its line breaks step, and help arrives every 3 turns.`); sfx("frenzy");
     }
@@ -552,7 +561,7 @@ function endTurn(played) {
       const e = spawn(pickOne(["drone", "drone", "contra", "heavy"])); if (e) { F.arrivals++; log(`A ${foe(e).name} joins the line.`); }
     }
     if (!F.frenzy && F.enemies.length && F.turn >= F.frenzyAt) {
-      F.frenzy = true;
+      F.frenzy = true; F.frenzySince = F.turn;
       for (const e of F.enemies) if (!foe(e).fixed) e.free = true;
       log("Frenzy: every enemy breaks step.");
       goalFail("line", "Frenzy.");
@@ -703,7 +712,11 @@ function play(slot, dx, dy) {
       }
       break;
     }
-    case "recall": for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; } log("The line snaps back into step."); break;
+    case "recall":
+      // In a frenzy the recall only holds for a few turns (see endTurn), so it can't freeze a fight for good.
+      for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
+      log(F.frenzy ? `The line snaps back into step, for ${RECALL_HOLD} turns.` : "The line snaps back into step.");
+      break;
     case "trapdoor": F.traps.push({ x: P.x + dx, y: P.y + dy, t: 5 }); fx("trap", P.x + dx, P.y + dy); break;
     case "brace": F.brace = true; fx("block", P.x, P.y); break;
   }
@@ -859,7 +872,7 @@ if (typeof module === "object" && module.exports) {
     get W() { return W; }, get H() { return H; },
     get FX() { return FX; }, set FX(v) { FX = v; },
     get SFX() { return SFX; }, set SFX(v) { SFX = v; },
-    hooks, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, DIRS, BELT, ROOMS, ACT_ROOMS, BOSS_ROOMS,
+    hooks, BREAK, RELOCK, RUN_EVERY, RECALL_HOLD, runTurn, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, DIRS, BELT, ROOMS, ACT_ROOMS, BOSS_ROOMS,
     FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
     room, setDims, rng, rand, pickOne, shuffle, cardPool, unlock, mergeProfile, combineProfiles, hasO,
     newRun, genMap, openNodes, enterNode, startFight, setGoal, spawn,
