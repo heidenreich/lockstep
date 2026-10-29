@@ -55,7 +55,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
 - Each act uses its own room pool (Crossroads, Gallery, Moat, Lanes, Funnel) and a stronger roster.
 
-Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, moves every other turn). Elites: **Runner** (moves 2 per shift), **Anchor** (never moves, 3 HP, strikes adjacent).
+Enemies: Drone (1 HP), Contrarian (1 HP, moves opposite), Heavy (2 HP, hits 2, moves every other turn). Elites: **Runner** (moves 2 per shift), **Anchor** (never moves, 3 HP, strikes adjacent; once the rest of its line is gone it leaves its post and falls into step). Riflemen yield when the rest of their line is gone.
 
 Bosses (one twist each; a pit deals 3 damage and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
@@ -156,4 +156,4 @@ Same rule on a side-on stage with gravity (walk, jump, wait; the line copies wal
 
 Bot check (1-ply, C0, 30 runs per row): about the same as v10, 17–57% wins by row against 13–37% on the old code; 30 runs per row is noisy.
 
-Open: **anchors yield** when the rest of their line is gone, so an anchor elite is effectively "clear the normal enemies". Making anchors fight on (only riflemen yield) dropped the 1-ply win rate from about 33% to about 12% across characters, with elites becoming the top cause of death, so it was not changed. Options: anchors don't yield but drop to 2 HP; or a lone anchor leaves its post and chases (so it can be pitted); or keep yielding and call it intended.
+Anchors (decided in the next pass): they used to yield with the rest of their line gone, which made an anchor elite "clear the normal enemies". Making them fight on dropped the 1-ply win rate from about 33% to about 12%. They now leave their post and fall into step instead, so the core rule finishes them (no change in win rate).

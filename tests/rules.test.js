@@ -154,18 +154,23 @@ test("rifle shots: walls stop them, enemies in the way take them, a clear line h
   assert.equal(F.enemies[0].load, G.RELOAD);
 });
 
-test("riflemen yield once the rest of their line is gone", () => {
+test("with their line gone, riflemen yield and anchors fall into step", () => {
   const F = fight([
-    "R......",
+    "R.....N",
     ".......",
     "...@...",
     ".......",
     "......D"
-  ]);
-  G.kill(F.enemies[1], "test");
+  ], { kind: "elite" });
+  G.kill(F.enemies.find(e => e.type === "drone"), "test");
   G.endTurn(null);
-  assert.equal(F.enemies.length, 0);
-  assert.equal(F.over, "win");
+  assert.deepEqual(at(F, "rifle"), []);
+  const a = F.enemies[0];
+  assert.equal(a.type, "anchor");
+  assert.equal(G.isLocked(a), true);
+  assert.equal(F.over, null);
+  G.step(0, 1);
+  assert.deepEqual([a.x, a.y], [6, 1], "it now copies your step");
 });
 
 test("anything that arrives during a frenzy is already free", () => {

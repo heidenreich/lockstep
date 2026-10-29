@@ -790,7 +790,7 @@ function tinMarks(g, e, x, top, k) {
       g.beginPath(); g.arc(x - (n - 1) * w / 2 + i * w, top - 4 * k, Math.max(2, w * 0.38), 0, Math.PI * 2); g.fill(); g.stroke();
     }
   }
-  if (e.blocked > 0 && !d.fixed && !e.free && !d.chaser) for (let i = 0; i < e.blocked; i++) {
+  if (e.blocked > 0 && !fixed(e) && !e.free && !d.chaser) for (let i = 0; i < e.blocked; i++) {
     g.fillStyle = "#e2483d"; g.beginPath(); g.arc(x - (e.blocked - 1) * 5 * k + i * 10 * k, top - 14 * k, 3.4 * k, 0, Math.PI * 2); g.fill();
   }
   if (d.rifle) {

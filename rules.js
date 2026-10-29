@@ -335,7 +335,9 @@ const enemyAt = (x, y) => R.fight.enemies.find(e => e.x === x && e.y === y);
 const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const foe = e => FOES[e.type];
 const alive = e => R.fight.enemies.includes(e);
-const isLocked = e => !e.free && !foe(e).fixed && !foe(e).chaser;
+// Anchors and riflemen hold their ground (fixed) until an anchor's line is gone and it falls into step (e.loose).
+const fixed = e => !!foe(e).fixed && !e.loose;
+const isLocked = e => !e.free && !fixed(e) && !foe(e).chaser;
 const floorFree = (x, y) => inB(x, y) && !isWall(x, y) && !isPit(x, y) && !enemyAt(x, y) && !(x === R.fight.p.x && y === R.fight.p.y);
 
 /* ---------- Damage ---------- */
@@ -496,7 +498,7 @@ const runTurn = () => { const F = R.fight; return F.frenzy && F.frenzySince != n
 function chasersAct(everyone) {
   const F = R.fight, field = pathField();
   for (const e of [...F.enemies]) {
-    if (!alive(e) || foe(e).fixed) continue;
+    if (!alive(e) || fixed(e)) continue;
     if (!everyone && isLocked(e)) continue;
     if (resting(e)) continue;
     let hit = chaseStep(e, field);
@@ -507,7 +509,7 @@ function chasersAct(everyone) {
     if (hit || dist(e, F.p) < RELOCK || F.frenzy) e.chased = 0;
     else if (++e.chased >= RELOCK) { e.free = false; e.blocked = 0; log(`A ${foe(e).name} loses you and falls back into step.`); }
   }
-  for (const e of F.enemies) if (foe(e).fixed && !foe(e).rifle && dist(e, F.p) === 1) hurtPlayer(e, "strikes");
+  for (const e of F.enemies) if (fixed(e) && !foe(e).rifle && dist(e, F.p) === 1) hurtPlayer(e, "strikes");
 }
 
 /* ---------- Turn flow ---------- */
@@ -518,7 +520,7 @@ function endTurn(played) {
   for (const c of R.hand) if (c !== played && c.cd > 0) c.cd--;
   F.traps = F.traps.filter(t => --t.t > 0);
   // Conveyor belts carry whatever stands on them, front of the belt first.
-  const riders = [F.p, ...F.enemies.filter(e => !foe(e).fixed)].filter(u => beltAt(u.x, u.y));
+  const riders = [F.p, ...F.enemies.filter(e => !fixed(e))].filter(u => beltAt(u.x, u.y));
   riders.sort((a, b) => { const [ax, ay] = beltAt(a.x, a.y), [bx, by] = beltAt(b.x, b.y); return (b.x * bx + b.y * by) - (a.x * ax + a.y * ay); });
   for (const u of riders) {
     if (u !== F.p && !alive(u)) continue;
@@ -552,7 +554,7 @@ function endTurn(played) {
     const enraged = F.turn >= 30, every = enraged ? 3 : boss.type === "colossus" ? 6 : 7;
     if (F.turn === 30) {
       F.frenzy = true; F.frenzySince = F.turn;
-      for (const e of F.enemies) if (!foe(e).boss && !foe(e).fixed) e.free = true;
+      for (const e of F.enemies) if (!foe(e).boss && !fixed(e)) e.free = true;
       log(`The ${foe(boss).name} enrages. Its line breaks step, and help arrives every 3 turns.`); sfx("frenzy");
     }
     if (F.turn % every === 0 && F.enemies.length < 14) {
@@ -566,14 +568,18 @@ function endTurn(played) {
     }
     if (!F.frenzy && F.enemies.length && F.turn >= F.frenzyAt) {
       F.frenzy = true; F.frenzySince = F.turn;
-      for (const e of F.enemies) if (!foe(e).fixed) e.free = true;
+      for (const e of F.enemies) if (!fixed(e)) e.free = true;
       log("Frenzy: every enemy breaks step.");
       goalFail("line", "Frenzy.");
       sfx("frenzy");
     }
   }
-  if (F.kind !== "boss" && F.enemies.length && F.enemies.every(e => foe(e).fixed)) {
-    for (const e of [...F.enemies]) kill(e, `With its line gone, the ${foe(e).name} yields.`);
+  // With the rest of the line gone, riflemen yield and anchors leave their post and fall into step.
+  if (F.kind !== "boss" && F.enemies.length && F.enemies.every(fixed)) {
+    for (const e of [...F.enemies]) {
+      if (foe(e).rifle) kill(e, `With its line gone, the ${foe(e).name} yields.`);
+      else { e.loose = true; e.blocked = 0; e.free = F.frenzy; log(`With its line gone, the ${foe(e).name} leaves its post and falls into step.`); }
+    }
   }
   if (R.hp <= 0) { R.hp = 0; F.over = "lose"; }
   else if (!F.over && F.kind !== "boss" && !F.enemies.length) F.over = "win";
@@ -687,7 +693,7 @@ function play(slot, dx, dy) {
     }
     case "shove": {
       const e = enemyAt(P.x + dx, P.y + dy);
-      if (damage(e, 1, "You shove") && !foe(e).fixed) {
+      if (damage(e, 1, "You shove") && !fixed(e)) {
         let knocked = false;
         for (let i = 0; i < (c.up ? 3 : 2) && alive(e); i++) {
           const bx = e.x + dx, by = e.y + dy;
@@ -880,7 +886,7 @@ if (typeof module === "object" && module.exports) {
     FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
     room, setDims, rng, rand, pickOne, shuffle, cardPool, unlock, mergeProfile, combineProfiles, hasO,
     newRun, genMap, openNodes, enterNode, startFight, setGoal, spawn,
-    inB, kegAt, isWall, hazard, beltAt, roomPit, trapAt, isPit, enemyAt, dist, foe, alive, isLocked, floorFree,
+    inB, kegAt, isWall, hazard, beltAt, roomPit, trapAt, isPit, enemyAt, dist, foe, alive, fixed, isLocked, floorFree,
     hurtPlayer, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, chasersAct, endTurn,
     sightLine, riflesFire, stepPlayer, step, cardBlock, play, preview,
     fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, makeShop,

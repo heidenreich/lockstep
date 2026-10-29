@@ -35,7 +35,7 @@ function evalR(R) {
   if (F.over === "lose" || R.hp <= 0) return -300;
   let v = R.hp * 7 + F.gold * 1.5;
   if (F.over === "win") return v + 80;
-  for (const e of F.enemies) { const d = G.FOES[e.type]; v -= e.hp * (d.boss ? 2.5 : 1.6); if (G.dist(e, F.p) === 1 && !d.fixed) v -= 2; if (e.free && !d.chaser) v -= 1.2; }
+  for (const e of F.enemies) { const d = G.FOES[e.type]; v -= e.hp * (d.boss ? 2.5 : 1.6); if (G.dist(e, F.p) === 1 && !G.fixed(e)) v -= 2; if (e.free && !d.chaser) v -= 1.2; }
   if (F.kind === "boss") v -= F.turn * 0.4;
   if (F.goal && !F.goal.ok) v -= 6;
   if (F.goal && F.goal.ok && F.goal.flag && !F.goal.took) v -= 0.6 * G.dist(F.p, F.goal.flag);
