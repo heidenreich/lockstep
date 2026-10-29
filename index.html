@@ -295,19 +295,26 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 
 <script src="rules.js"></script>
 <script>
+/* ---------- The game ---------- */
+// The page owns one game at a time (rules.js makeGame). R is its run, kept here for the many places that read it;
+// set both through useRun() or a newRun on the game.
+let P = mergeProfile({}), game = null, R = null;
+// Board size of the current fight, for drawing.
+let W = 9, H = 9;
+const GAME_OPTS = { profile: () => P, hooks: { save: () => saveProfile(), toast: msg => toast(msg) } };
+function useRun(run) { game = run ? makeGame(run, GAME_OPTS) : null; R = run; return R; }
+function startRun(char, cad) { game = makeGame(null, GAME_OPTS); R = game.newRun(char, cad); return R; }
+
 /* ---------- Profile storage ---------- */
 let store = { kind: "local" };
 let saving = Promise.resolve();
 function saveProfile() {
-  if (SIM) return;
   const body = JSON.parse(JSON.stringify(P));
   saving = saving.then(async () => {
     try { if (store.kind === "db") { await store.ref.set(body); return; } } catch (e) {}
     try { localStorage.setItem("lockstep-profile", JSON.stringify(body)); } catch (e) {}
   });
 }
-hooks.save = saveProfile;
-hooks.toast = msg => toast(msg);
 // Runs saved before the seeded RNG have no RNG state; give them one.
 function adoptRun(r) {
   if (r && r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
@@ -378,7 +385,7 @@ const SOUNDS = {
   win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.12, "triangle", 0.05), i * 90)),
   lose: () => [392, 311, 233].forEach((f, i) => setTimeout(() => tone(f, 0.2, "triangle", 0.05), i * 140))
 };
-function flushSounds() { const seen = new Set(); for (const s of SFX) if (!seen.has(s)) { seen.add(s); SOUNDS[s] && SOUNDS[s](); } SFX = []; }
+function flushSounds() { if (!game) return; const seen = new Set(); for (const s of game.drainSfx()) if (!seen.has(s)) { seen.add(s); SOUNDS[s] && SOUNDS[s](); } }
 // A quiet marching cadence under every fight: it picks up hi-hats when anything breaks step, and doubles in a frenzy.
 let musicNext = 0, musicBeat = 0;
 function musicTick() {
@@ -475,7 +482,7 @@ function renderBar() {
   if (!R) { $("runStats").innerHTML = ""; return; }
   $("runStats").innerHTML = `<span>${esc(CHARS[R.char].name)}${R.cad ? ` · C${R.cad}` : ""}</span><span class="hpv" title="Health ${R.hp}/${R.maxhp}">Health <span class="medals" aria-label="${R.hp} of ${R.maxhp}">${Array.from({ length: R.maxhp }, (_, i) => `<i class="medal${i < R.hp ? "" : " lost"}"></i>`).join("")}</span></span><span class="gold">Gold <b>${R.gold}</b></span><span>Act <b>${R.act}</b></span>`;
 }
-function saveRun() { if (SIM) return; try { if (R && R.screen !== "end") localStorage.setItem("lockstep-run", JSON.stringify(R)); else localStorage.removeItem("lockstep-run"); } catch (e) {} }
+function saveRun() { try { if (R && R.screen !== "end") localStorage.setItem("lockstep-run", JSON.stringify(R)); else localStorage.removeItem("lockstep-run"); } catch (e) {} }
 
 // Each act has its own light: daylight sandstone, lamplit barracks, a torchlit citadel at night.
 const ACT_THEME = [
@@ -489,8 +496,7 @@ function applyTheme() {
   if (R) Object.assign(C, ACT_THEME[R.act - 1]);
 }
 function render() {
-  if (SIM) return;
-  setDims();
+  if (R && R.fight) ({ w: W, h: H } = ROOMS[R.fight.room]);
   applyTheme();
   renderBar();
   if (!R) { renderTitle(); return; }
@@ -521,13 +527,13 @@ function renderTitle() {
     `<span>Furthest act <b>${P.bestAct || "–"}</b></span>`,
     `<span>Bosses beaten <b>${BOSSES.filter(b => P.beat[b]).map(b => FOES[b].name).join(", ") || "none yet"}</b></span>`
   ].join("");
-  $("unlocks").innerHTML = UNLOCKS.map(u => `<li class="${u.has() ? "" : "no"}"><span class="tick">${u.has() ? "✓" : "·"}</span><span><b>${esc(u.what)}</b> <span class="muted">${esc(u.how)}</span></span></li>`).join("");
+  $("unlocks").innerHTML = UNLOCKS.map(u => `<li class="${u.has(P) ? "" : "no"}"><span class="tick">${u.has(P) ? "✓" : "·"}</span><span><b>${esc(u.what)}</b> <span class="muted">${esc(u.how)}</span></span></li>`).join("");
 }
 
 /* ---------- Map screen ---------- */
 function renderMap() {
   show("sMap");
-  const m = R.map, open = new Set(openNodes());
+  const m = R.map, open = new Set(game.openNodes());
   $("mapTitle").textContent = `Act ${R.act} · ${["The parade ground", "The barracks", "The citadel"][R.act - 1]}`;
   const X = c => 60 + c * 100, Y = r => r === 6 ? 52 : 548 - r * 80;
   let svg = "";
@@ -561,7 +567,7 @@ function renderStage() {
       ${pend}${ups}
       <div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
   } else if (R.screen === "rest") {
-    const heal = restHealAmount();
+    const heal = game.restHealAmount();
     s.innerHTML = `<div class="eyebrow">Campfire</div><h2>Rest</h2><p class="note">Do one thing before you march on.</p>
       <button class="choice" data-act="heal"${R.hp >= R.maxhp ? " disabled" : ""}><b>Rest</b><span>Heal ${heal} health (${R.hp}/${R.maxhp}).</span></button>
       <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Or drill: upgrade a card</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up }).replace('class="card', 'data-restup="' + i + '" class="card')).join("")}</div></div>
@@ -677,7 +683,7 @@ function resize() {
 // Chest height of a soldier standing on tile (x, y): where hits and numbers appear.
 const chest = (x, y) => { const [cx, cy] = at(x, y); return [cx, cy - tw * 0.6 * rowScale(y + 0.5)]; };
 function consumeFX() {
-  for (const f of FX) {
+  for (const f of game ? game.drainFx() : []) {
     const [cx, cy] = chest(f.x, f.y), [bx, by] = at(f.x, f.y);
     if (f.kind === "hit") { floats.push({ x: cx, y: cy - 6, text: `−${f.n}`, color: "#fffaf0", life: 1 }); burst(cx, cy, "#fffaf0", 6); }
     if (f.kind === "hurt") { floats.push({ x: cx, y: cy - 10, text: `−${f.n}`, color: C.danger, life: 1.2 }); burst(cx, cy, C.danger, 10); shake = reduced() ? 0 : 6; hitStop = performance.now() + 70; }
@@ -697,7 +703,6 @@ function consumeFX() {
     if (f.kind === "trap") burst(bx, by, C.brass, 10, true);
     if (f.kind === "shot") { const b = chest(f.tx, f.ty); shots.push({ a: [cx, cy], b, life: 0.35 }); burst(cx, cy, "#ffd27a", 8); burst(b[0], b[1], "#fffaf0", 8); shake = reduced() ? 0 : Math.max(shake, 3); }
   }
-  FX = [];
 }
 function burst(x, y, color, n, inward) {
   if (reduced()) return;
@@ -1044,7 +1049,7 @@ function draw(dt) {
   // Pits are holes cut in the board; trapdoors have a brass rim and a countdown.
   const pits = [...R0.pits].map(k2 => k2.split(",").map(Number)).concat(F.traps.map(t => [t.x, t.y, t.t]));
   for (const [x, y, tt] of pits) {
-    const filled = tt == null && !roomPit(x, y);
+    const filled = tt == null && !game.roomPit(x, y);
     ctx.save(); tileSpace(ctx, x, y);
     if (filled) {
       ctx.fillStyle = "rgba(90,67,48,0.55)"; rr(-0.4, -0.4, 0.8, 0.8, 0.12); ctx.fill();
@@ -1083,7 +1088,7 @@ function draw(dt) {
     ctx.save(); ctx.strokeStyle = `rgba(226,72,61,${reduced() ? 0.75 : 0.62 + Math.sin(now * 6) * 0.18})`; ctx.lineWidth = Math.max(2, tw * 0.045); ctx.setLineDash([tw * 0.12, tw * 0.1]);
     for (const [sx, sy] of DIRS) {
       let x = e.x, y = e.y;
-      for (;;) { const nx = x + sx, ny = y + sy; if (!inB(nx, ny) || (isWall(nx, ny) && !kegAt(nx, ny))) break; x = nx; y = ny; if (kegAt(x, y)) break; }
+      for (;;) { const nx = x + sx, ny = y + sy; if (!game.inB(nx, ny) || (game.isWall(nx, ny) && !game.kegAt(nx, ny))) break; x = nx; y = ny; if (game.kegAt(x, y)) break; }
       if (x === e.x && y === e.y) continue;
       const a = at(e.x, e.y), b = at(x, y); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
     }
@@ -1218,9 +1223,9 @@ function currentPreview() {
   pvKey = key;
   if (armed != null) {
     const slot = armed;
-    if (cardBlock(slot, dx, dy)) { pvVal = null; return null; }
-    pvVal = preview(() => play(slot, dx, dy));
-  } else pvVal = preview(() => step(dx, dy));
+    if (game.cardBlock(slot, dx, dy)) { pvVal = null; return null; }
+    pvVal = game.preview(g => g.play(slot, dx, dy));
+  } else pvVal = game.preview(g => g.step(dx, dy));
   return pvVal;
 }
 
@@ -1249,19 +1254,19 @@ function doDir(dx, dy) {
   if (armed != null) {
     const slot = armed, d = CARDS[R.hand[slot].id];
     if (!dx && !dy && d.dir) { armed = null; render(); return; }
-    const msg = cardBlock(slot, dx, dy);
+    const msg = game.cardBlock(slot, dx, dy);
     if (msg) { toast(msg); return; }
     armed = null;
-    act(() => play(slot, dx, dy));
-  } else act(() => step(dx, dy));
+    act(() => game.play(slot, dx, dy));
+  } else act(() => game.step(dx, dy));
 }
 function arm(slot) {
   if (!R || R.screen !== "fight" || R.fight.over) return;
   const c = R.hand[slot]; if (!c) return;
   if (c.cd > 0) { toast(`${CARDS[c.id].name} is ready in ${c.cd} turn${c.cd === 1 ? "" : "s"}.`); return; }
   if (!CARDS[c.id].dir) {
-    const msg = cardBlock(slot, 0, 0); if (msg) { toast(msg); return; }
-    armed = null; act(() => play(slot, 0, 0)); return;
+    const msg = game.cardBlock(slot, 0, 0); if (msg) { toast(msg); return; }
+    armed = null; act(() => game.play(slot, 0, 0)); return;
   }
   armed = armed === slot ? null : slot; pvKey = ""; render();
 }
@@ -1293,12 +1298,12 @@ $("hand").addEventListener("click", ev => { const b = ev.target.closest("button[
 
 $("chars").addEventListener("click", ev => { const b = ev.target.closest("[data-char]"); if (b && !b.disabled) { pickChar = b.dataset.char; renderTitle(); } });
 $("cads").addEventListener("click", ev => { const b = ev.target.closest("[data-cad]"); if (b && !b.disabled) { pickCad = +b.dataset.cad; renderTitle(); } });
-$("startBtn").addEventListener("click", () => { newRun(pickChar, pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
-$("resumeBtn").addEventListener("click", () => { try { R = adoptRun(JSON.parse(localStorage.getItem("lockstep-run"))); } catch (e) { R = null; } vis = {}; render(); });
-$("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === "fight" && R.fight) R.fight.over = "lose"; R.hp = Math.min(R.hp, 0); endRun(false); render(); });
+$("startBtn").addEventListener("click", () => { startRun(pickChar, pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
+$("resumeBtn").addEventListener("click", () => { try { useRun(adoptRun(JSON.parse(localStorage.getItem("lockstep-run")))); } catch (e) { useRun(null); } vis = {}; render(); });
+$("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === "fight" && R.fight) R.fight.over = "lose"; R.hp = Math.min(R.hp, 0); game.endRun(false); render(); });
 $("muteBtn").addEventListener("click", () => { muted = !muted; try { localStorage.setItem("lockstep-muted", muted ? "1" : "0"); } catch (e) {} renderBar(); });
 
-function mapPick(k) { if (enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
+function mapPick(k) { if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
 $("mapSvg").addEventListener("click", ev => { const g = ev.target.closest("[data-node]"); if (g) mapPick(g.dataset.node); });
 $("mapSvg").addEventListener("keydown", ev => { if (ev.key !== "Enter" && ev.key !== " ") return; const g = ev.target.closest("[data-node]"); if (g) { ev.preventDefault(); mapPick(g.dataset.node); } });
 
@@ -1306,32 +1311,32 @@ document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act],[data-take],[data-replace],[data-up],[data-restup],[data-buy],[data-buyup],[data-shopreplace],[data-ev],[data-order]");
   if (!b || b.disabled || !R) return;
   const a = b.dataset;
-  if (a.act === "claim") { fightReward(); render(); return; }
-  if (a.act === "fallen") { endRun(false); render(); return; }
-  if (a.act === "title") { R = null; render(); return; }
-  if (a.act === "leave") { leaveNode(); render(); return; }
+  if (a.act === "claim") { game.fightReward(); render(); return; }
+  if (a.act === "fallen") { game.endRun(false); render(); return; }
+  if (a.act === "title") { useRun(null); render(); return; }
+  if (a.act === "leave") { game.leaveNode(); render(); return; }
   if (a.act === "cancelReplace") { R.reward.pending = null; render(); return; }
-  if (a.act === "heal") { restHeal(); render(); return; }
-  if (a.act === "buyHeal") { buyHeal(); render(); return; }
-  if (a.act === "buyHp") { buyHp(); render(); return; }
+  if (a.act === "heal") { game.restHeal(); render(); return; }
+  if (a.act === "buyHeal") { game.buyHeal(); render(); return; }
+  if (a.act === "buyHp") { game.buyHp(); render(); return; }
   if (a.act === "cancelShop") { R.shop.pending = null; render(); return; }
-  if (a.act === "restock") { if (restock()) toast("The quartermaster brings out new stock."); render(); return; }
-  if (a.act === "buyOrder") { if (buyOrder()) toast(`${ORDERS[R.shop.order.id].name}: in effect for the rest of the run.`); render(); return; }
-  if (a.order) { if (!R.reward.tookOrder && takeOrder(a.order)) { R.reward.tookOrder = true; toast(`${ORDERS[a.order].name}: in effect for the rest of the run.`); } render(); return; }
-  if (a.take) { takeCard(a.take); render(); return; }
-  if (a.replace != null) { takeCard(R.reward.pending, +a.replace); render(); return; }
-  if (a.up != null) { if (upgradeCard(+a.up)) { R.reward.upgrade = false; toast(`${CARDS[R.hand[+a.up].id].name} upgraded.`); } render(); return; }
-  if (a.restup != null) { const id = R.hand[+a.restup]?.id; if (restUpgrade(+a.restup)) toast(`${CARDS[id].name} upgraded.`); render(); return; }
-  if (a.buy != null) { buyCard(+a.buy); render(); return; }
-  if (a.shopreplace != null) { buyCard(R.shop.pending.idx, +a.shopreplace); render(); return; }
-  if (a.buyup != null) { if (buyUpgrade(+a.buyup)) toast(`${CARDS[R.hand[+a.buyup].id].name} upgraded.`); render(); return; }
-  if (a.ev != null) { EVENTS[R.event].opts[+a.ev].go(); leaveNode(); render(); return; }
+  if (a.act === "restock") { if (game.restock()) toast("The quartermaster brings out new stock."); render(); return; }
+  if (a.act === "buyOrder") { if (game.buyOrder()) toast(`${ORDERS[R.shop.order.id].name}: in effect for the rest of the run.`); render(); return; }
+  if (a.order) { if (!R.reward.tookOrder && game.takeOrder(a.order)) { R.reward.tookOrder = true; toast(`${ORDERS[a.order].name}: in effect for the rest of the run.`); } render(); return; }
+  if (a.take) { game.takeCard(a.take); render(); return; }
+  if (a.replace != null) { game.takeCard(R.reward.pending, +a.replace); render(); return; }
+  if (a.up != null) { if (game.upgradeCard(+a.up)) { R.reward.upgrade = false; toast(`${CARDS[R.hand[+a.up].id].name} upgraded.`); } render(); return; }
+  if (a.restup != null) { const id = R.hand[+a.restup]?.id; if (game.restUpgrade(+a.restup)) toast(`${CARDS[id].name} upgraded.`); render(); return; }
+  if (a.buy != null) { game.buyCard(+a.buy); render(); return; }
+  if (a.shopreplace != null) { game.buyCard(R.shop.pending.idx, +a.shopreplace); render(); return; }
+  if (a.buyup != null) { if (game.buyUpgrade(+a.buyup)) toast(`${CARDS[R.hand[+a.buyup].id].name} upgraded.`); render(); return; }
+  if (a.ev != null) { EVENTS[R.event].opts[+a.ev].go(game); game.leaveNode(); render(); return; }
 });
 
 /* ---------- Boot ---------- */
 function boot(data) {
   readColors();
-  if (data && data.R && data.R.v === 1) R = adoptRun(data.R);
+  if (data && data.R && data.R.v === 1) useRun(adoptRun(data.R));
   render();
   initStore();
   requestAnimationFrame(frame);

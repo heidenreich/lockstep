@@ -6,8 +6,8 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 
 ## Code layout
 
-- `rules.js`: all game rules and state (data, map, fights, cards, rewards, shop and rest, unlocks). No DOM. The page loads it as a plain script; Node loads it with `require`.
-- `index.html`: the page (rendering, sound, input, profile storage). Publish it together with `rules.js`.
+- `rules.js`: all game rules. The data tables and pure helpers are plain globals; everything that reads or changes a run lives in a game from `makeGame(run, { profile, hooks, sim })`. A game owns its run, its effect queues and its sim flag. `game.fork()` is a sim copy (bots look ahead on forks) and `game.preview(g => g.step(dx, dy))` reports what a move would do without touching the run. No DOM.
+- `index.html`: the page (rendering, sound, input, profile storage). It holds one game at a time (`useRun`, `startRun`) and the player's profile `P`. Publish it together with `rules.js`.
 - `tests/`: rule tests. `npm test` (Node 18+).
 - `sim/run4.js`: the bot harness, `node sim/run4.js check|base|cards|bosses|econ|new [N]` (`check` is the quick balance read: one line per character). `sim/trace4*.js` trace stalled fights.
 - `archive/`: the earlier prototypes (`archive/prototype/`) and the harnesses that drove them (`archive/sim/`). Kept for reference; nothing current depends on them.
