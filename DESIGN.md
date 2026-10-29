@@ -11,7 +11,7 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 - `tests/`: rule tests. `npm test` (Node 18+).
 - `sim/run4.js`: the bot harness, `node sim/run4.js check|base|cards|bosses|econ|new [N]` (`check` is the quick balance read: one line per character). `sim/trace4*.js` trace stalled fights.
 - `archive/`: the earlier prototypes (`archive/prototype/`) and the harnesses that drove them (`archive/sim/`). Kept for reference; nothing current depends on them.
-- Randomness is seeded (`newRun(char, cad, seed)`); the RNG state lives in the run, so saved runs, the hover preview and bot replays see the same rolls as the real game.
+- Randomness is seeded (`game.newRun(char, cad, seed)`); the RNG state lives in the run, so saved runs, the hover preview and bot replays see the same rolls as the real game.
 
 Keep this doc in step with the code: change the numbers here in the same commit as a balance change.
 
