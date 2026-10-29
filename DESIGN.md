@@ -158,3 +158,23 @@ Same rule on a side-on stage with gravity (walk, jump, wait; the line copies wal
 Bot check (1-ply, C0, 30 runs per row): about the same as v10, 17–57% wins by row against 13–37% on the old code; 30 runs per row is noisy.
 
 Anchors (decided in the next pass): they used to yield with the rest of their line gone, which made an anchor elite "clear the normal enemies". Making them fight on dropped the 1-ply win rate from about 33% to about 12%. They now leave their post and fall into step instead, so the core rule finishes them (no change in win rate).
+
+## Balance pass 2 (2026-10-29)
+
+Changes, each its own commit with bot numbers in the message:
+- **Stalls:** in a frenzy the broken line runs (two steps) every third turn; a Recall during a frenzy holds for 4 turns. Nearly every stall was one chaser the player could outpace forever, or a frenzy Recall that relocked enemies for good.
+- **Mirror** seals any pit it climbs out of; 9 HP. **Warden** marches in step on the turns it doesn't chase (so it can be stepped into a pit; it was a draft check); back to 12 HP.
+- **Anchors** fall into step when their line is gone (they used to yield).
+- **Bonus orders:** Parade order now needs no damage *by turn 14*; Hold the line became *Clean drill* (no enemy ever blocked). All bonuses now land 36–70% for the 1-ply bot.
+- **Gold:** supply wagon at the pre-boss campfire, shop Restock, Rations +25 each. Unspent gold ~220 → ~75.
+- Lunge hurts on spikes it dashes across; winning on the turn you'd fall leaves you on 1; rests can be skipped (a full-health, fully upgraded hand used to soft-lock the rest screen).
+
+Bot check, win % per character (recruit / drummer / sapper), 150 runs (1-ply) or 60 (2-ply) each:
+
+| | v10 1-ply | now 1-ply | v10 2-ply | now 2-ply |
+|---|---|---|---|---|
+| C0 | 26 / 46 / 31 | 48 / 59 / 49 | 58 / 73 / 48 | 82 / 88 / 83 |
+| C3 | 17 / 32 / 25 | 34 / 43 / 45 | 48 / 72 / 63 | 72 / 83 / 80 |
+| C5 | 9 / 11 / 11 | 7 / 20 / 13 | 20 / 55 / 32 | 52 / 77 / 53 |
+
+Stalls per 150 1-ply runs went from 12–36 to 1–6. The game is clearly **easier** now, mostly because the Warden is no longer a draft check and spare gold turns into max health. No difficulty target is written down yet; set one from playtests, then tune with the obvious levers (Rations price, wagon contents, Warden HP, Cadence steps). The 2-ply bot still beats the Mirror 100% of the time (13–22 turns), so it remains the softest boss.
