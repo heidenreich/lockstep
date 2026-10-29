@@ -236,6 +236,8 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .letter p { font-family: "Caveat", "Segoe Print", cursive; font-size: 22px; line-height: 1.2; }
 .letter .eyebrow { color: #6b5a44; }
 .armtx { display: none; }
+.newhere { margin: 0; font-size: 14px; color: var(--ink); border-left: 3px solid var(--brass); padding: 4px 10px; }
+.newhere b { color: var(--brass); }
 
 /* Phones: the fight fits one screen. Bigger board edge to edge, compact cards in a row, pad beside the slate. */
 @media (max-width: 860px) {
@@ -332,6 +334,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
         <button class="btn ghost" id="drillBtn">Training drill</button>
         <span class="note" id="saveNote"></span>
       </div>
+      <p class="newhere" id="newHere" hidden><b>New here?</b> Your run opens with a one-minute training drill that shows you the rule. You can skip it.</p>
     </div>
     <div class="grid2" style="margin-top:14px">
       <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Record</div><div id="record" class="status"></div></div>
@@ -419,9 +422,9 @@ let P = mergeProfile({}), game = null, R = null;
 let W = 9, H = 9;
 const GAME_OPTS = { profile: () => P, hooks: { save: () => saveProfile(), toast: msg => toast(msg) } };
 function useRun(run) { game = run ? makeGame(run, GAME_OPTS) : null; R = run; return R; }
-// A player's first run opens with the training drill; the title screen can also start a run with it.
+// Until a player has finished or skipped the training drill, their next run opens with it; the title screen can also start one.
 function startRun(char, cad, drill) {
-  const first = !P.drilled && !P.runs;
+  const first = !P.drilled;
   game = makeGame(null, GAME_OPTS); R = game.newRun(char, cad);
   if (drill || first) game.startDrill();
   tally("run", { char, cad, drill: !!(drill || first) });
@@ -668,6 +671,7 @@ function renderTitle() {
   $("cadNote").textContent = pickCad ? CADENCE.slice(1, pickCad + 1).map(s => s.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
   let saved = null; try { saved = JSON.parse(localStorage.getItem("lockstep-run") || "null"); } catch (e) {}
   $("resumeBtn").hidden = !saved || saved.v !== 1;
+  $("newHere").hidden = !!P.drilled;
   $("saveNote").textContent = store.kind === "db" ? "Unlocks are saved to your account." : "Unlocks are saved in this browser.";
   $("record").innerHTML = [
     `<span>Runs <b>${P.runs}</b> · wins <b>${P.wins}</b> · falls <b>${P.deaths}</b></span>`,
