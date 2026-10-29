@@ -71,6 +71,8 @@ Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/prof
 
 - A toy diorama: a painted parade ground on a wooden plinth, front view with mild perspective; tin soldiers on green bases. Act settings: nursery windowsill (alphabet-block walls), lamplit study (books), toy box at night (crates). Mockups in `design/`.
 - Hovering a move draws chalk arrows for every piece that will move, plus damage and combo notes. Cards are paper drill cards, health is tin medals, fight status is a chalk slate.
+- Between fights, everything you can take or buy is a paper card (supplies and drill orders too, orders with a wax seal); upgrade pickers show what drilling changes, and a disabled offer says why. Each screen has a setting: reward and run-over on a chalk slate, the shop at a plank counter, rest by a campfire, events as a letter. The run-over screen lists this run's unlocks and the next one.
+- Phones: the board runs edge to edge and the fight fits one screen (cards in a compact row, the pad beside the slate; the armed card's text shows above the hand).
 - Feel: tweens, hit-stop, particles, light shake (off under reduced motion); synth snare and tom steps over a drum cadence that picks up when the line breaks.
 
 ## Code

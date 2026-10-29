@@ -190,6 +190,7 @@ function makeGame(run, opts = {}) {
     if (bag[id]) return;
     bag[id] = true;
     if (kind === "char" && P.cad[id] == null) P.cad[id] = 0;
+    if (R) (R.stats.unlocked = R.stats.unlocked || []).push(label);
     if (!SIM) hooks.toast(`Unlocked: ${label}`);
   }
   function fx(kind, x, y, extra) { if (!SIM) FX.push(Object.assign({ kind, x, y }, extra || {})); }

@@ -205,6 +205,66 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .choice.order { border-left: 6px solid #8a2a22; }
 .slate .warn b { color: #ff8a7a; }
 #cv { border-radius: 14px; }
+/* Between fights: paper cards for everything you can take, and a setting per screen. */
+.pickbox { display: grid; gap: 10px; }
+.offers { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.card.offer { grid-template-columns: 40px minmax(0, 1fr); align-content: start; }
+.card.offer .ico { width: 40px; height: 40px; }
+.card.offer .ico svg { width: 34px; height: 34px; }
+.card.offer .nm { padding-right: 0; font-size: 18px; }
+.card.offer .cd { position: static; grid-column: 2; }
+.card .tag { grid-column: 2; justify-self: start; margin-top: 4px; font-family: var(--f-mono); font-size: 12px; background: var(--brass); color: var(--brass-ink); border-radius: 999px; padding: 2px 9px; }
+.card .tag.why { background: transparent; color: var(--danger); border: 1px dashed currentColor; }
+.card .upn { grid-column: 2; font-family: var(--f-mono); font-size: 12px; color: var(--brass); }
+.card.pick:disabled { opacity: .62; }
+.card.order .ico { background: #f3e1d4; border-color: #d9b3a0; }
+.card.sold { background: transparent; border: 1px dashed rgba(255,255,255,.22); box-shadow: none; color: rgba(255,255,255,.45); grid-template-columns: 1fr; place-content: center; min-height: 68px; }
+.card.sold .nm { color: rgba(255,255,255,.45); }
+.scenehead { border-radius: 10px; padding: 18px 20px; display: grid; gap: 6px; }
+.scenehead p { margin: 0; }
+.scenehead.slatehead { background: #2d3431; border: 8px solid #7a4e2e; box-shadow: inset 0 0 22px rgba(0,0,0,.5), 0 12px 24px -14px #000; color: rgba(238,240,232,.85); }
+.slatehead p { font-family: "Caveat", "Segoe Print", cursive; font-size: 21px; line-height: 1.2; }
+.slatehead h2, .slatehead b { color: #fffaf0; }
+.slatehead .eyebrow { color: rgba(238,240,232,.6); }
+.slatehead .got b { color: #ffd77a; }
+.scenehead.counter { background: repeating-linear-gradient(180deg, #86562f 0 26px, #6e4526 26px 28px); border-bottom: 10px solid #4e311b; box-shadow: 0 14px 24px -14px #000; color: #fff3dc; }
+.counter .eyebrow { color: #f0d9b0; }
+.counter b { color: #ffd77a; }
+.scenehead.fire { background: radial-gradient(ellipse at 50% 135%, rgba(255,143,69,.6), rgba(255,143,69,0) 62%), var(--panel); border: 1px solid #7a4e2e; padding-bottom: 30px; animation: flicker 2.4s ease-in-out infinite alternate; }
+@keyframes flicker { from { box-shadow: 0 18px 40px -22px rgba(255,143,69,.5); } to { box-shadow: 0 18px 50px -18px rgba(255,143,69,.8); } }
+.scenehead.letter { background: #f3e8cf; color: #2b1d12; border: 1px solid #d6c59f; transform: rotate(-.6deg); box-shadow: 0 12px 22px -14px #000; }
+.letter p { font-family: "Caveat", "Segoe Print", cursive; font-size: 22px; line-height: 1.2; }
+.letter .eyebrow { color: #6b5a44; }
+.armtx { display: none; }
+
+/* Phones: the fight fits one screen. Bigger board edge to edge, compact cards in a row, pad beside the slate. */
+@media (max-width: 860px) {
+  body { padding-block: 8px 16px; }
+  .wrap { gap: 10px; }
+  .bar { gap: 4px 10px; min-height: 0; }
+  .logo { font-size: 22px; }
+  .stats { font-size: 12px; gap: 2px 10px; }
+  .iconbtn { padding: 3px 8px; font-size: 12px; }
+  .fight { gap: 10px; }
+  .boardbox { margin-inline: -16px; }
+  #cv { border-radius: 0; box-shadow: none; }
+  .fight .side { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .fight .side > .panel:first-child { grid-column: 1 / -1; padding: 10px; }
+  .fight .side > .panel:last-child { display: none; }
+  .fight .slate { font-size: 16px; padding: 10px; align-self: stretch; }
+  .fight .side > .panel:nth-child(3) { padding: 10px; align-self: start; }
+  #hand { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  #hand .card { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 8px 4px; min-height: 0; gap: 2px; }
+  #hand .card .ico { grid-row: auto; width: 40px; height: 40px; }
+  #hand .card .ico svg { width: 32px; height: 32px; }
+  #hand .card .nm { font-size: 14px; padding-right: 0; margin-top: 6px; }
+  #hand .card .tx { display: none; }
+  #hand .card .cd { position: static; }
+  #hand .card.empty { font-size: 11px; }
+  .armtx { display: inline; }
+  .keys { display: none; }
+  .pad { grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 44px); }
+}
 </style>
 
 <div class="wrap">
@@ -450,14 +510,30 @@ function cardHTML(c, i, opts) {
   const cls = ["card", o.cls || "", c.cd > 0 && o.inFight ? "cooling" : "", o.armed ? "armed" : ""].join(" ");
   const cd = o.inFight ? (c.cd > 0 ? `${c.cd} turn${c.cd === 1 ? "" : "s"}` : "ready") : `cd ${cardCd(c)}`;
   const key = o.inFight ? `<span class="k">${i + 1}</span>` : "";
-  return `<button class="${cls}" data-slot="${i}"${o.disabled ? " disabled" : ""}><span class="ico">${cardIcon(c.id)}${key}</span><span class="nm">${esc(d.name)}${c.up ? '<span class="up">+</span>' : ""}</span><span class="tx">${esc(cardText(c))}</span><span class="cd">${cd}</span></button>`;
+  // Upgrade pickers show what drilling the card changes; a disabled pick says why.
+  const note = o.upgrade ? `<span class="upn">${c.up ? "Already drilled" : esc(upNote(c))}</span>` : "";
+  return `<button class="${cls}" data-slot="${i}"${o.disabled ? " disabled" : ""}><span class="ico">${cardIcon(c.id)}${key}</span><span class="nm">${esc(d.name)}${c.up ? '<span class="up">+</span>' : ""}</span><span class="tx">${esc(cardText(c))}</span><span class="cd">${cd}</span>${note}${tagHTML(o.price, o.why)}</button>`;
 }
-function offerHTML(id, attrs, extra) {
+const UP_GAIN = { lunge: "first hit deals 3", shove: "knocks back 3" };
+const upNote = c => { const d = CARDS[c.id]; return d.cdUp < d.cd ? `Drilled: cooldown ${d.cd} → ${d.cdUp}` : `Drilled: ${UP_GAIN[c.id] || "stronger"}`; };
+const tagHTML = (price, why) => price || why ? `<span class="tag${why ? " why" : ""}">${esc(why || price)}</span>` : "";
+const needGold = price => R.gold < price ? `Need ${price - R.gold} more gold` : "";
+// Everything you can take or buy is a paper card: move cards, supplies and drill orders alike.
+function offerHTML(id, attrs, price, why) {
   const d = CARDS[id];
-  return `<button class="choice" ${attrs}><span class="ico">${cardIcon(id)}</span><b>${esc(d.name)}</b><span>${esc(d.text)}</span><span class="price">cooldown ${d.cd}${extra ? " · " + extra : ""}</span></button>`;
+  return `<button class="card pick offer" ${attrs}${why ? " disabled" : ""}><span class="ico">${cardIcon(id)}</span><span class="nm">${esc(d.name)}</span><span class="tx">${esc(d.text)}</span><span class="cd">cd ${d.cd}</span>${tagHTML(price, why)}</button>`;
 }
+const ITEM_ICONS = {
+  heal: `<rect x="15" y="7" width="10" height="26" rx="2" style="fill:var(--drone)"/><rect x="7" y="15" width="26" height="10" rx="2" style="fill:var(--drone)"/>`,
+  hp: `<circle cx="20" cy="22" r="10" style="fill:#e0ac45;stroke:#8a6420;stroke-width:2"/><path d="M20 4V12M14 6L20 12L26 6" style="fill:none;stroke:var(--drone);stroke-width:3;stroke-linecap:round"/><path d="M20 17V27M15 22H25" style="stroke:#8a6420;stroke-width:2.4;stroke-linecap:round"/>`,
+  seal: `<circle cx="20" cy="20" r="13" style="fill:#9b2a22"/><circle cx="20" cy="20" r="9" style="fill:none;stroke:#c9473c;stroke-width:1.5"/><path d="M20 13L22 18H27L23 21L24.5 26L20 23L15.5 26L17 21L13 18H18Z" style="fill:#e8b0a0"/>`,
+  rest: () => `<g transform="translate(5 5) scale(1.5)"><path d="${GLYPHS.rest}" style="fill:none;stroke:var(--heavy);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"/></g>`,
+  event: () => `<g transform="translate(5 5) scale(1.5)"><path d="${GLYPHS.event}" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round"/></g>`
+};
+const itemIcon = k => typeof ITEM_ICONS[k] === "function" ? ITEM_ICONS[k]() : ITEM_ICONS[k];
+const itemHTML = o => `<button class="card pick offer${o.cls ? " " + o.cls : ""}" ${o.attrs}${o.why ? " disabled" : ""}><span class="ico"><svg viewBox="0 0 40 40" aria-hidden="true">${itemIcon(o.ico)}</svg></span><span class="nm">${esc(o.name)}</span><span class="tx">${esc(o.text)}</span>${tagHTML(o.price, o.why)}</button>`;
 const orderChip = id => `<span class="ribbon" title="${esc(ORDERS[id].text)}"><b>${esc(ORDERS[id].name)}</b> <span>${esc(ORDERS[id].text)}</span></span>`;
-const orderOfferHTML = (id, attrs, extra) => `<button class="choice order" ${attrs}><b>${esc(ORDERS[id].name)}</b><span>${esc(ORDERS[id].text)}</span>${extra ? `<span class="price">${extra}</span>` : ""}</button>`;
+const orderOfferHTML = (id, attrs, price, why) => itemHTML({ cls: "order", attrs, ico: "seal", name: ORDERS[id].name, text: ORDERS[id].text, price, why });
 function goalLine(F) {
   const g = F.goal; if (!g) return "";
   const G = GOALS[g.id];
@@ -553,50 +629,56 @@ function renderMap() {
 }
 
 /* ---------- Stage screens ---------- */
+// Each screen between fights gets its own setting: a chalk slate, the quartermaster's counter, a campfire, a letter.
+const sceneHead = (scene, eyebrow, title, body) => `<header class="scenehead ${scene}"><div class="eyebrow">${eyebrow}</div><h2>${title}</h2>${body || ""}</header>`;
+const box = (label, inner, cls) => `<div class="panel pickbox"><div class="eyebrow">${label}</div><div class="${cls || "offers"}">${inner}</div></div>`;
+const handPick = (attr, opts) => R.hand.map((c, i) => cardHTML(c, i, Object.assign({ cls: "pick" }, typeof opts === "function" ? opts(c) : opts)).replace('class="card', `data-${attr}="${i}" class="card`)).join("");
+const soldHTML = `<div class="card pick offer sold"><span class="nm">Sold</span></div>`;
+function supplies(sh) {
+  const full = R.hp >= R.maxhp ? "Full health" : "";
+  return itemHTML({ attrs: 'data-act="buyHeal"', ico: "heal", name: "Field dressing", text: "Heal 3.", price: `${sh.healPrice} gold`, why: full || needGold(sh.healPrice) })
+    + itemHTML({ attrs: 'data-act="buyHp"', ico: "hp", name: "Rations", text: "+1 maximum health, and heal 1. Each one costs 25 more.", price: `${sh.hpPrice} gold`, why: needGold(sh.hpPrice) });
+}
 function renderStage() {
   show("sStage");
   const s = $("stage");
+  s.dataset.scene = R.screen;
   if (R.screen === "reward") {
     const rw = R.reward;
-    const pend = rw.pending ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Your hand is full. Replace a card with ${esc(CARDS[rw.pending].name)}, or cancel.</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" }).replace('class="card', 'data-replace="' + i + '" class="card')).join("")}</div><div><button class="btn ghost" data-act="cancelReplace">Cancel</button></div></div>` : "";
-    const ups = rw.upgrade ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Free upgrade: pick a card to improve</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up }).replace('class="card', 'data-up="' + i + '" class="card')).join("")}</div></div>` : "";
-    const gl = rw.goal ? `<p class="note">${rw.goal.ok ? "Bonus carried out" : "Bonus missed"}: <b>${esc(GOALS[rw.goal.id].name)}</b>${rw.goal.ok ? ` (+${GOALS[rw.goal.id].gold} gold, included)` : ""}.</p>` : "";
-    const ord = rw.orders && rw.orders.length && !rw.tookOrder ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Take a drill order (lasts the run)</div><div class="offers">${rw.orders.map(id => orderOfferHTML(id, `data-order="${id}"`)).join("")}</div></div>` : "";
-    s.innerHTML = `<div class="eyebrow">Room cleared</div><h2>+${rw.gold} gold</h2>${gl}${ord}
-      ${rw.took ? "" : `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Take a card, or skip</div><div class="offers">${rw.cards.map(id => offerHTML(id, `data-take="${id}"`)).join("") || '<p class="note">No new cards to offer.</p>'}</div></div>`}
-      ${pend}${ups}
-      <div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
+    const pend = rw.pending ? box(`Your hand is full. Replace a card with ${esc(CARDS[rw.pending].name)}, or cancel.`, handPick("replace", {}), "hand") + `<div><button class="btn ghost" data-act="cancelReplace">Cancel</button></div>` : "";
+    const ups = rw.upgrade ? box("Free upgrade: pick a card to drill", handPick("up", c => ({ disabled: c.up, upgrade: true })), "hand") : "";
+    const gl = rw.goal ? `<p>${rw.goal.ok ? "Bonus carried out" : "Bonus missed"}: <b>${esc(GOALS[rw.goal.id].name)}</b>${rw.goal.ok ? ` (+${GOALS[rw.goal.id].gold} gold, included)` : ""}.</p>` : "";
+    const ord = rw.orders && rw.orders.length && !rw.tookOrder ? box("Take a drill order (lasts the run)", rw.orders.map(id => orderOfferHTML(id, `data-order="${id}"`)).join("")) : "";
+    const cards = rw.took ? "" : box("Take a card, or skip", rw.cards.map(id => offerHTML(id, `data-take="${id}"`)).join("") || '<p class="note">No new cards to offer.</p>');
+    s.innerHTML = sceneHead("slatehead", R.fight && R.fight.kind === "boss" ? "Boss down" : "Room cleared", `+${rw.gold} gold`, gl) + ord + cards + pend + ups
+      + `<div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
   } else if (R.screen === "rest") {
     const heal = game.restHealAmount();
-    s.innerHTML = `<div class="eyebrow">Campfire</div><h2>Rest</h2><p class="note">Do one thing before you march on.</p>
-      <button class="choice" data-act="heal"${R.hp >= R.maxhp ? " disabled" : ""}><b>Rest</b><span>Heal ${heal} health (${R.hp}/${R.maxhp}).</span></button>
-      <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Or drill: upgrade a card</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up }).replace('class="card', 'data-restup="' + i + '" class="card')).join("")}</div></div>
-      ${R.shop && R.shop.wagon ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Supply wagon · you have ${R.gold} gold</div><div class="offers">
-        <button class="choice" data-act="buyHeal"${R.gold < R.shop.healPrice || R.hp >= R.maxhp ? " disabled" : ""}><b>Field dressing</b><span>Heal 3.</span><span class="price">${R.shop.healPrice} gold</span></button>
-        <button class="choice" data-act="buyHp"${R.gold < R.shop.hpPrice ? " disabled" : ""}><b>Rations</b><span>+1 maximum health, and heal 1. Each one costs 25 more.</span><span class="price">${R.shop.hpPrice} gold</span></button>
-      </div></div>` : ""}
-      <div class="row"><button class="btn ghost" data-act="leave">March on</button></div>`;
+    s.innerHTML = sceneHead("fire", "Campfire", "Rest", `<p>Do one thing before you march on. Health ${R.hp}/${R.maxhp}.</p>`)
+      + box("Rest", itemHTML({ attrs: 'data-act="heal"', ico: "rest", name: "Rest by the fire", text: `Heal ${heal} health.`, why: R.hp >= R.maxhp ? "Full health" : "" }))
+      + box("Or drill: upgrade a card", handPick("restup", c => ({ disabled: c.up, upgrade: true })), "hand")
+      + (R.shop && R.shop.wagon ? box(`Supply wagon · you have ${R.gold} gold`, supplies(R.shop)) : "")
+      + `<div class="row"><button class="btn" data-act="leave">March on</button></div>`;
   } else if (R.screen === "shop") {
     const sh = R.shop;
-    const pend = sh.pending ? `<div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Hand full: replace a card with ${esc(CARDS[sh.pending.id].name)}</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" }).replace('class="card', 'data-shopreplace="' + i + '" class="card')).join("")}</div><div><button class="btn ghost" data-act="cancelShop">Cancel</button></div></div>` : "";
-    s.innerHTML = `<div class="eyebrow">Quartermaster</div><h2>Shop</h2><p class="note">You have <b style="color:var(--brass)">${R.gold}</b> gold.</p>
-      <div class="offers">${sh.cards.map((o, i) => o.sold ? `<div class="choice" style="opacity:.4"><b>Sold</b></div>` : offerHTML(o.id, `data-buy="${i}"${R.gold < o.price ? " disabled" : ""}`, `${o.price} gold`)).join("")}</div>
-      ${pend}
-      <div class="offers">
-        <button class="choice" data-act="buyHeal"${R.gold < sh.healPrice || R.hp >= R.maxhp ? " disabled" : ""}><b>Field dressing</b><span>Heal 3.</span><span class="price">${sh.healPrice} gold</span></button>
-        <button class="choice" data-act="buyHp"${R.gold < sh.hpPrice ? " disabled" : ""}><b>Rations</b><span>+1 maximum health, and heal 1. Each one costs 25 more.</span><span class="price">${sh.hpPrice} gold</span></button>
-        ${sh.order ? (sh.order.sold ? `<div class="choice" style="opacity:.4"><b>Sold</b></div>` : orderOfferHTML(sh.order.id, `data-act="buyOrder"${R.gold < sh.order.price ? " disabled" : ""}`, `drill order · ${sh.order.price} gold`)) : ""}
-      </div>
-      <div class="panel" style="display:grid;gap:10px"><div class="eyebrow">Drill a card · ${sh.upPrice} gold</div><div class="hand">${R.hand.map((c, i) => cardHTML(c, i, { cls: "pick", disabled: c.up || R.gold < sh.upPrice }).replace('class="card', 'data-buyup="' + i + '" class="card')).join("")}</div></div>
-      <div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and order · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
+    const pend = sh.pending ? box(`Hand full: replace a card with ${esc(CARDS[sh.pending.id].name)}`, handPick("shopreplace", {}), "hand") + `<div><button class="btn ghost" data-act="cancelShop">Cancel</button></div>` : "";
+    const order = sh.order ? (sh.order.sold ? soldHTML : orderOfferHTML(sh.order.id, 'data-act="buyOrder"', `${sh.order.price} gold`, needGold(sh.order.price))) : "";
+    s.innerHTML = sceneHead("counter", "Quartermaster", "Shop", `<p>You have <b>${R.gold}</b> gold.</p>`)
+      + box("Move cards", sh.cards.map((o, i) => o.sold ? soldHTML : offerHTML(o.id, `data-buy="${i}"`, `${o.price} gold`, needGold(o.price))).join(""))
+      + pend
+      + box("Supplies and orders", supplies(sh) + order)
+      + box(`Drill a card · ${sh.upPrice} gold`, handPick("buyup", c => ({ disabled: c.up || R.gold < sh.upPrice, upgrade: true, why: c.up ? "" : needGold(sh.upPrice) })), "hand")
+      + `<div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and order · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
   } else if (R.screen === "event") {
     const ev = EVENTS[R.event];
-    s.innerHTML = `<div class="eyebrow">Along the way</div><h2>${esc(ev.title)}</h2><p class="note">${esc(ev.text)}</p>
-      ${ev.opts.map((o, i) => `<button class="choice" data-ev="${i}"><b>${esc(o.label)}</b><span>${esc(o.text)}</span></button>`).join("")}`;
+    s.innerHTML = sceneHead("letter", "Along the way", esc(ev.title), `<p>${esc(ev.text)}</p>`)
+      + `<div class="offers">${ev.opts.map((o, i) => itemHTML({ attrs: `data-ev="${i}"`, ico: "event", name: o.label, text: o.text })).join("")}</div>`;
   } else if (R.screen === "end") {
-    const e = R.end;
-    s.innerHTML = `<div class="eyebrow">${e.won ? "Victory" : "Run over"}</div><h2>${e.won ? "The citadel falls" : `Fell in act ${e.act}`}</h2>
-      <div class="panel status"><span>Cadet <b>${esc(CHARS[e.char].name)}</b>${e.cad ? ` · Cadence <b>C${e.cad}</b>` : ""}</span><span>Rooms fought <b>${e.stats.fights}</b> · turns <b>${e.stats.turns}</b></span><span>Enemies beaten <b>${e.stats.kills}</b>, <b>${e.stats.pitKills}</b> of them into pits</span><span>Gold collected <b>${e.gold}</b></span></div>
+    const e = R.end, got = e.stats.unlocked || [], next = UNLOCKS.find(u => !u.has(P));
+    const unl = got.length ? `<p class="got">Unlocked this run: <b>${got.map(esc).join(", ")}</b></p>` : "";
+    const nx = next ? `<p>Next unlock: <b>${esc(next.what)}</b> · ${esc(next.how)}</p>` : `<p>Everything is unlocked.</p>`;
+    s.innerHTML = sceneHead("slatehead", e.won ? "Victory" : "Run over", e.won ? "The citadel falls" : `Fell in act ${e.act}`, unl + nx)
+      + `<div class="panel status"><span>Cadet <b>${esc(CHARS[e.char].name)}</b>${e.cad ? ` · Cadence <b>C${e.cad}</b>` : ""}</span><span>Rooms fought <b>${e.stats.fights}</b> · turns <b>${e.stats.turns}</b></span><span>Enemies beaten <b>${e.stats.kills}</b>, <b>${e.stats.pitKills}</b> of them into pits</span><span>Gold collected <b>${e.gold}</b></span></div>
       <div class="row"><button class="btn" data-act="title">Back to the barracks</button></div>`;
   }
 }
@@ -609,7 +691,7 @@ function renderFight() {
   show("sFight");
   const F = R.fight;
   $("hand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { inFight: true, armed: armed === i })).join("") + (R.hand.length < R.slots ? `<div class="card empty">Empty slot</div>` : "");
-  $("armNote").textContent = armed != null ? `${CARDS[R.hand[armed].id].name}: pick a direction` : "";
+  $("armNote").innerHTML = armed != null ? `${esc(CARDS[R.hand[armed].id].name)}: pick a direction<span class="armtx">. ${esc(cardText(R.hand[armed]))}</span>` : "";
   const boss = F.enemies.find(e => foe(e).boss);
   const lines = [`<span>${esc(ROOMS[F.room].name)} · turn <b>${F.turn}</b></span>`];
   if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= 30 ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${30 - F.turn}</b>`}</span>`);
@@ -671,7 +753,7 @@ function tilePath(g, x, y, m) {
 }
 function resize() {
   const w = Math.min($("boardbox").clientWidth || 600, 820);
-  tw = Math.max(22, Math.min(84, Math.floor(w / (W + 1.6))));
+  tw = Math.max(22, Math.min(84, Math.floor(w / (W + (w < 600 ? 0.7 : 1.6)))));
   cell = tw;
   CW = w; ox = CW / 2; oy = Math.round(tw * 1.55);
   CH = Math.round(rowY(H) + tw * 1.05);
