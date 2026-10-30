@@ -25,12 +25,12 @@ function renderFight() {
   const loose = F.enemies.filter(e => e.free && !foe(e).chaser).length;
   if (loose) lines.push(`<span class="warn"><b>${loose}</b> broken free</span>`);
   if (F.goal) lines.push(goalLine(F));
-  if ((R.orders || []).length) lines.push(`<span class="ords">Orders: ${R.orders.map(id => `<b title="${esc(ORDERS[id].text)}">${esc(ORDERS[id].name)}</b>`).join(", ")}</span>`);
-  if (boss && boss.type === "mirror") lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Cadence flipped: <b>${F.flip}</b> turns left` : `Cadence flips in <b>${F.flipIn}</b>`}</span>`);
+  if ((R.orders || []).length) lines.push(`<span class="ords">Perks: ${R.orders.map(id => `<b title="${esc(ORDERS[id].text)}">${esc(ORDERS[id].name)}</b>`).join(", ")}</span>`);
+  if (boss && boss.type === "mirror") lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Direction flipped: <b>${F.flip}</b> turns left` : `Direction flips in <b>${F.flipIn}</b>`}</span>`);
   $("fstatus").innerHTML = lines.join("");
   $("log").innerHTML = F.log.map(l => `<li>${esc(l.msg)}</li>`).join("");
   const ban = $("banner");
-  ban.textContent = F.frenzy ? "Frenzy: everything is chasing you" : F.flip ? "Cadence flipped" : "";
+  ban.textContent = F.frenzy ? "Frenzy: everything is chasing you" : F.flip ? "Direction flipped" : "";
   ban.className = F.frenzy || F.flip ? "warn" : "";
   ban.parentElement.hidden = !ban.textContent;
   const cover = $("fightCover");

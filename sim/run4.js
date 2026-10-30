@@ -131,7 +131,7 @@ function runOne(bot, { char = "recruit", cad = 0, policy = { draft: "random" }, 
       const ev = K.EVENTS[R.event]; let i = 0;
       if (ev.title.includes("medic")) i = R.hp <= R.maxhp - 3 ? 0 : 1;
       else if (ev.title.includes("kit")) i = R.hand.length < R.slots ? 1 : 0;
-      else if (ev.title.includes("instructor")) i = R.hp >= 5 && R.hand.some(c => !c.up) ? 0 : 1;
+      else if (ev.title.includes("sergeant")) i = R.hp >= 5 && R.hand.some(c => !c.up) ? 0 : 1;
       else if (ev.title.includes("drum")) i = R.maxhp >= 8 ? 0 : 1;
       ev.opts[i].go(game); game.leaveNode(); continue;
     }
@@ -199,7 +199,7 @@ if (SECTION === "econ") {
 }
 
 if (SECTION === "new") {
-  console.log("== rifleman + bonus orders + drill orders, 1ply, C0");
+  console.log("== rifleman + bonuses + perks, 1ply, C0");
   for (const char of ["recruit", "drummer", "sapper"]) for (const [name, policy] of [["orders", { draft: "random" }], ["no orders", { draft: "random", orders: "none" }]]) {
     const rs = many(ply1, N, { char, policy });
     const goals = {}; for (const r of rs) for (const [k, [t, ok]] of Object.entries(r.goals)) { goals[k] = goals[k] || [0, 0]; goals[k][0] += t; goals[k][1] += ok; }

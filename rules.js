@@ -58,12 +58,12 @@ const RELOAD = 2;
 // Every non-boss room comes with a bonus order (Into the Breach style).
 const GOALS = {
   colours: { name: "Take the colours", text: "Step onto the flag before the room is clear, and before an enemy does.", gold: 20 },
-  pits: { name: "Pit drill", text: "Put 3 enemies into pits.", gold: 20, need: 3 },
-  line: { name: "Clean drill", text: "Win without any enemy ever being blocked (by a wall, the edge or another piece).", gold: 15 },
+  pits: { name: "Into the pits", text: "Put 3 enemies into pits.", gold: 20, need: 3 },
+  line: { name: "Clean march", text: "Win without any enemy ever being blocked (by a wall, the edge or another piece).", gold: 15 },
   unhurt: { name: "Parade order", text: "Win without taking any damage, by turn 14.", gold: 20, by: 14 },
   quick: { name: "Quick march", text: "Clear the room by turn 10.", gold: 15, by: 10 }
 };
-// Drill orders: passives for the run, from bosses and the shop.
+// Perks (internally "orders"): passives for the run, from bosses and the shop.
 const ORDERS = {
   sappers: { name: "Sappers' pride", text: "Every pit drop brings each card 1 turn closer." },
   bayonet: { name: "Fixed bayonets", text: "Your bump attacks deal 2." },
@@ -106,7 +106,7 @@ const CADENCE = [
   "C5: start with 2 less health."
 ];
 const NODE = {
-  fight: { label: "Fight", text: "A drill. Clear the room for gold and a card." },
+  fight: { label: "Fight", text: "A fight. Clear the room for gold and a card." },
   elite: { label: "Elite", text: "A harder room with an elite. Better gold, a card and a free upgrade." },
   rest: { label: "Rest", text: "Heal, or upgrade a card." },
   shop: { label: "Shop", text: "Spend gold on cards, upgrades and healing." },
@@ -114,7 +114,7 @@ const NODE = {
   boss: { label: "Boss", text: "The act's boss. Beat it to move on." }
 };
 const EVENTS = [
-  { title: "The drill instructor", text: "A sergeant offers to run you through your paces. It will hurt.",
+  { title: "The sergeant major", text: "A sergeant offers to run you through your paces. It will hurt.",
     opts: [{ label: "Train hard", text: "Lose 2 health. Upgrade a random card.", go: g => { g.run.hp = Math.max(1, g.run.hp - 2); g.upgradeRandom(); } },
            { label: "Decline", text: "Nothing happens.", go: () => {} }] },
   { title: "An abandoned kit", text: "Someone left their pack by the barracks door.",
@@ -583,8 +583,8 @@ function makeGame(run, opts = {}) {
     }
     const boss = F.enemies.find(e => foe(e).boss);
     if (boss && boss.type === "mirror") {
-      if (F.flip > 0) { if (--F.flip === 0) log("The cadence settles. Everyone moves the usual way."); }
-      else if (--F.flipIn <= 0) { F.flip = 5; F.flipIn = 5; log("The Mirror flips the cadence: for 5 turns, everyone moves the other way."); }
+      if (F.flip > 0) { if (--F.flip === 0) log("The Mirror settles. Everyone moves the usual way again."); }
+      else if (--F.flipIn <= 0) { F.flip = 5; F.flipIn = 5; log("The Mirror flips direction: for 5 turns, everyone moves the opposite way."); }
     }
     if (F.kind === "boss" && boss) {
       // After turn 30 the boss enrages and calls help every 3 turns, so a boss fight can't be stalled.
@@ -845,7 +845,7 @@ function makeGame(run, opts = {}) {
     R.screen = "map";
   }
   const shopPrice = n => Math.round(n * (hasO("quarter") ? 0.75 : 1) / 5) * 5;
-  // Fresh card and drill-order offers (used when the shop opens and when it restocks).
+  // Fresh card and perk offers (used when the shop opens and when it restocks).
   function shopStock() {
     const owned = new Set(R.hand.map(c => c.id)), oid = orderOffer(1)[0];
     return {
@@ -856,7 +856,7 @@ function makeGame(run, opts = {}) {
   function makeShop() {
     return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(45), restockPrice: shopPrice(15), pending: null });
   }
-  // Restock: new cards and a new drill order, for a price that rises each time in this shop.
+  // Restock: new cards and a new perk, for a price that rises each time in this shop.
   function restock() {
     const sh = R.shop;
     if (R.gold < sh.restockPrice) return false;

@@ -312,7 +312,7 @@ test("the Warden marches in step on the turns it doesn't chase, so it can be ste
   assert.equal(w.hp, K.FOES.warden.hp - 3);
 });
 
-test("bonus orders: Clean drill fails on the first block, Parade order has a turn limit", () => {
+test("bonuses: Clean march fails on the first block, Parade order has a turn limit", () => {
   let F = fight([
     "D#.......",
     ".........",

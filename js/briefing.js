@@ -1,5 +1,5 @@
-// Lockstep page: the briefing before each fight. Every room opens with its orders of the day: who is on the field,
-// what the ground holds, the bonus order and (for a boss) its twist. Pointing at a line lights those pieces or tiles
+// Lockstep page: the briefing before each fight. Every room opens with a briefing: who is on the field,
+// what the ground holds, the bonus and (for a boss) its twist. Pointing at a line lights those pieces or tiles
 // up on the board. It folds away on your first move; the Briefing button in the top bar brings it back.
 
 /* ---------- Briefing ---------- */
@@ -65,11 +65,11 @@ function renderBrief() {
   const win = boss ? `Beat the ${esc(foe(boss).name)}. The fight ends the moment it falls; its helpers don't matter.` : "Clear the room: every enemy down, into a pit or out of the fight.";
   const clock = boss ? [`Turn 30: the ${esc(foe(boss).name)} enrages. Its helpers break free and more arrive every 3 turns.`]
     : [`Turn ${F.frenzyAt}: frenzy. Every enemy breaks free and chases you.`, `Every ${ARRIVE_EVERY} turns one more joins (${MAX_ARRIVALS} at most) while 2 or more are left. Waiting brings one at once.`];
-  const html = `<div class="briefhead"><div><span class="eyebrow">Orders of the day</span><h3 id="briefTitle" tabindex="-1">${esc(ROOMS[F.room].name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
+  const html = `<div class="briefhead"><div><span class="eyebrow">Briefing</span><h3 id="briefTitle" tabindex="-1">${esc(ROOMS[F.room].name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
     <p class="briefwin"><b>Win:</b> ${win}</p>
     ${fresh.length ? `<div class="eyebrow">New here</div><ul class="brieflist">${fresh.map(r => `<li data-hi="${r.key}" tabindex="0">${sw(r, 44, 48)}<span><span class="newtag">New</span> <b>${esc(r.title)}</b> ${esc(r.text)}</span></li>`).join("")}</ul>` : ""}
     ${known.length ? `<div class="eyebrow">${fresh.length ? "Also here" : "Here"}</div><ul class="briefchips">${known.map(r => `<li data-hi="${r.key}" tabindex="0" title="${esc(r.text)}" aria-label="${esc(r.title + ": " + r.text)}">${sw(r, 28, 30)}<b>${esc(r.title)}</b></li>`).join("")}</ul><p class="briefdetail" id="briefDetail" aria-live="polite">Point at one to see its rule and where it is.</p>` : ""}
-    ${G ? `<p class="briefbonus"><span class="eyebrow">Bonus order · +${G.gold} gold</span><b>${esc(G.name)}.</b> ${esc(G.text)}</p>` : ""}
+    ${G ? `<p class="briefbonus"><span class="eyebrow">Bonus · +${G.gold} gold</span><b>${esc(G.name)}.</b> ${esc(G.text)}</p>` : ""}
     <ul class="briefclock">${clock.map(c => `<li>${c}</li>`).join("")}</ul>
     <label class="briefauto"><input type="checkbox" id="briefAuto"${briefAuto() ? " checked" : ""}> Brief me before every fight</label>`;
   // Rebuild only when something changed, so keyboard focus and the lit line survive the game's frequent redraws.

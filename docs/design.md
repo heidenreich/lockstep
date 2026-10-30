@@ -46,7 +46,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 
 Bosses (a pit deals 3 and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
-2. **Mirror**: locked contrarian, 9 HP; every 5 turns the cadence flips for 5 turns (telegraphed). A pit it climbs out of is sealed.
+2. **Mirror**: locked contrarian, 9 HP; every 5 turns it flips direction for 5 turns (telegraphed). A pit it climbs out of is sealed.
 3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns.
 
 ## Run
@@ -54,10 +54,14 @@ Bosses (a pit deals 3 and the boss climbs back out at an edge):
 - 3 acts, each a 6-row branching map plus a boss; row 6 is always Rest. Each act has its own rooms, roster and light.
 - Nodes: **Fight**, **Elite** (from row 3), **Rest** (heal 3, upgrade a card, or March on), **Shop**, **Event**, **Boss**.
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
-- Shop: cards 30–45, upgrade 40, Field dressing (heal 3) 25, Rations (+1 max HP) 45 rising 25 each, one drill order 75–90, Restock 15 rising 10 each. The campfire before each boss has a supply wagon (Rations, Field dressing).
-- **Bonus orders:** every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Pit drill (3 pit drops) 20, Clean drill (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
-- **Drill orders** (run-long passives): bosses offer 1 of 3, shops sell one. Sappers' pride, Fixed bayonets, Iron ranks, Steady drum, Deep pits, Short fuses, Hobnail boots, Field surgeon, Crossfire, Rally, Quartermaster's friend, Reserve slot (texts in `ORDERS`).
+- Shop: cards 30–45, upgrade 40, Field dressing (heal 3) 25, Rations (+1 max HP) 45 rising 25 each, one perk 75–90, Restock 15 rising 10 each. The campfire before each boss has a supply wagon (Rations, Field dressing).
+- **Bonuses** (`GOALS`): every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Into the pits (3 pit drops) 20, Clean march (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
+- **Perks** (run-long passives, `ORDERS` in code): bosses offer 1 of 3, shops sell one. Sappers' pride, Fixed bayonets, Iron ranks, Steady drum, Deep pits, Short fuses, Hobnail boots, Field surgeon, Crossfire, Rally, Quartermaster's friend, Reserve slot (texts in `ORDERS`).
 - Winning a fight on the turn you'd fall leaves you on 1.
+
+## Words
+
+One word per idea, in everything the player reads: **Briefing** (the card before a fight), **Bonus** (a room's extra-gold goal), **Perks** (run-long passives; `ORDERS` in code), **Upgrade** (improve a card), **Cadence** (the difficulty ladder only; the Mirror "flips direction"), **training drill** (the lesson room only; the Fight space is "A fight").
 
 ## Onboarding
 
@@ -85,7 +89,7 @@ Saved per player in the artifact's per-user storage (`db`, `data/users/<id>/prof
 - **You:** the blue cadet stands on a pulsing brass tile with a brass chevron pointing at it from beside the piece (from the left near the right edge; overhead it would land on the piece behind); for the first 3 turns of each fight (and the whole drill) the chevron carries a handwritten "you" tag.
 - **The map is a toy board game:** the act's tabletop (nursery floorboards, the study's desk blotter, the toy box), a wooden-framed board with the parade ground painted on it and the act's name on a brass plate. Rooms are painted board-game spaces (red fight, gold elite, green rest, blue shop, cream event) with their mark on top; tracks between them are chalk dashes ahead, marching brass dashes for the ways open to you and brass boot prints where you've been. Your tin cadet stands on your space (or on the "fall in" square before the first room), the act's boss piece waits on the boss space, open spaces lift and glow, passed ones dull and visited ones carry a chalk tick. The canvas only paints; an SVG over it holds the clickable, focusable spaces.
 - Hovering a move draws chalk arrows for every piece that will move, plus damage and combo notes. Cards are paper drill cards, health is tin medals, fight status is a chalk slate.
-- Between fights, everything you can take or buy is a paper card (supplies and drill orders too, orders with a wax seal); upgrade pickers show what drilling changes, and a disabled offer says why. Each screen has a setting: reward and run-over on a chalk slate, the shop at a plank counter, rest by a campfire, events as a letter. The run-over screen lists this run's unlocks and the next one.
+- Between fights, everything you can take or buy is a paper card (supplies and perks too, perks with a wax seal); upgrade pickers show what drilling changes, and a disabled offer says why. Each screen has a setting: reward and run-over on a chalk slate, the shop at a plank counter, rest by a campfire, events as a letter. The run-over screen lists this run's unlocks and the next one.
 - Phones: the board runs edge to edge and the fight fits one screen (cards in a compact row, the pad beside the slate; the armed card's text shows above the hand).
 - Feel: tweens, hit-stop, particles, light shake (off under reduced motion); synth snare and tom steps over a drum cadence that picks up when the line breaks.
 
