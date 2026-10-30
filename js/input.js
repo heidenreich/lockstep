@@ -2,6 +2,8 @@
 
 /* ---------- Input ---------- */
 function act(fn) {
+  // Your first move folds the briefing away.
+  if (briefOpen) closeBrief();
   const before = R && R.fight;
   visBefore = {}; for (const k of Object.keys(vis)) visBefore[k] = { x: vis[k].x, y: vis[k].y };
   const prevPos = before ? new Map(before.enemies.map(e => [e.id, e.x + "," + e.y])) : new Map();
@@ -47,7 +49,7 @@ window.addEventListener("keydown", e => {
   if (e.metaKey || e.ctrlKey || e.altKey || $("help").open) return;
   if (!R || R.screen !== "fight") return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (k === "Escape") { armed = null; pvKey = ""; render(); return; }
+  if (k === "Escape") { if (briefOpen) closeBrief(); armed = null; pvKey = ""; render(); return; }
   if (["1", "2", "3", "4"].includes(k)) { e.preventDefault(); arm(+k - 1); return; }
   const d = KEYS[k]; if (!d) return;
   e.preventDefault(); doDir(d[0], d[1]);
@@ -74,13 +76,21 @@ $("resumeBtn").addEventListener("click", () => { try { useRun(adoptRun(JSON.pars
 $("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === "fight" && R.fight) R.fight.over = "lose"; R.hp = Math.min(R.hp, 0); game.endRun(false); render(); });
 $("drillBtn").addEventListener("click", () => { startRun(pickChar, pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);
+$("briefBtn").addEventListener("click", () => { briefOpen = true; render(); });
+// Pointing at (or focusing, or tapping) a briefing line lights up those pieces or tiles on the board.
+const briefLine = ev => ev.target.closest && ev.target.closest("#brief li[data-hi]");
+$("brief").addEventListener("mouseover", ev => { const li = briefLine(ev); briefHi = li ? li.dataset.hi : null; });
+$("brief").addEventListener("mouseleave", () => { briefHi = null; });
+$("brief").addEventListener("focusin", ev => { const li = briefLine(ev); if (li) briefHi = li.dataset.hi; });
+$("brief").addEventListener("click", ev => { const li = briefLine(ev); if (li) briefHi = briefHi === li.dataset.hi ? null : li.dataset.hi; });
+$("brief").addEventListener("change", ev => { if (ev.target.id === "briefAuto") setBriefAuto(ev.target.checked); });
 for (const id of ["helpClose", "helpOk"]) $(id).addEventListener("click", () => $("help").close());
 // A click on the dimmed backdrop (outside the dialog box) closes it too; Esc already does.
 $("help").addEventListener("click", ev => { const r = $("help").getBoundingClientRect(); if (ev.target === $("help") && (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom)) $("help").close(); });
 $("helpDrill").addEventListener("click", () => { $("help").close(); startRun(pickChar, pickCad, true); render(); });
 $("muteBtn").addEventListener("click", () => { muted = !muted; try { localStorage.setItem("lockstep-muted", muted ? "1" : "0"); } catch (e) {} renderBar(); });
 
-function mapPick(k) { if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
+function mapPick(k) { briefOpen = false; if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
 $("mapSvg").addEventListener("click", ev => { const g = ev.target.closest("[data-node]"); if (g) mapPick(g.dataset.node); });
 $("mapSvg").addEventListener("keydown", ev => { if (ev.key !== "Enter" && ev.key !== " ") return; const g = ev.target.closest("[data-node]"); if (g) { ev.preventDefault(); mapPick(g.dataset.node); } });
 
@@ -92,6 +102,7 @@ document.addEventListener("click", ev => {
   if (a.act === "claim") { if (R.fight && R.fight.kind === "drill") tally("drill"); game.fightReward(); render(); return; }
   if (a.act === "skipDrill") { tally("drillSkip", { step: Object.keys(R.fight.coach || {}).length }); game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
   if (a.act === "noteOk") { noteQueue.shift(); render(); return; }
+  if (a.act === "briefClose") { closeBrief(); render(); return; }
   if (a.act === "fallen") { game.endRun(false); render(); return; }
   if (a.act === "title") { useRun(null); render(); return; }
   if (a.act === "leave") { game.leaveNode(); render(); return; }

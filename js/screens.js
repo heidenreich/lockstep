@@ -149,18 +149,15 @@ function renderMap() {
   show("sMap");
   const m = R.map, open = new Set(game.openNodes());
   $("mapTitle").textContent = `Act ${R.act} · ${["The parade ground", "The barracks", "The citadel"][R.act - 1]}`;
-  const X = c => 60 + c * 100, Y = r => r === 6 ? 52 : 548 - r * 80;
+  // The board itself is painted on the canvas underneath (mapboard.js); the SVG carries clicks, focus and names.
   let svg = "";
-  for (const e of m.edges) {
-    const [a, b] = e.split(">"), na = m.nodes[a], nb = m.nodes[b];
-    svg += `<line class="edge ${R.walked.includes(e) ? "walked" : ""}" x1="${X(na.c)}" y1="${Y(na.r)}" x2="${X(nb.c)}" y2="${Y(nb.r)}"/>`;
-  }
   for (const [k, n] of Object.entries(m.nodes)) {
-    const isOpen = open.has(k), done = R.walked.some(e => e.split(">")[0] === k) || R.pos === k;
-    const r = n.t === "boss" ? 32 : 22;
-    svg += `<g class="node ${isOpen ? "open" : ""} ${done ? "done" : ""} ${R.pos === k ? "here" : ""}" data-node="${k}"${isOpen ? ` tabindex="0" role="button" aria-label="${NODE[n.t].label}"` : ""}><title>${NODE[n.t].label}</title>${isOpen ? `<circle class="ring" cx="${X(n.c)}" cy="${Y(n.r)}" r="${r}"/>` : ""}<circle cx="${X(n.c)}" cy="${Y(n.r)}" r="${r}"/>${glyphSvg(n.t, X(n.c), Y(n.r), n.t === "boss" ? 1.7 : 1.15)}</g>`;
+    if (!open.has(k)) continue;
+    const r = n.t === "boss" ? 34 : 25, label = NODE[n.t].label === "?" ? "Event" : NODE[n.t].label;
+    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${label}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/></g>`;
   }
   $("mapSvg").innerHTML = svg;
+  drawMap(performance.now() / 1000);
   $("mapHand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" })).join("") + (R.hand.length < R.slots ? `<div class="card empty">${R.slots - R.hand.length} empty slot${R.slots - R.hand.length === 1 ? "" : "s"}</div>` : "");
   $("mapOrders").innerHTML = (R.orders || []).length ? R.orders.map(orderChip).join("") : `<p class="note">None yet. Bosses and the shop hand them out.</p>`;
   $("legend").innerHTML = Object.entries(NODE).map(([t, n]) => `<div><svg viewBox="0 0 20 20" aria-hidden="true"><path class="glyph" d="${GLYPHS[t]}"/></svg><span><b>${n.label === "?" ? "Event" : n.label}</b> <span class="muted">${esc(n.text)}</span></span></div>`).join("");

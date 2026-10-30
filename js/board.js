@@ -7,7 +7,8 @@ const cv = $("cv"), ctx = cv.getContext("2d");
 function renderFight() {
   show("sFight");
   const F = R.fight;
-  renderCoach();
+  // The briefing and the coach share the top of the side column; the briefing goes first.
+  if (renderBrief()) $("coach").hidden = true; else renderCoach();
   $("handPanel").classList.toggle("drilling", F.kind === "drill");
   $("hand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { inFight: true, armed: armed === i })).join("") + (R.hand.length < R.slots ? `<div class="card empty">Empty slot</div>` : "");
   $("armNote").innerHTML = armed != null ? `${esc(CARDS[R.hand[armed].id].name)}: pick a direction<span class="armtx">. ${esc(cardText(R.hand[armed]))}</span>` : "";
@@ -587,6 +588,7 @@ function draw(dt) {
     ctx.restore();
     if (tt != null) { const [cx, cy] = at(x, y); ctx.fillStyle = "#f0c25e"; ctx.font = `700 ${Math.round(tw * 0.34)}px ${HAND}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(tt, cx, cy); }
   }
+  drawBriefHi(ctx, F, now);
   // Chalk arrows for the move under the cursor: the room's step, yours in brass, broken ones in red.
   const pv = currentPreview();
   if (pv && pv.ok) {
@@ -768,6 +770,7 @@ function frame(t) {
   const dt = Math.min(0.05, (t - lastFrame) / 1000 || 0.016); lastFrame = t;
   if (!R && !$("sTitle").hidden && !document.hidden) drawTitle(t / 1000);
   if (R && R.screen === "fight" && !document.hidden) draw(dt);
+  if (R && R.screen === "map" && !document.hidden) drawMap(t / 1000);
   requestAnimationFrame(frame);
 }
 
