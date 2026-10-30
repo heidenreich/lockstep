@@ -55,7 +55,7 @@ const UP_GAIN = { lunge: "first hit deals 3", shove: "knocks back 3" };
 const upNote = c => { const d = CARDS[c.id]; return d.cdUp < d.cd ? `Drilled: cooldown ${d.cd} → ${d.cdUp}` : `Drilled: ${UP_GAIN[c.id] || "stronger"}`; };
 const tagHTML = (price, why) => price || why ? `<span class="tag${why ? " why" : ""}">${esc(why || price)}</span>` : "";
 const needGold = price => R.gold < price ? `Need ${price - R.gold} more gold` : "";
-// Everything you can take or buy is a paper card: move cards, supplies and drill orders alike.
+// Everything you can take or buy is a paper card: move cards, supplies and perks alike.
 function offerHTML(id, attrs, price, why) {
   const d = CARDS[id];
   return `<button class="card pick offer" ${attrs}${why ? " disabled" : ""}><span class="ico">${cardIcon(id)}</span><span class="nm">${esc(d.name)}</span><span class="tx">${esc(d.text)}</span><span class="cd">cd ${d.cd}</span>${tagHTML(price, why)}</button>`;
@@ -158,8 +158,11 @@ function renderMap() {
   let svg = "";
   for (const [k, n] of Object.entries(m.nodes)) {
     if (!open.has(k)) continue;
-    const r = n.t === "boss" ? 34 : 25, label = NODE[n.t].label === "?" ? "Event" : NODE[n.t].label;
-    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${label}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
+    // The route only exists on the canvas, so the name says where each space leads.
+    const r = n.t === "boss" ? 34 : 25, label = spaceName(n.t);
+    const next = [...new Set(m.edges.filter(e => e.startsWith(k + ">")).map(e => spaceName(m.nodes[e.split(">")[1]].t)))];
+    const name = n.t === "boss" ? `Boss: the ${FOES[BOSSES[R.act - 1]].name}` : `${label}${next.length ? `, then ${next.join(" or ")}` : ""}`;
+    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${esc(name)}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
   }
   $("mapSvg").innerHTML = svg;
   drawMap(performance.now() / 1000);
@@ -186,9 +189,9 @@ function renderStage() {
   if (R.screen === "reward") {
     const rw = R.reward;
     const pend = rw.pending ? box(`Your hand is full. Replace a card with ${esc(CARDS[rw.pending].name)}, or cancel.`, handPick("replace", {}), "hand") + `<div><button class="btn ghost" data-act="cancelReplace">Cancel</button></div>` : "";
-    const ups = rw.upgrade ? box("Free upgrade: pick a card to drill", handPick("up", c => ({ disabled: c.up, upgrade: true })), "hand") : "";
+    const ups = rw.upgrade ? box("Free upgrade: pick a card", handPick("up", c => ({ disabled: c.up, upgrade: true })), "hand") : "";
     const gl = rw.goal ? `<p>${rw.goal.ok ? "Bonus carried out" : "Bonus missed"}: <b>${esc(GOALS[rw.goal.id].name)}</b>${rw.goal.ok ? ` (+${GOALS[rw.goal.id].gold} gold, included)` : ""}.</p>` : "";
-    const ord = rw.orders && rw.orders.length && !rw.tookOrder ? box("Take a drill order (lasts the run)", rw.orders.map(id => orderOfferHTML(id, `data-order="${id}"`)).join("")) : "";
+    const ord = rw.orders && rw.orders.length && !rw.tookOrder ? box("Take a perk (lasts the run)", rw.orders.map(id => orderOfferHTML(id, `data-order="${id}"`)).join("")) : "";
     const cards = rw.took ? "" : box("Take a card, or skip", rw.cards.map(id => offerHTML(id, `data-take="${id}"`)).join("") || '<p class="note">No new cards to offer.</p>');
     s.innerHTML = sceneHead("slatehead", R.fight && R.fight.kind === "boss" ? "Boss down" : "Room cleared", `+${rw.gold} gold`, gl) + ord + cards + pend + ups
       + `<div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
@@ -196,7 +199,7 @@ function renderStage() {
     const heal = game.restHealAmount();
     s.innerHTML = sceneHead("fire", "Campfire", "Rest", `<p>Do one thing before you march on. Health ${R.hp}/${R.maxhp}.</p>`)
       + box("Rest", itemHTML({ attrs: 'data-act="heal"', ico: "rest", name: "Rest by the fire", text: `Heal ${heal} health.`, why: R.hp >= R.maxhp ? "Full health" : "" }))
-      + box("Or drill: upgrade a card", handPick("restup", c => ({ disabled: c.up, upgrade: true })), "hand")
+      + box("Or upgrade a card", handPick("restup", c => ({ disabled: c.up, upgrade: true })), "hand")
       + (R.shop && R.shop.wagon ? box(`Supply wagon · you have ${R.gold} gold`, supplies(R.shop)) : "")
       + `<div class="row"><button class="btn" data-act="leave">March on</button></div>`;
   } else if (R.screen === "shop") {
@@ -206,9 +209,9 @@ function renderStage() {
     s.innerHTML = sceneHead("counter", "Quartermaster", "Shop", `<p>You have <b>${R.gold}</b> gold.</p>`)
       + box("Move cards", sh.cards.map((o, i) => o.sold ? soldHTML : offerHTML(o.id, `data-buy="${i}"`, `${o.price} gold`, needGold(o.price))).join(""))
       + pend
-      + box("Supplies and orders", supplies(sh) + order)
-      + box(`Drill a card · ${sh.upPrice} gold`, handPick("buyup", c => ({ disabled: c.up || R.gold < sh.upPrice, upgrade: true, why: c.up ? "" : needGold(sh.upPrice) })), "hand")
-      + `<div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and order · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
+      + box("Supplies and perks", supplies(sh) + order)
+      + box(`Upgrade a card · ${sh.upPrice} gold`, handPick("buyup", c => ({ disabled: c.up || R.gold < sh.upPrice, upgrade: true, why: c.up ? "" : needGold(sh.upPrice) })), "hand")
+      + `<div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and perk · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
   } else if (R.screen === "event") {
     const ev = EVENTS[R.event];
     s.innerHTML = sceneHead("letter", "Along the way", esc(ev.title), `<p>${esc(ev.text)}</p>`)

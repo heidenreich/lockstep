@@ -55,11 +55,12 @@
     <div class="mapwrap">
       <div class="panel map">
         <div class="row between maphead"><h3 id="mapTitle">Act 1</h3><span class="note">Pick the next room. Paths only go up.</span></div>
-        <div class="mapboard"><canvas id="mapCv" aria-hidden="true"></canvas><svg id="mapSvg" viewBox="0 0 420 660" role="group" aria-label="Run map: pick one of the lit spaces"></svg></div>
+        <p class="mapkey" aria-hidden="true"><span><i style="background:#b8433a"></i>Fight</span><span><i style="background:#d9a441"></i>Elite</span><span><i style="background:#3f8a4f"></i>Rest</span><span><i style="background:#2f6aa8"></i>Shop</span><span><i style="background:#efe6cf"></i>Event</span><span><i style="background:#2a2730;box-shadow:0 0 0 2px #b8322b"></i>Boss</span></p>
+        <div class="mapboard"><canvas id="mapCv" aria-hidden="true"></canvas><svg id="mapSvg" viewBox="0 0 420 680" role="group" aria-label="Run map: pick one of the lit spaces"></svg></div>
       </div>
       <div class="side">
         <div class="panel stack"><div class="eyebrow">Your hand</div><div class="hand" id="mapHand"></div></div>
-        <div class="panel stack tight" id="mapOrdersBox"><div class="eyebrow">Drill orders</div><div class="orders" id="mapOrders"></div></div>
+        <div class="panel stack tight" id="mapOrdersBox"><div class="eyebrow">Perks</div><div class="orders" id="mapOrders"></div></div>
         <div class="panel legend" id="legend"></div>
       </div>
     </div>
@@ -115,7 +116,7 @@
   <div class="eyebrow">Reading the board</div>
   <ul class="rules plain">
     <li>Hover the board or the arrows to preview a move: chalk arrows show where everything goes, and the damage you'd take.</li>
-    <li>The chalk slate shows the turn, enemies left, the frenzy countdown and this room's bonus order (extra gold if you carry it out).</li>
+    <li>The chalk slate shows the turn, enemies left, the frenzy countdown and this room's bonus (extra gold if you carry it out).</li>
     <li>Keys: <kbd>WASD</kbd> or arrows step, <kbd>1</kbd>–<kbd>4</kbd> arm a card, <kbd>Space</kbd> wait, <kbd>Esc</kbd> cancel. On a phone, tap a tile beside you.</li>
   </ul>
   <div class="row"><button class="btn" id="helpDrill">Run the training drill</button><button class="btn ghost" id="helpOk">Got it</button></div>
