@@ -599,7 +599,7 @@ function makeGame(run, opts = {}) {
         for (let i = 0; i < n; i++) { const e = spawn(boss.type === "mirror" ? "contra" : "drone"); if (e && enraged) e.free = true; }
         log(`The ${foe(boss).name} calls in reinforcements.`);
       }
-    } else if (F.kind !== "drill") {
+    } else if (F.kind !== "boss" && F.kind !== "drill") {
       if (!F.frenzy && F.enemies.length >= 2 && F.arrivals < MAX_ARRIVALS && F.turn % ARRIVE_EVERY === 0) {
         const e = spawn(pickOne(["drone", "drone", "contra", "heavy"])); if (e) { F.arrivals++; log(`A ${foe(e).name} joins the line.`); }
       }

@@ -336,6 +336,21 @@ function drawYouMarker(g, x, top, k, t, label) {
   }
   g.restore();
 }
+// On the board the piece one row back stands right where an overhead marker would go, so the board's marker points
+// at your cadet's chest from beside it instead (from the left near the right edge).
+function drawYouBeside(g, x, top, base, tileW, t, label, fromLeft) {
+  const side = fromLeft ? -1 : 1, bob = reduced() ? 0 : Math.sin(t * 4) * tileW * 0.03;
+  const s = Math.max(8, tileW * 0.2), cy = top + (base - top) * 0.32, tip = x + side * (tileW * 0.2 + bob);
+  g.save();
+  g.fillStyle = "#f0c25e"; g.strokeStyle = "#5a3f12"; g.lineWidth = Math.max(1.5, s * 0.14); g.lineJoin = "round";
+  g.beginPath(); g.moveTo(tip, cy); g.lineTo(tip + side * s * 0.75, cy - s * 0.6); g.lineTo(tip + side * s * 0.75, cy + s * 0.6); g.closePath(); g.stroke(); g.fill();
+  if (label) {
+    g.font = `700 ${Math.round(Math.max(14, s * 1.15))}px ${HAND}`; g.textAlign = fromLeft ? "right" : "left"; g.textBaseline = "middle";
+    const lx = tip + side * s * 0.95;
+    g.lineWidth = Math.max(3, s * 0.24); g.strokeStyle = "#2b1d12"; g.strokeText("you", lx, cy); g.fillStyle = "#ffe7a8"; g.fillText("you", lx, cy);
+  }
+  g.restore();
+}
 function drawCadetTin(g, x, y, k, dir, braced) {
   return tin(g, x, y, k, TIN.cadet, { ring: braced ? C.good : "#e0ac45", mirror: dir && dir[0] < 0, drum: R.char === "drummer", spade: R.char === "sapper" });
 }
@@ -633,7 +648,7 @@ function draw(dt) {
       const hop = Math.sin(Math.min(1, md) * Math.PI) * tw * 0.14 * sc, sq = Math.min(0.16, md * 0.3);
       ctx.translate(x, y); ctx.scale(1 - sq * 0.5, 1 + sq); ctx.translate(-x, -y); y -= hop;
     }
-    if (it.p) youAt = [x, drawCadetTin(ctx, x, y, kk, F.pdir, F.brace), kk]; else drawUnit(ctx, it.e, x, y, kk, now);
+    if (it.p) youAt = [x, drawCadetTin(ctx, x, y, kk, F.pdir, F.brace), y, tw * sc]; else drawUnit(ctx, it.e, x, y, kk, now);
     ctx.restore();
   }
   // Enemies toppling into pits: slide to the hole, then tip over and drop out of sight.
@@ -650,7 +665,7 @@ function draw(dt) {
   fallers = fallers.filter(f => f.life > 0);
   ctx.restore();
   drawLight(ctx, act, now);
-  if (youAt) drawYouMarker(ctx, youAt[0], youAt[1], youAt[2], now, F.turn < 3 || F.kind === "drill");
+  if (youAt) drawYouBeside(ctx, youAt[0], youAt[1], youAt[2], youAt[3], now, F.turn < 3 || F.kind === "drill", F.p.x >= W - 2);
   // The preview's grease-pencil note, combo banners, particles and numbers sit above the light.
   if (pv && pv.ok) {
     const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : "";
