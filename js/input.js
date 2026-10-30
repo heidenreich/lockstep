@@ -6,7 +6,7 @@
 function observeFight() {
   const F = R && R.fight;
   if (!F || F.over || F.kind === "drill") return;
-  const a = prepareBrief(F), b = noteCheck(F);
+  const a = briefAutoShows(F) && prepareBrief(F), b = noteCheck(F);
   if (a || b) saveProfile();
 }
 function act(fn) {
@@ -88,7 +88,7 @@ $("resumeBtn").addEventListener("click", resumeRun);
 $("quitBtn").addEventListener("click", () => { if (!R) return; game.quit(); render(); });
 $("drillBtn").addEventListener("click", () => { startRun(pickChar, pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);
-$("briefBtn").addEventListener("click", () => { briefOpen = true; render(); });
+$("briefBtn").addEventListener("click", () => { briefOpen = true; if (R && R.fight && prepareBrief(R.fight)) saveProfile(); render(); });
 // Pointing at (or focusing, or tapping) a briefing line lights up those pieces or tiles on the board.
 const briefLine = ev => ev.target.closest && ev.target.closest("#brief li[data-hi]");
 $("brief").addEventListener("mouseover", ev => { const li = briefLine(ev); if (li) setBriefHi(li.dataset.hi); });

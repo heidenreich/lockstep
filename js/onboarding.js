@@ -7,7 +7,7 @@ const DRILL_STEPS = [
   { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", how: "Each pit holds 2 per fight, then fills." },
   { id: "free", text: () => "Step right until a drone is pinned on the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
   { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
-  { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: "Real fights turn into a frenzy at turn 30." }
+  { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: `Real fights turn into a frenzy at turn ${FRENZY}.` }
 ];
 function coachTrack(F) {
   const ui = fightUi(F), c = ui.coach = ui.coach || {};
@@ -18,26 +18,25 @@ function coachTrack(F) {
   return c;
 }
 // First-time notes: the first time something turns up, the sergeant explains it once (remembered in the profile).
+// Enemies explain themselves from their rule in FOES (rules.js); drones are left out, the drill teaches them.
 const NOTES = {
-  contra: ["Contrarian", "Violet coats step the opposite way to you. Step toward a pit to send them away from it."],
-  heavy: ["Heavy", "Orange grenadiers hit for 2, take 2 hits, and only move every other turn, so they fall out of line."],
-  rifle: ["Rifleman", "Riflemen hold their ground, reload for 2 turns, then fire along their row or column. Walls stop the shot; anything else in the way takes it."],
-  runner: ["Runner", "An elite that moves 2 for each of your steps."],
-  anchor: ["Anchor", "An elite that never moves and strikes anything beside it. Once its line is gone it falls into step."],
-  colossus: ["The Colossus", "A giant heavy: 8 health, hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns."],
-  mirror: ["The Mirror", "A giant contrarian. Every 5 turns it flips direction: for 5 turns everyone moves the opposite way. It seals any pit it climbs out of."],
-  warden: ["The Warden", "It chases every other turn and marches in step on the turns between (the slate says which). Step it into a pit then."],
   keg: ["Powder keg", "Blocks like a wall. Crash, shove or bump anything into it and it blows: 1 to everything beside it, and nearby kegs go too."],
   ice: ["Ice", "Anything that steps onto ice slides until something stops it, you included."],
   spike: ["Spikes", "Stepping onto spikes costs 1 health, for you and enemies alike. Bosses don't feel them."],
   belt: ["Conveyor belt", "At the end of each turn a belt carries whatever stands on it one tile, into pits too."],
   goal: ["Bonus", "Every room has a bonus on the slate. Carry it out for extra gold."],
   free: ["Broken free", "Blocked 3 turns running, it now chases you instead of copying you. Stay 4 tiles away for 4 turns and it falls back into step."],
-  frenzy: ["Frenzy", "Turn 30: every enemy breaks free, and every third turn they run two steps. Finish rooms before this."],
+  frenzy: ["Frenzy", `Turn ${FRENZY}: every enemy breaks free, and every third turn they run two steps. Finish rooms before this.`],
   combo: ["Combo", "Two or more down from one move pays extra gold and brings every card a turn closer."],
   pitfull: ["Pit full", "That pit has filled in. Each pit takes 2 per fight (3 for the Sapper)."],
   card: ["Cooldown", "A card you play goes on cooldown for a few turns. Step and wait are always free."]
 };
+// A note's [title, text]: from NOTES, or for an enemy (not drones) its name and rule.
+function noteText(k) {
+  if (NOTES[k]) return NOTES[k];
+  const d = FOES[k];
+  return d && k !== "drone" ? [d.boss ? "The " + d.name : cap(d.name), d.rule] : null;
+}
 let noteQueue = [];
 function noteCheck(F) {
   const tiles = Object.values(fightRoom(F).tiles);
@@ -46,7 +45,7 @@ function noteCheck(F) {
     F.frenzy && F.kind !== "boss" && "frenzy", F.bestChain >= 2 && "combo", Object.values(F.pitFill).some(n => n >= R.pitHold) && "pitfull",
     R.hand.some(c => c.cd > 0) && "card"];
   let added = false;
-  for (const k of keys) if (k && NOTES[k] && !P.seen[k]) { noteQueue.push(k); P.seen[k] = true; added = true; }
+  for (const k of keys) if (k && noteText(k) && !P.seen[k]) { noteQueue.push(k); P.seen[k] = true; added = true; }
   return added;
 }
 function renderCoach() {
@@ -61,13 +60,13 @@ function renderCoach() {
   }
   const k = noteQueue[0];
   box.hidden = !k;
-  if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(NOTES[k][0])}</span>${noteQueue.length > 1 ? `<span class="note hint">${noteQueue.length - 1} more</span>` : ""}</div>
-    <p>${esc(NOTES[k][1])}</p><div class="row"><button class="btn ghost" data-act="helpOpen">How to play</button><button class="btn" data-act="noteOk">Got it</button></div>`;
+  if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(noteText(k)[0])}</span>${noteQueue.length > 1 ? `<span class="note hint">${noteQueue.length - 1} more</span>` : ""}</div>
+    <p>${esc(noteText(k)[1])}</p><div class="row"><button class="btn ghost" data-act="helpOpen">How to play</button><button class="btn" data-act="noteOk">Got it</button></div>`;
 }
 // How to play: the rules in six lines and the line drawn as tin soldiers.
-const LEGEND = [["cadet", "You", "Blue coat, on the brass tile under the brass arrow."], ["drone", "Drone", "Steps with you. 1 health."], ["contra", "Contrarian", "Sideways bicorne, back turned: steps the opposite way."],
-  ["heavy", "Heavy", "Hits for 2, moves every other turn. 2 health."], ["rifle", "Rifleman", "Feathered hat, kneeling. Rifle up: reloading. Level: fires its row and column."],
-  ["runner", "Runner", "Elite hussar in a busby, mid-stride. Moves 2 per step."], ["anchor", "Anchor", "Elite in a crested helmet on a stone block. Never moves; strikes beside it."]];
+// The legend: you, then every enemy that isn't a boss, with how to spot it (FOES look).
+const LEGEND = [["cadet", "You", "Blue coat, on the brass tile under the brass arrow."]]
+  .concat(Object.entries(FOES).filter(([, d]) => !d.boss).map(([t, d]) => [t, cap(d.name), d.look]));
 function openHelp() {
   const lg = $("helpLegend");
   if (!lg.childElementCount) {

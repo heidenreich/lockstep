@@ -14,7 +14,7 @@ function renderFight() {
   $("armNote").innerHTML = armed != null ? `${esc(CARDS[R.hand[armed].id].name)}: pick a direction<span class="armtx">. ${esc(cardText(R.hand[armed]))}</span>` : "";
   const boss = F.enemies.find(e => foe(e).boss);
   const lines = [`<span>${esc(fightRoom(F).name)} · turn <b>${F.turn}</b></span>`];
-  if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= 30 ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${30 - F.turn}</b>`}</span>`);
+  if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= ENRAGE ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${ENRAGE - F.turn}</b>`}</span>`);
   if (boss && foe(boss).march) lines.push(`<span>${boss.skip ? "This turn it <b>marches in step</b>" : "This turn it <b>chases</b>"}</span>`);
   else {
     // In a frenzy the line runs (two steps) every RUN_EVERY turns; warn when.
@@ -26,7 +26,7 @@ function renderFight() {
   if (loose) lines.push(`<span class="warn"><b>${loose}</b> broken free</span>`);
   if (F.goal) lines.push(goalLine(F));
   if ((R.orders || []).length) lines.push(`<span class="ords">Perks: ${R.orders.map(id => `<b title="${esc(ORDERS[id].text)}">${esc(ORDERS[id].name)}</b>`).join(", ")}</span>`);
-  if (boss && boss.type === "mirror") lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Direction flipped: <b>${F.flip}</b> turns left` : `Direction flips in <b>${F.flipIn}</b>`}</span>`);
+  if (boss && foe(boss).flips) lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Direction flipped: <b>${F.flip}</b> turns left` : `Direction flips in <b>${F.flipIn}</b>`}</span>`);
   $("fstatus").innerHTML = lines.join("");
   $("log").innerHTML = F.log.map(l => `<li>${esc(l.msg)}</li>`).join("");
   const ban = $("banner");

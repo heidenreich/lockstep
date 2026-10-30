@@ -182,7 +182,7 @@ function drawMapBoard(g, act, S) {
   g.fillStyle = shade; g.fillRect(ix, iy, iw, ih);
   g.restore();
   g.strokeStyle = hexRgba(S.chalk, act === 3 ? 0.35 : 0.5); g.lineWidth = 2; rrect(g, ix + 6, iy + 6, iw - 12, ih - 12, 3); g.stroke();
-  const name = `ACT ${act} · ${["THE PARADE GROUND", "THE BARRACKS", "THE CITADEL"][act - 1]}`;
+  const name = `ACT ${act} · ${ACTS[act - 1].name.toUpperCase()}`;
   g.font = `600 10px ${css("--f-mono")}`;
   const pw = g.measureText(name).width + 22, ph = 13, px = MAP_W / 2 - pw / 2, py = y1 + (face - ph) / 2;
   const grd = g.createLinearGradient(0, py, 0, py + ph); grd.addColorStop(0, "#f0c25e"); grd.addColorStop(1, "#b7862a");
