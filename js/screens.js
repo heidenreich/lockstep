@@ -159,7 +159,7 @@ function renderMap() {
   for (const [k, n] of Object.entries(m.nodes)) {
     if (!open.has(k)) continue;
     const r = n.t === "boss" ? 34 : 25, label = NODE[n.t].label === "?" ? "Event" : NODE[n.t].label;
-    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${label}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/></g>`;
+    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${label}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
   }
   $("mapSvg").innerHTML = svg;
   drawMap(performance.now() / 1000);

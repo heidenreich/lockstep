@@ -48,11 +48,11 @@ window.addEventListener("keydown", e => {
   if (["INPUT", "BUTTON", "SELECT", "TEXTAREA"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
   // Space or Enter on a focused briefing line lights it up on the board (Space would otherwise be Wait).
   const line = e.target.closest && e.target.closest("#brief li[data-hi]");
-  if (line && (e.key === " " || e.key === "Enter")) { e.preventDefault(); briefHi = line.dataset.hi; return; }
+  if (line && (e.key === " " || e.key === "Enter")) { e.preventDefault(); setBriefHi(line.dataset.hi); return; }
   if (e.metaKey || e.ctrlKey || e.altKey || $("help").open) return;
   if (!R || R.screen !== "fight") return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (k === "Escape") { if (briefOpen) closeBrief(); armed = null; pvKey = ""; render(); return; }
+  if (k === "Escape") { const was = briefOpen; if (was) closeBrief(); armed = null; pvKey = ""; render(); if (was) $("briefBtn").focus({ preventScroll: true }); return; }
   if (["1", "2", "3", "4"].includes(k)) { e.preventDefault(); arm(+k - 1); return; }
   const d = KEYS[k]; if (!d) return;
   e.preventDefault(); doDir(d[0], d[1]);
@@ -82,10 +82,11 @@ $("helpBtn").addEventListener("click", openHelp);
 $("briefBtn").addEventListener("click", () => { briefOpen = true; render(); });
 // Pointing at (or focusing, or tapping) a briefing line lights up those pieces or tiles on the board.
 const briefLine = ev => ev.target.closest && ev.target.closest("#brief li[data-hi]");
-$("brief").addEventListener("mouseover", ev => { const li = briefLine(ev); briefHi = li ? li.dataset.hi : null; });
-$("brief").addEventListener("mouseleave", () => { briefHi = null; });
-$("brief").addEventListener("focusin", ev => { const li = briefLine(ev); if (li) briefHi = li.dataset.hi; });
-$("brief").addEventListener("click", ev => { const li = briefLine(ev); if (li) briefHi = li.dataset.hi; });
+$("brief").addEventListener("mouseover", ev => { const li = briefLine(ev); if (li) setBriefHi(li.dataset.hi); });
+// Only a real mouse leaving clears it: after a tap the browser fires a leave too, which would undo the tap.
+$("brief").addEventListener("pointerleave", ev => { if (ev.pointerType === "mouse") setBriefHi(null); });
+$("brief").addEventListener("focusin", ev => { const li = briefLine(ev); if (li) setBriefHi(li.dataset.hi); });
+$("brief").addEventListener("click", ev => { const li = briefLine(ev); if (li) setBriefHi(li.dataset.hi); });
 $("brief").addEventListener("change", ev => { if (ev.target.id === "briefAuto") setBriefAuto(ev.target.checked); });
 for (const id of ["helpClose", "helpOk"]) $(id).addEventListener("click", () => $("help").close());
 // A click on the dimmed backdrop (outside the dialog box) closes it too; Esc already does.
@@ -105,7 +106,7 @@ document.addEventListener("click", ev => {
   if (a.act === "claim") { if (R.fight && R.fight.kind === "drill") tally("drill"); game.fightReward(); render(); return; }
   if (a.act === "skipDrill") { tally("drillSkip", { step: Object.keys(R.fight.coach || {}).length }); game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
   if (a.act === "noteOk") { noteQueue.shift(); render(); return; }
-  if (a.act === "briefClose") { closeBrief(); render(); return; }
+  if (a.act === "briefClose") { closeBrief(); render(); $("briefBtn").focus({ preventScroll: true }); return; }
   if (a.act === "fallen") { game.endRun(false); render(); return; }
   if (a.act === "title") { useRun(null); render(); return; }
   if (a.act === "leave") { game.leaveNode(); render(); return; }

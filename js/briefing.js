@@ -4,62 +4,93 @@
 
 /* ---------- Briefing ---------- */
 const BRIEF_PIECE = {
-  drone: "Steps with you.",
+  drone: "Copies your every step.",
   contra: "Steps the opposite way to you.",
-  heavy: "Moves every other turn, so it falls out of line. Hits for 2.",
-  rifle: "Holds its ground. Reloads for 2 turns, then fires along its row and column; walls stop the shot, anything else in the way takes it. Yields once the rest of its line is gone.",
+  heavy: "Moves only every other turn, so it drifts out of step with you. Hits for 2.",
+  rifle: "Holds its ground. Reloads for 2 turns, then fires along its row and column; walls stop the shot, anything else in the way takes it. Gives up once every other enemy is gone.",
   runner: "Elite. Moves 2 for each of your steps.",
-  anchor: "Elite. Never moves and strikes anything beside it. Once the rest of its line is gone it falls into step.",
+  anchor: "Elite. Never moves and strikes anything beside it. Once every other enemy is gone it starts copying your steps.",
   colossus: "A giant heavy that hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns.",
-  mirror: "A giant contrarian. Every 5 turns it flips the cadence: for 5 turns everyone moves the other way. It seals any pit it climbs out of.",
-  warden: "Hits for 2. It chases every other turn and marches in step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns."
+  mirror: "A giant contrarian. Every 5 turns it flips direction: for 5 turns everyone moves the opposite way. It seals any pit it climbs out of.",
+  warden: "Hits for 2. It chases you every other turn and copies your step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns."
 };
 const WALL_NAME = ["Alphabet blocks", "Stacked books", "Toy-box crates"];
-let briefOpen = false, briefHi = null;
+let briefOpen = false, briefHi = null, briefHtml = "";
 // Auto-show before every fight is a per-browser preference.
 const briefAuto = () => { try { return localStorage.getItem("lockstep-brief") !== "0"; } catch (e) { return true; } };
 function setBriefAuto(on) { try { localStorage.setItem("lockstep-brief", on ? "1" : "0"); } catch (e) {} }
 
-// What the room holds, as briefing rows: [key, swatch, title, text]. Keys name what to light up on the board.
+// What the room holds, as briefing rows: { key, id, sw, title, text }. key names what to light up on the board;
+// id is what the profile remembers as met (enemy type or kind of ground).
 function briefRows(F) {
-  const rm = ROOMS[F.room], tiles = Object.values(rm.tiles), boss = F.kind === "boss", rows = { field: [], ground: [] };
+  const rm = ROOMS[F.room], tiles = Object.values(rm.tiles), boss = F.kind === "boss", rows = [];
+  const add = (key, sw, title, text) => rows.push({ key, id: key.slice(2), sw, title, text });
   const byType = new Map();
   for (const e of F.enemies) { const b = byType.get(e.type) || { n: 0, hp: e.max }; b.n++; byType.set(e.type, b); }
   for (const [type, b] of byType) {
     const d = FOES[type], hits = d.dmg > 1 && !/[Hh]its for/.test(BRIEF_PIECE[type]) ? ` Hits for ${d.dmg}.` : "";
-    rows.field.push([`e:${type}`, `tin:${type}`, `${d.boss ? d.name : cap(d.name)}${b.n > 1 ? ` ×${b.n}` : ""}`, `${b.hp} health. ${BRIEF_PIECE[type] || ""}${hits}`]);
+    add(`e:${type}`, `tin:${type}`, `${d.boss ? d.name : cap(d.name)}${b.n > 1 ? ` ×${b.n}` : ""}`, `${b.hp} health. ${BRIEF_PIECE[type] || ""}${hits}`);
   }
-  if (rm.pits.size) rows.ground.push(["t:pit", "pit", `Pits ×${rm.pits.size}`, boss ? `The boss takes 3 and climbs back out at an edge; anything else is gone. ${F.enemies.some(e => foe(e).seals) ? "Any pit the Mirror climbs out of is sealed." : "Pits never fill in a boss fight."}` : `Anything that steps in is gone. Each pit takes ${R.pitHold} this fight, then fills in.`]);
-  if (rm.walls.size) rows.ground.push(["t:wall", "wall", WALL_NAME[R.act - 1], "Walls stop everything. An enemy blocked 3 turns running breaks free and chases you."]);
-  if (F.kegs.length) rows.ground.push(["t:keg", "keg", `Powder kegs ×${F.kegs.length}`, NOTES.keg[1]]);
-  if (tiles.includes("ice")) rows.ground.push(["t:ice", "ice", "Ice", NOTES.ice[1]]);
-  if (tiles.includes("spike")) rows.ground.push(["t:spike", "spike", "Spikes", NOTES.spike[1]]);
-  if (tiles.some(t => BELT[t])) rows.ground.push(["t:belt", "belt", "Conveyor belts", NOTES.belt[1]]);
-  if (F.goal && F.goal.flag) rows.ground.push(["t:flag", "flag", "The colours", "Step onto the flag before the room is clear, and before an enemy tramples it."]);
+  if (rm.pits.size) add("t:pit", "pit", `Pits ×${rm.pits.size}`, boss ? `The boss takes 3 and climbs back out at an edge; anything else is gone. ${F.enemies.some(e => foe(e).seals) ? "Any pit the Mirror climbs out of is sealed." : "Pits never fill in a boss fight."}` : `Anything that steps in is gone. Each pit takes ${R.pitHold} this fight, then fills in.`);
+  if (rm.walls.size) add("t:wall", "wall", WALL_NAME[R.act - 1], "Walls stop everything. An enemy blocked 3 turns running breaks free and chases you.");
+  if (F.kegs.length) add("t:keg", "keg", `Powder kegs ×${F.kegs.length}`, NOTES.keg[1]);
+  if (tiles.includes("ice")) add("t:ice", "ice", "Ice", NOTES.ice[1]);
+  if (tiles.includes("spike")) add("t:spike", "spike", "Spikes", NOTES.spike[1]);
+  if (tiles.some(t => BELT[t])) add("t:belt", "belt", "Conveyor belts", NOTES.belt[1]);
+  if (F.goal && F.goal.flag) add("t:flag", "flag", "The colours", "Step onto the flag before the room is clear, and before an enemy tramples it.");
   return rows;
 }
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+// The training drill teaches drones, pits and walls.
+const briefKnown = id => !!P.seen[id] || (P.drilled && ["drone", "pit", "wall"].includes(id));
 function renderBrief() {
-  const box = $("brief"), F = R.fight;
+  const box = $("brief"), F = R.fight, was = !box.hidden;
   const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || (F.turn === 0 && !F.briefed && briefAuto())));
   $("briefBtn").hidden = !(F && !F.over && F.kind !== "drill" && !show);
   box.hidden = !show;
-  if (!show) { briefHi = null; if (!F || F.over) briefOpen = false; return false; }
+  if (!show) { briefHi = null; briefHtml = ""; if (!F || F.over) briefOpen = false; return false; }
   briefOpen = true;
-  // The briefing explains every piece and tile here, so their one-off "New" notes would only repeat it.
-  for (const k of [...F.enemies.map(e => e.type), "keg", "ice", "spike", "belt", "goal"]) if (NOTES[k]) P.seen[k] = true;
-  const rows = briefRows(F), boss = F.enemies.find(e => foe(e).boss), G = F.goal && GOALS[F.goal.id];
-  const row = ([key, sw, title, text]) => `<li data-hi="${key}" tabindex="0"><canvas data-sw="${sw}" width="88" height="96"></canvas><span><b>${esc(title)}</b> ${esc(text)}</span></li>`;
-  const clock = boss ? `At turn 30 the ${esc(foe(boss).name)} enrages: its line breaks free and help arrives every 3 turns.`
-    : `At turn ${F.frenzyAt} a frenzy frees every enemy. Until then, up to ${MAX_ARRIVALS} more join every ${ARRIVE_EVERY} turns while 2 or more are left. Waiting brings one at once.`;
-  box.innerHTML = `<div class="briefhead"><div><span class="eyebrow">Orders of the day${boss ? " · boss" : F.kind === "elite" ? " · elite" : ""}</span><h3>${esc(ROOMS[F.room].name)}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
-    <div class="eyebrow">On the field</div><ul class="brieflist">${rows.field.map(row).join("")}</ul>
-    ${rows.ground.length ? `<div class="eyebrow">The ground</div><ul class="brieflist">${rows.ground.map(row).join("")}</ul>` : ""}
+  const rows = briefRows(F);
+  // What's new is fixed the first time this room's briefing opens; after that everything here counts as met, and the
+  // one-off "New" notes for pieces and ground would only repeat the briefing.
+  if (!F.briefNew) {
+    F.briefNew = rows.filter(r => !briefKnown(r.id)).map(r => r.id);
+    for (const r of rows) P.seen[r.id] = true;
+    if (F.goal) P.seen.goal = true;
+    saveProfile();
+  }
+  const fresh = rows.filter(r => F.briefNew.includes(r.id)), known = rows.filter(r => !F.briefNew.includes(r.id));
+  const boss = F.enemies.find(e => foe(e).boss), G = F.goal && GOALS[F.goal.id];
+  const sw = (r, w, h) => `<canvas data-sw="${r.sw}" width="${w * 2}" height="${h * 2}" style="width:${w}px;height:${h}px" aria-hidden="true"></canvas>`;
+  const win = boss ? `Beat the ${esc(foe(boss).name)}. The fight ends the moment it falls; its helpers don't matter.` : "Clear the room: every enemy down, into a pit or out of the fight.";
+  const clock = boss ? [`Turn 30: the ${esc(foe(boss).name)} enrages. Its helpers break free and more arrive every 3 turns.`]
+    : [`Turn ${F.frenzyAt}: frenzy. Every enemy breaks free and chases you.`, `Every ${ARRIVE_EVERY} turns one more joins (${MAX_ARRIVALS} at most) while 2 or more are left. Waiting brings one at once.`];
+  const html = `<div class="briefhead"><div><span class="eyebrow">Orders of the day</span><h3 id="briefTitle" tabindex="-1">${esc(ROOMS[F.room].name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
+    <p class="briefwin"><b>Win:</b> ${win}</p>
+    ${fresh.length ? `<div class="eyebrow">New here</div><ul class="brieflist">${fresh.map(r => `<li data-hi="${r.key}" tabindex="0">${sw(r, 44, 48)}<span><span class="newtag">New</span> <b>${esc(r.title)}</b> ${esc(r.text)}</span></li>`).join("")}</ul>` : ""}
+    ${known.length ? `<div class="eyebrow">${fresh.length ? "Also here" : "Here"}</div><ul class="briefchips">${known.map(r => `<li data-hi="${r.key}" tabindex="0" title="${esc(r.text)}" aria-label="${esc(r.title + ": " + r.text)}">${sw(r, 28, 30)}<b>${esc(r.title)}</b></li>`).join("")}</ul><p class="briefdetail" id="briefDetail" aria-live="polite">Point at one to see its rule and where it is.</p>` : ""}
     ${G ? `<p class="briefbonus"><span class="eyebrow">Bonus order · +${G.gold} gold</span><b>${esc(G.name)}.</b> ${esc(G.text)}</p>` : ""}
-    <p class="briefclock">${clock}</p>
+    <ul class="briefclock">${clock.map(c => `<li>${c}</li>`).join("")}</ul>
     <label class="briefauto"><input type="checkbox" id="briefAuto"${briefAuto() ? " checked" : ""}> Brief me before every fight</label>`;
-  for (const c of box.querySelectorAll("canvas[data-sw]")) paintSwatch(c, c.dataset.sw);
+  // Rebuild only when something changed, so keyboard focus and the lit line survive the game's frequent redraws.
+  if (html !== briefHtml) {
+    const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.dataset.hi || document.activeElement.id : null;
+    box.innerHTML = html; briefHtml = html;
+    for (const c of box.querySelectorAll("canvas[data-sw]")) paintSwatch(c, c.dataset.sw);
+    if (focused) { const el = box.querySelector(`[data-hi="${focused}"]`) || $(focused); if (el) el.focus({ preventScroll: true }); }
+  }
+  setBriefHi(briefHi);
+  // Opening (a new room, or the Briefing button) takes keyboard focus to the briefing's title.
+  if (!was) $("briefTitle").focus({ preventScroll: true });
   return true;
+}
+// Lights a line: the board marks those pieces or tiles (drawBriefHi), and a familiar one shows its rule.
+function setBriefHi(key) {
+  briefHi = key || null;
+  const box = $("brief");
+  for (const li of box.querySelectorAll("li[data-hi]")) li.classList.toggle("on", li.dataset.hi === briefHi);
+  const d = $("briefDetail"), li = briefHi && box.querySelector(`.briefchips li[data-hi="${briefHi}"]`);
+  if (d) d.textContent = li ? `${li.querySelector("b").textContent}: ${li.title}` : "Point at one to see its rule and where it is.";
 }
 function closeBrief() {
   const F = R && R.fight;
@@ -68,8 +99,9 @@ function closeBrief() {
 }
 // Small portraits for the briefing: tin soldiers for pieces, a painted tile for each kind of ground.
 function paintSwatch(c, sw) {
-  const g = c.getContext("2d"), S = SETTING[R.act - 1];
-  g.setTransform(2, 0, 0, 2, 0, 0);
+  // Painted in a 44×48 box, scaled to the canvas (full rows are 44 wide at 2x, chips 28).
+  const g = c.getContext("2d"), S = SETTING[R.act - 1], sc = c.width / 44;
+  g.setTransform(sc, 0, 0, sc, 0, 0);
   const tile = (inset, fill) => { g.fillStyle = fill; rrect(g, 4 + inset, 22 + inset, 36 - inset * 2, 22 - inset * 2, 3); g.fill(); };
   // A tile seen from the front: the board's two-tone paint under whatever stands or lies on it.
   tile(0, S.g1); g.strokeStyle = hexRgba(S.chalk, 0.35); g.lineWidth = 0.8; rrect(g, 4, 22, 36, 22, 3); g.stroke();
