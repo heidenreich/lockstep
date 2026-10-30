@@ -94,7 +94,6 @@ const GLYPHS = {
   event: "M7 7.2A3 3 0 1 1 11.2 9.9C10.3 10.5 10 11.2 10 12.5M10 15.8V16",
   boss: "M3 15.5L4 6L8 10L10 4L12 10L16 6L17 15.5ZM3 17.5H17"
 };
-const glyphSvg = (t, cx, cy, scale) => `<g transform="translate(${cx - 10 * scale} ${cy - 10 * scale}) scale(${scale})"><path class="glyph" d="${GLYPHS[t]}"/></g>`;
 
 // Switching screens starts the new one at the top (a scrolled map would otherwise open the fight half off-screen).
 function show(id) {
@@ -146,8 +145,7 @@ function renderTitle() {
   pickCad = Math.min(pickCad, maxCad);
   $("cads").innerHTML = CADENCE.map((_, i) => `<button data-cad="${i}" class="${i === pickCad ? "on" : ""}"${i > maxCad ? " disabled" : ""}>${i === 0 ? "Off" : "C" + i}</button>`).join("");
   $("cadNote").textContent = pickCad ? CADENCE.slice(1, pickCad + 1).map(s => s.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
-  let saved = null; try { saved = JSON.parse(localStorage.getItem("lockstep-run") || "null"); } catch (e) {}
-  $("resumeBtn").hidden = !saved || saved.v !== 1;
+  $("resumeBtn").hidden = !savedRun();
   $("newHere").hidden = !!P.drilled;
   $("saveNote").textContent = "Unlocks are saved in this browser.";
   $("record").innerHTML = [

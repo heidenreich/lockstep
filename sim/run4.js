@@ -1,66 +1,23 @@
-// Lockstep roguelite (index.html) bot harness.
-// usage: node sim/run4.js <section> [N]   sections: base | cards | bosses | new
+// Lockstep bot harness: plays whole runs with simple bots and prints balance numbers.
+// usage: node sim/run4.js <section> [N] [char]   sections: check | base | cards | bosses | econ | new
+//   SEED=n makes the bots' own choices repeatable (each run's game is seeded from it too); BOT=2ply and CAD=n for check.
+//   check exits 1 if a character stalls in more than 20% of its runs, so CI notices.
+if (process.env.SEED) { let s = +process.env.SEED; Math.random = () => { let t = (s = (s + 0x6D2B79F5) | 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const K = require("../rules.js");
 // One profile for the whole process (unlocks carry over between bot runs, as they would for a player).
 const PROFILE = K.mergeProfile({});
 let game = null;  // the run being played; bots look ahead on game.fork()s
+const SECTIONS = ["check", "base", "cards", "bosses", "econ", "new"];
 const SECTION = process.argv[2] || "base", N = +process.argv[3] || 40;
+if (!SECTIONS.includes(SECTION)) { console.error(`Unknown section "${SECTION}". Sections: ${SECTIONS.join(", ")}`); process.exit(2); }
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const pct = (a, f) => (100 * a.filter(f).length / a.length).toFixed(0) + "%";
 const q = (arr, p) => { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
 
-/* ---------- fight bots ---------- */
-const pass = (x, y) => game.inB(x, y) && !game.isWall(x, y) && !game.isPit(x, y);
-function bfs(sx, sy) { const f = new Map([[sx + "," + sy, 0]]), qq = [[sx, sy]]; while (qq.length) { const [x, y] = qq.shift(), d = f.get(x + "," + y); for (const [dx, dy] of K.DIRS) { const nx = x + dx, ny = y + dy, k = nx + "," + ny; if (pass(nx, ny) && !f.has(k)) { f.set(k, d + 1); qq.push([nx, ny]); } } } return f; }
-const naive = () => {
-  const F = game.run.fight, P = F.p;
-  for (const [dx, dy] of K.DIRS) if (game.enemyAt(P.x + dx, P.y + dy)) return { kind: "step", dx, dy };
-  const f = bfs(P.x, P.y); let t = null, bd = 1e9; for (const e of F.enemies) { const d = f.get(e.x + "," + e.y); if (d != null && d < bd) { bd = d; t = e; } }
-  if (!t) return { kind: "step", dx: 0, dy: 0 };
-  const g = bfs(t.x, t.y); let best = null, bv = 1e9; for (const [dx, dy] of K.DIRS) { const nx = P.x + dx, ny = P.y + dy; if (!pass(nx, ny) || game.enemyAt(nx, ny)) continue; const v = g.get(nx + "," + ny); if (v != null && v < bv) { bv = v; best = { kind: "step", dx, dy }; } }
-  return best || { kind: "step", dx: 0, dy: 0 };
-};
-function actions(g) {
-  const out = [{ kind: "step", dx: 0, dy: 0 }];
-  for (const [dx, dy] of K.DIRS) out.push({ kind: "step", dx, dy });
-  g.run.hand.forEach((c, slot) => {
-    if (c.cd > 0) return;
-    if (K.CARDS[c.id].dir) { for (const [dx, dy] of K.DIRS) if (!g.cardBlock(slot, dx, dy)) out.push({ kind: "card", slot, dx, dy }); }
-    else if (!g.cardBlock(slot, 0, 0)) out.push({ kind: "card", slot, dx: 0, dy: 0 });
-  });
-  return out;
-}
-const apply = (g, a) => (a.kind === "step" ? g.step(a.dx, a.dy) : g.play(a.slot, a.dx, a.dy));
-// Plays a on a fork of g and returns the fork.
-const tryOn = (g, a) => { const f = g.fork(); apply(f, a); return f; };
-function evalR(R) {
-  const F = R.fight; if (!F) return 0;
-  if (F.over === "lose" || R.hp <= 0) return -300;
-  let v = R.hp * 7 + F.gold * 1.5;
-  if (F.over === "win") return v + 80;
-  for (const e of F.enemies) { const d = K.FOES[e.type]; v -= e.hp * (d.boss ? 2.5 : 1.6); if (K.dist(e, F.p) === 1 && !K.fixed(e)) v -= 2; if (e.free && !d.chaser) v -= 1.2; }
-  if (F.kind === "boss") v -= F.turn * 0.4;
-  if (F.goal && !F.goal.ok) v -= 6;
-  if (F.goal && F.goal.ok && F.goal.flag && !F.goal.took) v -= 0.6 * K.dist(F.p, F.goal.flag);
-  return v;
-}
-const ply1 = () => {
-  let best = null, bv = -1e9;
-  for (const a of actions(game)) { const v = evalR(tryOn(game, a).run) + Math.random() * 0.01; if (v > bv) { bv = v; best = a; } }
-  return best;
-};
-const ply2 = () => {
-  const scored = [];
-  for (const a of actions(game)) { const s = tryOn(game, a); scored.push({ a, v: evalR(s.run), s }); }
-  scored.sort((x, y) => y.v - x.v);
-  let best = scored[0].a, bv = -1e9;
-  for (const { a, v, s } of scored.slice(0, 4)) {
-    let v2 = v;
-    if (!s.run.fight.over) { let b2 = -1e9; for (const a2 of actions(s)) b2 = Math.max(b2, evalR(tryOn(s, a2).run)); v2 = 0.5 * v + 0.5 * b2; }
-    v2 += Math.random() * 0.01; if (v2 > bv) { bv = v2; best = a; }
-  }
-  return best;
-};
+/* ---------- fight bots (sim/bot.js) ---------- */
+const B = require("./bot.js");
+const naive = () => B.naive(game), ply1 = () => B.ply1(game), ply2 = () => B.ply2(game);
+const apply = B.apply;
 
 /* ---------- run driver ---------- */
 const worst = (policy) => { // slot to replace: lowest-preference card; never the policy's preferred card
@@ -215,6 +172,9 @@ if (SECTION === "check") {
     const rs = many(bot, N, { char, cad, policy: { draft: "random" } });
     const goals = {}; for (const r of rs) for (const [k, [t, ok]] of Object.entries(r.goals)) { goals[k] = goals[k] || [0, 0]; goals[k][0] += t; goals[k][1] += ok; }
     console.log(summary(char, rs));
+    // A rare stall is known (about 3% of runs); failing on more than 20% catches a rule change that makes them common.
+    const stalls = rs.reduce((a, r) => a + r.stalls, 0), limit = Math.max(1, Math.floor(N * 0.2));
+    if (stalls > limit) { console.error(`${char}: ${stalls} stalled runs out of ${N} (limit ${limit})`); process.exitCode = 1; }
     console.log(`     bonus done: ${Object.entries(goals).map(([k, [t, ok]]) => `${k} ${(100 * ok / t).toFixed(0)}%`).join(", ")} | gold spent ${mean(rs.map(r => r.goldSpent)).toFixed(0)}, left ${mean(rs.map(r => r.gold)).toFixed(0)} (winners ${mean(rs.filter(r => r.won).map(r => r.gold)).toFixed(0)}, incl. 60 from the last boss) | restocks/run ${mean(rs.map(r => r.restocks || 0)).toFixed(1)}`);
   }
 }

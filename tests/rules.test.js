@@ -9,6 +9,7 @@ function newRun(char, cad, seed) { g = K.makeGame(null, { sim: true }); return g
 
 // Builds a fight in a hand-drawn room. Room symbols as in ROOMS, plus "@" for you and a letter per enemy:
 // D drone, C contrarian, H heavy, N anchor, U runner, R rifleman (rifles start loaded).
+let testRooms = 0;
 const PIECES = { D: "drone", C: "contra", H: "heavy", N: "anchor", U: "runner", R: "rifle" };
 function fight(rows, { char = "recruit", cad = 0, kind = "fight" } = {}) {
   newRun(char, cad, 1);
@@ -20,10 +21,11 @@ function fight(rows, { char = "recruit", cad = 0, kind = "fight" } = {}) {
     if (PIECES[ch]) { placed.push({ type: PIECES[ch], x, y }); return "."; }
     return ch;
   }).join(""));
-  K.ROOMS.push(K.room("test", clean));
+  // Each test gets a room of its own, registered by a fresh id (nothing is added to the game's room list).
+  const rm = K.addRoom(K.room(`test-${++testRooms}`, "test", clean));
   const F = g.run.fight;
-  F.room = K.ROOMS.length - 1; F.orient = 0;
-  F.kegs = [...K.ROOMS[F.room].kegs];
+  F.room = rm.id; F.orient = 0;
+  F.kegs = [...rm.kegs];
   F.enemies = []; F.goal = null; F.log = []; F.p = p;
   g.setDims();
   for (const { type, x, y } of placed) put(type, x, y);
@@ -291,7 +293,7 @@ test("the Warden marches in step on the turns it doesn't chase, so it can be ste
     "@.........."
   ], { kind: "boss" });
   const w = put("warden", 8, 1);
-  K.ROOMS[F.room].pits.add("9,1");
+  K.roomById(F.room).pits.add("9,1");
   g.step(0, -1);  // a chase turn: it closes in
   assert.equal(w.skip, true);
   const before = [w.x, w.y];
@@ -447,7 +449,8 @@ test("nothing joins the line after the boss falls", () => {
 
 test("turned rooms keep every wall, pit, keg and tile in bounds; belts turn with the room", () => {
   const sig = t => JSON.stringify([[...t.walls].sort(), [...t.pits].sort(), [...t.kegs].sort(), Object.entries(t.tiles).sort()]);
-  K.ROOMS.slice(0, 12).forEach((rm, i) => {
+  K.ROOMS.filter(rm => rm.id !== "training-ground").forEach(rm => {
+    const i = rm.id;
     const os = K.roomOrients(rm);
     assert.equal(os[0], 0);
     assert.equal(new Set(os.map(o => sig(K.fightRoom({ room: i, orient: o })))).size, os.length, `${rm.name} repeats a layout`);
@@ -458,15 +461,15 @@ test("turned rooms keep every wall, pit, keg and tile in bounds; belts turn with
       for (const k of keys) { const [x, y] = k.split(",").map(Number); assert.ok(x >= 0 && y >= 0 && x < t.w && y < t.h, `${rm.name} ${o} ${k}`); }
     }
   });
-  const belt = K.turnRoom(K.room("b", [">.", ".."]), 1), swap = K.turnRoom(K.room("b", [">.", ".."]), 4);
+  const belt = K.turnRoom(K.room("b", "b", [">.", ".."]), 1), swap = K.turnRoom(K.room("b", "b", [">.", ".."]), 4);
   assert.deepEqual(belt.tiles, { "1,0": "<" });
   assert.deepEqual(swap.tiles, { "0,0": "v" });
-  assert.equal(K.fightRoom({ room: 0, orient: 0 }), K.ROOMS[0]);
-  assert.deepEqual(K.roomOrients(K.room("sym", ["...", ".o.", "..."])), [0]);
+  assert.equal(K.fightRoom({ room: "drill-square", orient: 0 }), K.roomById("drill-square"));
+  assert.deepEqual(K.roomOrients(K.room("sym", "sym", ["...", ".o.", "..."])), [0]);
 });
 
 test("every turn of the Belt room keeps each belt pointing at the same neighbour", () => {
-  const i = K.ROOMS.findIndex(r => r.name === "Belt room"), rm = K.ROOMS[i];
+  const i = "belt-room", rm = K.roomById(i);
   assert.equal(K.roomOrients(rm).length, 8);
   for (const o of K.roomOrients(rm)) {
     const T = (x, y) => { const a = o & 1 ? rm.w - 1 - x : x, b = o & 2 ? rm.h - 1 - y : y; return o & 4 ? [b, a] : [a, b]; };
@@ -497,7 +500,7 @@ test("a fight picks a turn of its room and the board takes its size", () => {
   for (let seed = 1; seed <= 40; seed++) {
     newRun("recruit", 0, seed); g.startFight("fight");
     const F = g.run.fight, rm = K.fightRoom(F);
-    assert.ok(K.roomOrients(K.ROOMS[F.room]).includes(F.orient));
+    assert.ok(K.roomOrients(K.roomById(F.room)).includes(F.orient));
     assert.equal(g.W, rm.w); assert.equal(g.H, rm.h);
     assert.ok(!rm.walls.has(F.p.x + "," + F.p.y) && !rm.pits.has(F.p.x + "," + F.p.y));
     seen.add(F.orient);
@@ -538,4 +541,33 @@ test("a synergy is announced once, when its pair comes together", () => {
   assert.deepEqual(msgs, ["Synergy! Hobnail stomp: Stomp first hits every enemy beside you for 1."]);
   game.takeOrder("fuse");
   assert.equal(msgs.length, 1);
+});
+
+test("saved runs: a v1 save moves its fight's room from a list position to the room's id", () => {
+  newRun("recruit", 0, 3); g.startFight("fight");
+  const v1 = JSON.parse(JSON.stringify(g.run));
+  v1.v = 1; v1.fight.room = 5; delete v1.rng;  // as saved by the old game: Belt room was 6th, and no RNG state yet
+  const r = K.migrateRun(v1);
+  assert.equal(r.v, K.RUN_V);
+  assert.equal(r.fight.room, "belt-room");
+  assert.equal(typeof r.rng, "number");
+  // and it plays on
+  const back = K.makeGame(r, { sim: true });
+  assert.ok(back.step(0, 0));
+});
+
+test("saved runs the game can't play any more are refused, not loaded", () => {
+  newRun("recruit", 0, 3);
+  const good = () => JSON.parse(JSON.stringify(g.run));
+  assert.ok(K.migrateRun(good()));
+  for (const [what, spoil] of [
+    ["an unknown card", r => { r.hand[0].id = "renamed"; }],
+    ["an unknown perk", r => { r.orders = ["gone"]; }],
+    ["an unknown character", r => { r.char = "ghost"; }],
+    ["a newer version", r => { r.v = K.RUN_V + 1; }],
+    ["no version", r => { delete r.v; }],
+    ["no map", r => { delete r.map; }]
+  ]) { const r = good(); spoil(r); assert.equal(K.migrateRun(r), null, what); }
+  assert.equal(K.migrateRun(null), null);
+  assert.equal(K.migrateRun("junk"), null);
 });
