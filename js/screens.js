@@ -158,8 +158,11 @@ function renderMap() {
   let svg = "";
   for (const [k, n] of Object.entries(m.nodes)) {
     if (!open.has(k)) continue;
-    const r = n.t === "boss" ? 34 : 25, label = NODE[n.t].label === "?" ? "Event" : NODE[n.t].label;
-    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${label}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
+    // The route only exists on the canvas, so the name says where each space leads.
+    const r = n.t === "boss" ? 34 : 25, label = spaceName(n.t);
+    const next = [...new Set(m.edges.filter(e => e.startsWith(k + ">")).map(e => spaceName(m.nodes[e.split(">")[1]].t)))];
+    const name = n.t === "boss" ? `Boss: the ${FOES[BOSSES[R.act - 1]].name}` : `${label}${next.length ? `, then ${next.join(" or ")}` : ""}`;
+    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${esc(name)}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
   }
   $("mapSvg").innerHTML = svg;
   drawMap(performance.now() / 1000);
