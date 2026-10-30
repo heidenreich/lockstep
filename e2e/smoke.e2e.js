@@ -89,7 +89,7 @@ test("on a phone the map and a fight fit the width", async t => {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
   // Tapping a briefing line lights it on the board.
   const line = page.locator("#brief li[data-hi]").first();
-  if (await line.count()) { await line.tap(); assert.ok(await page.evaluate(() => !!briefHi)); }
+  if (await line.count()) { await line.tap(); assert.ok(await page.evaluate(() => !!ui.briefHi)); }
 });
 
 test("with the briefing switched off, a new enemy gets its first-time note instead", async t => {

@@ -3,8 +3,7 @@
 // up on the board. It folds away on your first move; the Briefing button in the top bar brings it back.
 
 /* ---------- Briefing ---------- */
-const WALL_NAME = ["Alphabet blocks", "Stacked books", "Toy-box crates"];
-let briefOpen = false, briefHi = null, briefHtml = "";
+let briefHtml = "";
 // Auto-show before every fight is a per-browser preference.
 const briefAuto = () => { try { return localStorage.getItem("lockstep-brief") !== "0"; } catch (e) { return true; } };
 function setBriefAuto(on) { try { localStorage.setItem("lockstep-brief", on ? "1" : "0"); } catch (e) {} }
@@ -33,11 +32,11 @@ function briefRows(F) {
 const briefKnown = id => !!P.seen[id] || (P.drilled && ["drone", "pit", "wall"].includes(id));
 function renderBrief() {
   const box = $("brief"), F = R.fight, was = !box.hidden;
-  const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || briefAutoShows(F)));
+  const show = !!(F && !F.over && F.kind !== "drill" && (ui.briefOpen || briefAutoShows(F)));
   $("briefBtn").hidden = !(F && !F.over && F.kind !== "drill" && !show);
   box.hidden = !show;
-  if (!show) { briefHi = null; briefHtml = ""; if (!F || F.over) briefOpen = false; return false; }
-  briefOpen = true;
+  if (!show) { ui.briefHi = null; briefHtml = ""; if (!F || F.over) ui.briefOpen = false; return false; }
+  ui.briefOpen = true;
   const rows = briefRows(F), isNew = fightUi(F).briefNew || [];
   const fresh = rows.filter(r => isNew.includes(r.id)), known = rows.filter(r => !isNew.includes(r.id));
   const boss = F.enemies.find(e => foe(e).boss), G = F.goal && GOALS[F.goal.id];
@@ -55,22 +54,22 @@ function renderBrief() {
     <label class="briefauto"><input type="checkbox" id="briefAuto"${briefAuto() ? " checked" : ""}> Brief me before every fight</label>`;
   // Rebuild only when something changed, so keyboard focus and the lit line survive the game's frequent redraws.
   if (html !== briefHtml) {
-    const focused = document.activeElement && box.contains(document.activeElement) ? document.activeElement.dataset.hi || document.activeElement.id : null;
+    const focused = document.activeElement && box.contains(document.activeElement) ? /** @type {HTMLElement} */ (document.activeElement).dataset.hi || document.activeElement.id : null;
     box.innerHTML = html; briefHtml = html;
     for (const c of box.querySelectorAll("canvas[data-sw]")) paintSwatch(c, c.dataset.sw);
     if (focused) { const el = box.querySelector(`[data-hi="${focused}"]`) || $(focused); if (el) el.focus({ preventScroll: true }); }
   }
-  setBriefHi(briefHi);
+  setBriefHi(ui.briefHi);
   // Opening (a new room, or the Briefing button) takes keyboard focus to the briefing's title.
   if (!was) $("briefTitle").focus({ preventScroll: true });
   return true;
 }
 // Lights a line: the board marks those pieces or tiles (drawBriefHi), and a familiar one shows its rule.
 function setBriefHi(key) {
-  briefHi = key || null;
+  ui.briefHi = key || null;
   const box = $("brief");
-  for (const li of box.querySelectorAll("li[data-hi]")) li.classList.toggle("on", li.dataset.hi === briefHi);
-  const d = $("briefDetail"), li = briefHi && box.querySelector(`.briefchips li[data-hi="${briefHi}"]`);
+  for (const li of box.querySelectorAll("li[data-hi]")) li.classList.toggle("on", li.dataset.hi === ui.briefHi);
+  const d = $("briefDetail"), li = ui.briefHi && box.querySelector(`.briefchips li[data-hi="${ui.briefHi}"]`);
   if (d) d.textContent = li ? `${li.querySelector("b").textContent}: ${li.title}` : "Point at one to see its rule and where it is.";
 }
 // Whether the briefing opens by itself for this fight (at its start, unless switched off or already read).
@@ -90,7 +89,7 @@ function prepareBrief(F) {
 function closeBrief() {
   const F = R && R.fight;
   if (F) fightUi(F).briefed = true;
-  briefOpen = false; briefHi = null;
+  ui.briefOpen = false; ui.briefHi = null;
 }
 // Small portraits for the briefing: tin soldiers for pieces, a painted tile for each kind of ground.
 function paintSwatch(c, sw) {
@@ -122,22 +121,4 @@ function paintSwatch(c, sw) {
     tile(1, "#3a3530"); g.strokeStyle = "rgba(240,194,94,0.9)"; g.lineWidth = 2; g.lineCap = "round"; g.lineJoin = "round";
     for (const x of [13, 22, 31]) { g.beginPath(); g.moveTo(x - 3, 28); g.lineTo(x + 2, 33); g.lineTo(x - 3, 38); g.stroke(); }
   } else if (sw === "flag") drawFlag(g, 16, 41, 0.34, 0, true);
-}
-// Lights up what a briefing line is about, on the board (called from draw, before the pieces stand on it).
-function drawBriefHi(g, F, now) {
-  if (!briefHi || !briefOpen) return;
-  const [kind, what] = briefHi.split(":"), rm = fightRoom(F), a = reduced() ? 0.9 : 0.65 + Math.sin(now * 5) * 0.3;
-  const mark = (x, y, round) => {
-    g.save(); tileSpace(g, x, y); g.strokeStyle = `rgba(255,214,110,${a})`; g.lineWidth = 0.09; g.setLineDash([0.16, 0.08]);
-    if (round) { g.beginPath(); g.ellipse(0, 0.05, 0.47, 0.47, 0, 0, Math.PI * 2); } else rr(-0.47, -0.47, 0.94, 0.94, 0.12);
-    g.stroke(); g.fillStyle = `rgba(255,214,110,${a * 0.22})`; g.fill(); g.restore();
-  };
-  const keys = [];
-  if (kind === "e") for (const e of F.enemies) { if (e.type === what) { const v = vis[e.id] || e; mark(v.x, v.y, true); } }
-  else if (what === "pit") keys.push(...rm.pits);
-  else if (what === "wall") keys.push(...rm.walls);
-  else if (what === "keg") keys.push(...F.kegs);
-  else if (what === "flag" && F.goal && F.goal.flag) keys.push(F.goal.flag.x + "," + F.goal.flag.y);
-  else for (const [k, t] of Object.entries(rm.tiles)) if (t === what || (what === "belt" && BELT[t])) keys.push(k);
-  for (const k of keys) { const [x, y] = k.split(",").map(Number); mark(x, y, false); }
 }
