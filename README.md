@@ -10,6 +10,10 @@ Open `index.html` through any local web server (it loads `rules.js`, `styles.css
 python3 -m http.server 8000
 ```
 
+## Play it online
+
+GitHub Pages serves `main` at https://heidenreich.github.io/lockstep/ (`.github/workflows/pages.yml` publishes only the files the page loads: `index.html`, `rules.js`, `styles.css`, `js/`). Saves there stay in the player's browser; as a claude.ai Artifact they follow the player's account.
+
 ## Develop
 
 ```bash
