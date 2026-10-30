@@ -448,3 +448,16 @@ test("combining profiles keeps the drill and every first-time note seen on eithe
   assert.equal(p.drilled, true);
   assert.deepEqual(p.seen, { keg: true, rifle: true });
 });
+
+test("nothing joins the line after the boss falls", () => {
+  newRun("recruit", 0, 4);
+  g.run.map.nodes = { "0:0": { r: 0, c: 0, t: "boss" } }; g.run.map.edges = []; g.run.pos = null;
+  g.enterNode("0:0");
+  const F = g.run.fight, n = F.enemies.length;
+  F.turn = K.ARRIVE_EVERY - 1;  // the next turn would be an arrival turn in a normal fight
+  g.kill(F.enemies.find(e => K.FOES[e.type].boss), "test");
+  g.endTurn(null);
+  assert.equal(F.over, "win");
+  assert.equal(F.arrivals, 0);
+  assert.equal(F.enemies.length, n - 1);
+});
