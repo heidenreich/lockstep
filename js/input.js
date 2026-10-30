@@ -103,8 +103,8 @@ document.addEventListener("click", ev => {
   const b = ev.target.closest("[data-act],[data-take],[data-replace],[data-up],[data-restup],[data-buy],[data-buyup],[data-shopreplace],[data-ev],[data-order]");
   if (!b || b.disabled || !R) return;
   const a = b.dataset;
-  if (a.act === "claim") { if (R.fight && R.fight.kind === "drill") tally("drill"); game.fightReward(); render(); return; }
-  if (a.act === "skipDrill") { tally("drillSkip", { step: Object.keys(R.fight.coach || {}).length }); game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
+  if (a.act === "claim") { game.fightReward(); render(); return; }
+  if (a.act === "skipDrill") { game.fightReward(); toast("Drill skipped. Run it again any time from the title screen."); render(); return; }
   if (a.act === "noteOk") { noteQueue.shift(); render(); return; }
   if (a.act === "briefClose") { closeBrief(); render(); $("briefBtn").focus({ preventScroll: true }); return; }
   if (a.act === "fallen") { game.endRun(false); render(); return; }
@@ -129,14 +129,12 @@ document.addEventListener("click", ev => {
 });
 
 /* ---------- Boot ---------- */
-function boot(data) {
+function boot() {
   readColors();
-  if (data && data.R && data.R.v === 1) useRun(adoptRun(data.R));
+  loadProfile();
   render();
-  initStore();
   requestAnimationFrame(frame);
 }
-window.claude?.hot?.snapshot?.(() => ({ R }));
 new ResizeObserver(() => { if (R && R.screen === "fight" && R.fight) { resize(); draw(0); } }).observe($("boardbox"));
 document.fonts?.ready?.then(() => readColors());
-window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+boot();
