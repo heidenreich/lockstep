@@ -3,17 +3,6 @@
 // up on the board. It folds away on your first move; the Briefing button in the top bar brings it back.
 
 /* ---------- Briefing ---------- */
-const BRIEF_PIECE = {
-  drone: "Copies your every step.",
-  contra: "Steps the opposite way to you.",
-  heavy: "Moves only every other turn, so it drifts out of step with you. Hits for 2.",
-  rifle: "Holds its ground. Reloads for 2 turns, then fires along its row and column; walls stop the shot, anything else in the way takes it. Gives up once every other enemy is gone.",
-  runner: "Elite. Moves 2 for each of your steps.",
-  anchor: "Elite. Never moves and strikes anything beside it. Once every other enemy is gone it starts copying your steps.",
-  colossus: "A giant heavy that hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns.",
-  mirror: "A giant contrarian. Every 5 turns it flips direction: for 5 turns everyone moves the opposite way. It seals any pit it climbs out of.",
-  warden: "Hits for 2. It chases you every other turn and copies your step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns."
-};
 const WALL_NAME = ["Alphabet blocks", "Stacked books", "Toy-box crates"];
 let briefOpen = false, briefHi = null, briefHtml = "";
 // Auto-show before every fight is a per-browser preference.
@@ -28,8 +17,8 @@ function briefRows(F) {
   const byType = new Map();
   for (const e of F.enemies) { const b = byType.get(e.type) || { n: 0, hp: e.max }; b.n++; byType.set(e.type, b); }
   for (const [type, b] of byType) {
-    const d = FOES[type], hits = d.dmg > 1 && !/[Hh]its for/.test(BRIEF_PIECE[type]) ? ` Hits for ${d.dmg}.` : "";
-    add(`e:${type}`, `tin:${type}`, `${d.boss ? d.name : cap(d.name)}${b.n > 1 ? ` ×${b.n}` : ""}`, `${b.hp} health. ${BRIEF_PIECE[type] || ""}${hits}`);
+    const d = FOES[type], hits = d.dmg > 1 && !/[Hh]its for/.test(d.rule) ? ` Hits for ${d.dmg}.` : "";
+    add(`e:${type}`, `tin:${type}`, `${d.boss ? d.name : cap(d.name)}${b.n > 1 ? ` ×${b.n}` : ""}`, `${b.hp} health. ${d.rule}${hits}`);
   }
   if (rm.pits.size) add("t:pit", "pit", `Pits ×${rm.pits.size}`, boss ? `The boss takes 3 and climbs back out at an edge; anything else is gone. ${F.enemies.some(e => foe(e).seals) ? "Any pit the Mirror climbs out of is sealed." : "Pits never fill in a boss fight."}` : `Anything that steps in is gone. Each pit takes ${R.pitHold} this fight, then fills in.`);
   if (rm.walls.size) add("t:wall", "wall", WALL_NAME[R.act - 1], "Walls stop everything. An enemy blocked 3 turns running breaks free and chases you.");
@@ -40,12 +29,11 @@ function briefRows(F) {
   if (F.goal && F.goal.flag) add("t:flag", "flag", "The colours", "Step onto the flag before the room is clear, and before an enemy tramples it.");
   return rows;
 }
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 // The training drill teaches drones, pits and walls.
 const briefKnown = id => !!P.seen[id] || (P.drilled && ["drone", "pit", "wall"].includes(id));
 function renderBrief() {
   const box = $("brief"), F = R.fight, was = !box.hidden;
-  const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || (F.turn === 0 && !fightUi(F).briefed && briefAuto())));
+  const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || briefAutoShows(F)));
   $("briefBtn").hidden = !(F && !F.over && F.kind !== "drill" && !show);
   box.hidden = !show;
   if (!show) { briefHi = null; briefHtml = ""; if (!F || F.over) briefOpen = false; return false; }
@@ -56,7 +44,7 @@ function renderBrief() {
   box.className = "brief" + (boss ? " boss" : F.kind === "elite" ? " elite" : "");
   const sw = (r, w, h) => `<canvas data-sw="${r.sw}" width="${w * 2}" height="${h * 2}" style="width:${w}px;height:${h}px" aria-hidden="true"></canvas>`;
   const win = boss ? `Beat the ${esc(foe(boss).name)}. The fight ends the moment it falls; its helpers don't matter.` : "Clear the room: every enemy down, into a pit or out of the fight.";
-  const clock = boss ? [`Turn 30: the ${esc(foe(boss).name)} enrages. Its helpers break free and more arrive every 3 turns.`]
+  const clock = boss ? [`Turn ${ENRAGE}: the ${esc(foe(boss).name)} enrages. Its helpers break free and more arrive every ${ENRAGE_EVERY} turns.`]
     : [`Turn ${F.frenzyAt}: frenzy. Every enemy breaks free and chases you.`, `Every ${ARRIVE_EVERY} turns one more joins (${MAX_ARRIVALS} at most) while 2 or more are left. Waiting brings one at once.`];
   const html = `<div class="briefhead"><div><span class="eyebrow">Briefing</span><h3 id="briefTitle" tabindex="-1">${esc(fightRoom(F).name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
     <p class="briefwin"><b>Win:</b> ${win}</p>
@@ -85,8 +73,11 @@ function setBriefHi(key) {
   const d = $("briefDetail"), li = briefHi && box.querySelector(`.briefchips li[data-hi="${briefHi}"]`);
   if (d) d.textContent = li ? `${li.querySelector("b").textContent}: ${li.title}` : "Point at one to see its rule and where it is.";
 }
-// What's new in this room is fixed when the fight starts (observeFight); after that everything here counts as met, so
-// the one-off "New" notes for pieces and ground don't repeat the briefing.
+// Whether the briefing opens by itself for this fight (at its start, unless switched off or already read).
+const briefAutoShows = F => F.kind !== "drill" && F.turn === 0 && !fightUi(F).briefed && briefAuto();
+// What's new in this room is fixed when its briefing first opens (at the start of the fight, or from the Briefing
+// button); after that everything here counts as met, so the one-off "New" notes don't repeat the briefing. With the
+// briefing off and unopened, the notes explain things as they turn up instead.
 function prepareBrief(F) {
   const ui = fightUi(F);
   if (ui.briefNew || F.kind === "drill") return false;

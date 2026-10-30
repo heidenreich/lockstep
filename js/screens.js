@@ -9,6 +9,7 @@ function readColors() {
   C.wallTop = css("--wall-top"); C.wallSide = css("--wall-side");
 }
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 let toastT;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
@@ -144,7 +145,7 @@ function renderTitle() {
   const maxCad = P.cad[pickChar] || 0;
   pickCad = Math.min(pickCad, maxCad);
   $("cads").innerHTML = CADENCE.map((_, i) => `<button data-cad="${i}" class="${i === pickCad ? "on" : ""}"${i > maxCad ? " disabled" : ""}>${i === 0 ? "Off" : "C" + i}</button>`).join("");
-  $("cadNote").textContent = pickCad ? CADENCE.slice(1, pickCad + 1).map(s => s.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
+  $("cadNote").textContent = pickCad ? CADENCE.slice(1, pickCad + 1).map(c => c.text.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
   $("resumeBtn").hidden = !savedRun();
   $("newHere").hidden = !!P.drilled;
   $("saveNote").textContent = "Unlocks are saved in this browser.";
@@ -160,7 +161,7 @@ function renderTitle() {
 function renderMap() {
   show("sMap");
   const m = R.map, open = new Set(game.openNodes());
-  $("mapTitle").textContent = `Act ${R.act} · ${["The parade ground", "The barracks", "The citadel"][R.act - 1]}`;
+  $("mapTitle").textContent = `Act ${R.act} · ${ACTS[R.act - 1].name}`;
   // The board itself is painted on the canvas underneath (mapboard.js); the SVG carries clicks, focus and names.
   let svg = "";
   for (const [k, n] of Object.entries(m.nodes)) {

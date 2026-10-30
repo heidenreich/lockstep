@@ -3,42 +3,12 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const K = require("../rules.js");
 
-// Each test plays in its own sim game.
+const H = require("./helpers.js");
+const { put, at } = H;
+// The game the current test plays: newRun and fight (tests/helpers.js) make it.
 let g = null;
-function newRun(char, cad, seed) { g = K.makeGame(null, { sim: true }); return g.newRun(char, cad, seed); }
-
-// Builds a fight in a hand-drawn room. Room symbols as in ROOMS, plus "@" for you and a letter per enemy:
-// D drone, C contrarian, H heavy, N anchor, U runner, R rifleman (rifles start loaded).
-let testRooms = 0;
-const PIECES = { D: "drone", C: "contra", H: "heavy", N: "anchor", U: "runner", R: "rifle" };
-function fight(rows, { char = "recruit", cad = 0, kind = "fight" } = {}) {
-  newRun(char, cad, 1);
-  g.startFight(kind);
-  const placed = [];
-  let p = null;
-  const clean = rows.map((row, y) => [...row].map((ch, x) => {
-    if (ch === "@") { p = { x, y }; return "."; }
-    if (PIECES[ch]) { placed.push({ type: PIECES[ch], x, y }); return "."; }
-    return ch;
-  }).join(""));
-  // Each test gets a room of its own, registered by a fresh id (nothing is added to the game's room list).
-  const rm = K.addRoom(K.room(`test-${++testRooms}`, "test", clean));
-  const F = g.run.fight;
-  F.room = rm.id; F.orient = 0;
-  F.kegs = [...rm.kegs];
-  F.enemies = []; F.goal = null; F.log = []; F.p = p;
-  g.setDims();
-  for (const { type, x, y } of placed) put(type, x, y);
-  return F;
-}
-function put(type, x, y) {
-  const F = g.run.fight, d = K.FOES[type];
-  const e = { id: F.nextId++, type, x, y, hp: d.hp, max: d.hp, blocked: 0, free: !!d.chaser, chased: 0, skip: false, dir: [0, 1] };
-  if (d.rifle) e.load = 0;
-  F.enemies.push(e);
-  return e;
-}
-const at = (F, type) => F.enemies.filter(e => e.type === type).map(e => [e.x, e.y]);
+function newRun(...a) { const r = H.newRun(...a); g = H.T.g; return r; }
+function fight(...a) { const F = H.fight(...a); g = H.T.g; return F; }
 
 test("the line copies your step; contrarians mirror it", () => {
   const F = fight([
@@ -195,7 +165,7 @@ test("Cadence 2 brings the frenzy 6 turns sooner, as its text says", () => {
   newRun("recruit", 2, 1);
   g.startFight("fight");
   assert.equal(g.run.fight.frenzyAt, K.FRENZY - 6);
-  assert.match(K.CADENCE[2], /6 turns sooner/);
+  assert.match(K.CADENCE[2].text, /6 turns sooner/);
 });
 
 test("the same seed gives the same run", () => {

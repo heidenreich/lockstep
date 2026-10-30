@@ -91,3 +91,14 @@ test("on a phone the map and a fight fit the width", async t => {
   const line = page.locator("#brief li[data-hi]").first();
   if (await line.count()) { await line.tap(); assert.ok(await page.evaluate(() => !!briefHi)); }
 });
+
+test("with the briefing switched off, a new enemy gets its first-time note instead", async t => {
+  const page = await open(t);
+  await page.evaluate(() => localStorage.setItem("lockstep-brief", "0"));
+  await page.click("#startBtn");
+  await page.click('[data-act="skipDrill"]');
+  // A room whose line has a contrarian, which the drill doesn't teach.
+  await page.evaluate(() => mapPick(game.openNodes()[0]));
+  assert.ok(await page.isHidden("#brief"));
+  assert.match(await page.textContent("#coach .eyebrow"), /New · Contrarian/);
+});

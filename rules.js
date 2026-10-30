@@ -5,6 +5,8 @@
 const BREAK = 3, RELOCK = 4, FRENZY = 30, ARRIVE_EVERY = 8, MAX_ARRIVALS = 2;
 // In a frenzy the broken line runs every RUN_EVERY turns; a Recall during a frenzy holds for RECALL_HOLD turns.
 const RUN_EVERY = 3, RECALL_HOLD = 4;
+// A boss fight that reaches turn ENRAGE: the boss's line breaks free and help arrives every ENRAGE_EVERY turns.
+const ENRAGE = 30, ENRAGE_EVERY = 3;
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 // Rooms are drawn as text: # wall, o pit, ~ ice, ^ spikes, K powder keg, > < v A conveyor belts.
 const BELT = { ">": [1, 0], "<": [-1, 0], "v": [0, 1], "A": [0, -1] };
@@ -41,8 +43,8 @@ const ROOM_BY_ID = new Map(ROOMS.map(r => [r.id, r]));
 const roomById = id => ROOM_BY_ID.get(id);
 // Tests and tools can add rooms of their own.
 const addRoom = rm => { ROOM_BY_ID.set(rm.id, rm); return rm; };
-const ACT_ROOMS = [["drill-square", "ice-yard", "spike-lanes"], ["powder-store", "belt-room", "mess-hall"], ["gatehouse", "battlements", "the-keep"]];
-const BOSS_ROOMS = ["colossus-court", "hall-of-mirrors", "wardens-yard"];
+// ACT_ROOMS and BOSS_ROOMS are filled in from ACTS (below).
+let ACT_ROOMS, BOSS_ROOMS;
 // Each fight turns its room: mirrored either way, and square rooms rotated too. Only turns that change the layout count.
 // F.orient bits: 1 flips x, 2 flips y, 4 swaps x and y (square rooms only). 0 is the room as drawn.
 const ORIENTS = new Map();
@@ -75,18 +77,36 @@ function fightRoom(F) {
 // The training drill: a first-run lesson room with a fixed line, no bonus, arrivals or frenzy. The page coaches it.
 const DRILL_ROOM = "training-ground", DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]], DRILL_START = { x: 3, y: 4 };
 const CHAIN = ["", "", "Double drop", "Triple drop", "Quad drop", "Rout"];
+// Enemies. rule is what it does (the briefing and its first-time note both show it); look is how to spot it (How to play).
+// Flags the rules read: contra (steps the opposite way), slow (moves every other turn), fast (moves 2), fixed (holds its
+// ground), rifle, chaser (never in step), elite, boss. Bosses also say who they bring (adds, addEvery turns, addN at a
+// time; 2 to start), and their twists: flips (the Mirror's direction flip), seals (pits it climbs out of), march (the Warden).
 const FOES = {
-  drone: { name: "drone", hp: 1, dmg: 1 },
-  contra: { name: "contrarian", hp: 1, dmg: 1, contra: true },
-  heavy: { name: "heavy", hp: 2, dmg: 2, slow: true },
-  runner: { name: "runner", hp: 2, dmg: 1, elite: true, fast: true },
-  anchor: { name: "anchor", hp: 3, dmg: 1, elite: true, fixed: true },
-  rifle: { name: "rifleman", hp: 1, dmg: 1, rifle: true, fixed: true },
-  colossus: { name: "Colossus", hp: 8, dmg: 2, boss: true, slow: true },
-  mirror: { name: "Mirror", hp: 9, dmg: 1, boss: true, contra: true, seals: true },
-  warden: { name: "Warden", hp: 12, dmg: 2, boss: true, slow: true, chaser: true, march: true }
+  drone: { name: "drone", hp: 1, dmg: 1, rule: "Copies your every step.", look: "Red coat, shako. Steps with you. 1 health." },
+  contra: { name: "contrarian", hp: 1, dmg: 1, contra: true, rule: "Steps the opposite way to you.", look: "Sideways bicorne, back turned: steps the opposite way." },
+  heavy: { name: "heavy", hp: 2, dmg: 2, slow: true, rule: "Moves only every other turn, so it drifts out of step with you. Hits for 2.", look: "Hits for 2, moves every other turn. 2 health." },
+  runner: { name: "runner", hp: 2, dmg: 1, elite: true, fast: true, rule: "Elite. Moves 2 for each of your steps.", look: "Elite hussar in a busby, mid-stride. Moves 2 per step." },
+  anchor: { name: "anchor", hp: 3, dmg: 1, elite: true, fixed: true, rule: "Elite. Never moves and strikes anything beside it. Once every other enemy is gone it starts copying your steps.", look: "Elite in a crested helmet on a stone block. Never moves; strikes beside it." },
+  rifle: { name: "rifleman", hp: 1, dmg: 1, rifle: true, fixed: true, rule: "Holds its ground. Reloads for 2 turns, then fires along its row and column; walls stop the shot, anything else in the way takes it. Gives up once every other enemy is gone.", look: "Feathered hat, kneeling. Rifle up: reloading. Level: fires its row and column." },
+  colossus: { name: "Colossus", hp: 8, dmg: 2, boss: true, slow: true, adds: "drone", addEvery: 6, addN: 1,
+    rule: "A giant heavy that hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns." },
+  mirror: { name: "Mirror", hp: 9, dmg: 1, boss: true, contra: true, seals: true, flips: true, adds: "contra", addEvery: 7, addN: 1,
+    rule: "A giant contrarian. Every 5 turns it flips direction: for 5 turns everyone moves the opposite way. It seals any pit it climbs out of." },
+  warden: { name: "Warden", hp: 12, dmg: 2, boss: true, slow: true, chaser: true, march: true, adds: "drone", addEvery: 7, addN: 2,
+    rule: "Hits for 2. It chases you every other turn and copies your step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns." }
 };
-const BOSSES = ["colossus", "mirror", "warden"];
+// The three acts: the map's name, the rooms a fight picks from, the boss and its room, who turns up (roster weights) and
+// the elite room's elites (a name, or a list to pick one from).
+const ACTS = [
+  { name: "The parade ground", rooms: ["drill-square", "ice-yard", "spike-lanes"], boss: "colossus", bossRoom: "colossus-court",
+    roster: ["drone", "drone", "drone", "contra", "contra", "heavy", "rifle"], elites: ["runner"] },
+  { name: "The barracks", rooms: ["powder-store", "belt-room", "mess-hall"], boss: "mirror", bossRoom: "hall-of-mirrors",
+    roster: ["drone", "drone", "contra", "contra", "heavy", "heavy", "rifle", "rifle"], elites: ["anchor"] },
+  { name: "The citadel", rooms: ["gatehouse", "battlements", "the-keep"], boss: "warden", bossRoom: "wardens-yard",
+    roster: ["drone", "drone", "contra", "contra", "heavy", "heavy", "heavy", "rifle", "rifle"], elites: [["runner", "anchor"], ["runner", "anchor"]] }
+];
+const BOSSES = ACTS.map(a => a.boss);
+ACT_ROOMS = ACTS.map(a => a.rooms); BOSS_ROOMS = ACTS.map(a => a.bossRoom);
 // Riflemen stand their ground and fire along their row and column once loaded; the first thing in the way takes the shot.
 const RELOAD = 2;
 // Every non-boss room comes with a bonus order (Into the Breach style).
@@ -118,18 +138,83 @@ const SYNERGIES = {
   powder: { name: "Powder quake", card: "quake", order: "fuse", text: "Quake deals 2 to pinned enemies." },
   hobnail: { name: "Hobnail stomp", card: "stomp", order: "boots", text: "Stomp first hits every enemy beside you for 1." }
 };
+// Move cards. Each card carries its own rule: check(k, F, tx, ty) returns why it can't be played toward (tx, ty) ("" if it
+// can), and play(k, F, c, dx, dy) does it. k is the game's kit (k.roomShift, k.damage, k.fall, ...; see cardKit in makeGame);
+// F is the fight and c the card in hand. Upgraded cards use cdUp and textUp. After play(), the game runs the chasers and the
+// end of the turn. The page draws each card's icon from ICONS (js/screens.js) and the bots rank them in sim/run4.js.
 const CARDS = {
-  sidestep: { name: "Sidestep", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room holds still." },
-  stomp: { name: "Stomp", cd: 2, cdUp: 1, dir: true, text: "You stay. The room moves 1 your way." },
-  doubletime: { name: "Double Time", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room moves 2." },
-  aboutface: { name: "About Face", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room moves the opposite way." },
-  lunge: { name: "Lunge", cd: 3, cdUp: 3, dir: true, text: "Dash up to 2; the first enemy hit takes 2. Room moves 1.", textUp: "Dash up to 2; the first enemy hit takes 3. Room moves 1." },
-  shove: { name: "Shove", cd: 2, cdUp: 2, dir: true, text: "Hit an adjacent enemy for 1 and knock it back 2. Room holds.", textUp: "Hit an adjacent enemy for 1 and knock it back 3. Room holds." },
-  quake: { name: "Quake", cd: 5, cdUp: 4, dir: true, text: "You stay. The room moves 1; every enemy already pinned against something takes 1." },
-  magnet: { name: "Magnet", cd: 4, cdUp: 3, dir: false, text: "You stay. Every locked enemy steps 1 toward you." },
-  recall: { name: "Recall", cd: 6, cdUp: 4, dir: false, text: "Every enemy that broke free falls back into step (in a frenzy, for 4 turns). Room holds." },
-  trapdoor: { name: "Trapdoor", cd: 6, cdUp: 4, dir: true, text: "Open a hidden pit beside you for 4 turns. Chasers don't see it coming. Room holds." },
-  brace: { name: "Brace", cd: 4, cdUp: 3, dir: false, text: "You stay and take no damage this turn. Room holds." }
+  sidestep: { name: "Sidestep", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room holds still.",
+    check: (k, F, tx, ty) => k.floorFree(tx, ty) ? "" : "Nowhere to sidestep there.",
+    play: (k, F, c, dx, dy) => { const P = F.p; P.x += dx; P.y += dy; k.arrive(P, dx, dy); } },
+  stomp: { name: "Stomp", cd: 2, cdUp: 1, dir: true, text: "You stay. The room moves 1 your way.",
+    play: (k, F, c, dx, dy) => {
+      if (k.syn("hobnail")) for (const e of [...F.enemies]) if (k.alive(e) && dist(e, F.p) === 1) k.damage(e, 1, "Your stomp catches");
+      k.roomShift(dx, dy);
+    } },
+  doubletime: { name: "Double Time", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room moves 2.",
+    play: (k, F, c, dx, dy) => { k.stepPlayer(dx, dy); k.roomShift(dx, dy); k.roomShift(dx, dy); } },
+  aboutface: { name: "About Face", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room moves the opposite way.",
+    play: (k, F, c, dx, dy) => { k.stepPlayer(dx, dy); k.roomShift(-dx, -dy); } },
+  lunge: { name: "Lunge", cd: 3, cdUp: 3, dir: true, text: "Dash up to 2; the first enemy hit takes 2. Room moves 1.", textUp: "Dash up to 2; the first enemy hit takes 3. Room moves 1.",
+    play: (k, F, c, dx, dy) => {
+      const P = F.p;
+      let dashed = false;
+      for (let i = 0; i < 2; i++) {
+        const tx = P.x + dx, ty = P.y + dy, e = k.inB(tx, ty) && k.enemyAt(tx, ty);
+        if (e) { k.damage(e, (c.up ? 3 : 2) + (k.syn("charge") ? 1 : 0), "Your lunge hits"); break; }
+        if (k.inB(tx, ty) && k.kegAt(tx, ty)) { k.explode(tx, ty); break; }
+        if (!k.inB(tx, ty) || k.isWall(tx, ty) || k.isPit(tx, ty)) break;
+        // Dashing on past a spike tile still hurts (the tile you stop on is handled by arrive).
+        if (dashed && k.hazard(P.x, P.y) === "spike" && !k.hasO("boots")) k.hurtSelf(1, "Spikes");
+        P.x = tx; P.y = ty; dashed = true;
+      }
+      if (dashed) k.arrive(P, dx, dy);
+      k.roomShift(dx, dy);
+    } },
+  shove: { name: "Shove", cd: 2, cdUp: 2, dir: true, text: "Hit an adjacent enemy for 1 and knock it back 2. Room holds.", textUp: "Hit an adjacent enemy for 1 and knock it back 3. Room holds.",
+    check: (k, F, tx, ty) => k.inB(tx, ty) && k.enemyAt(tx, ty) ? "" : "Shove needs an enemy right next to you.",
+    play: (k, F, c, dx, dy) => {
+      const e = k.enemyAt(F.p.x + dx, F.p.y + dy);
+      if (!k.damage(e, 1, "You shove") || fixed(e)) return;
+      let knocked = false;
+      for (let i = 0; i < (c.up ? 3 : 2) && k.alive(e); i++) {
+        const bx = e.x + dx, by = e.y + dy;
+        if (k.inB(bx, by) && k.isPit(bx, by)) { k.fall(e, bx, by); break; }
+        if (k.inB(bx, by) && k.kegAt(bx, by)) { k.explode(bx, by); break; }
+        if (!k.floorFree(bx, by)) break;
+        e.x = bx; e.y = by; knocked = true;
+      }
+      if (knocked && k.alive(e)) k.arrive(e, dx, dy);
+    } },
+  quake: { name: "Quake", cd: 5, cdUp: 4, dir: true, text: "You stay. The room moves 1; every enemy already pinned against something takes 1.",
+    play: (k, F, c, dx, dy) => { k.roomShift(dx, dy, { quake: k.syn("powder") ? 2 : 1, hitSet: new Set() }); k.sfx("quake"); k.fx("quake", F.p.x, F.p.y); } },
+  magnet: { name: "Magnet", cd: 4, cdUp: 3, dir: false, text: "You stay. Every locked enemy steps 1 toward you.",
+    play: (k, F) => {
+      const P = F.p, list = F.enemies.filter(e => isLocked(e) && !foe(e).boss).sort((a, b) => dist(a, P) - dist(b, P));
+      for (const e of list) {
+        if (!k.alive(e) || dist(e, P) <= 1) continue;
+        const ax = Math.sign(P.x - e.x), ay = Math.sign(P.y - e.y);
+        const tries = Math.abs(P.x - e.x) >= Math.abs(P.y - e.y) ? [[ax, 0], [0, ay]] : [[0, ay], [ax, 0]];
+        for (const [mx, my] of tries) {
+          if (!mx && !my) continue;
+          const tx = e.x + mx, ty = e.y + my;
+          if (k.inB(tx, ty) && k.isPit(tx, ty)) { k.fall(e, tx, ty); break; }
+          if (k.floorFree(tx, ty)) { e.x = tx; e.y = ty; e.dir = [mx, my]; k.arrive(e, mx, my); break; }
+        }
+      }
+    } },
+  recall: { name: "Recall", cd: 6, cdUp: 4, dir: false, text: "Every enemy that broke free falls back into step (in a frenzy, for 4 turns). Room holds.",
+    check: (k, F) => F.enemies.some(e => e.free && !foe(e).chaser) ? "" : "Nothing has broken free.",
+    // In a frenzy the recall only holds for a few turns (see endTurn), so it can't freeze a fight for good.
+    play: (k, F) => {
+      for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
+      k.log(F.frenzy ? `The line snaps back into step, for ${RECALL_HOLD} turns.` : "The line snaps back into step.");
+    } },
+  trapdoor: { name: "Trapdoor", cd: 6, cdUp: 4, dir: true, text: "Open a hidden pit beside you for 4 turns. Chasers don't see it coming. Room holds.",
+    check: (k, F, tx, ty) => k.floorFree(tx, ty) ? "" : "The trapdoor needs an empty tile beside you.",
+    play: (k, F, c, dx, dy) => { F.traps.push({ x: F.p.x + dx, y: F.p.y + dy, t: 5 }); k.fx("trap", F.p.x + dx, F.p.y + dy); } },
+  brace: { name: "Brace", cd: 4, cdUp: 3, dir: false, text: "You stay and take no damage this turn. Room holds.",
+    play: (k, F) => { F.brace = true; k.fx("block", F.p.x, F.p.y); } }
 };
 const START_POOL = ["sidestep", "stomp", "doubletime", "aboutface", "lunge", "shove", "trapdoor"];
 const CHARS = {
@@ -137,14 +222,21 @@ const CHARS = {
   drummer: { name: "Drummer", hp: 7, slots: 4, hand: ["doubletime", "aboutface"], blurb: "Sets the tempo. Four card slots; starts with Double Time and About Face.", unlock: "Beat the Colossus" },
   sapper: { name: "Sapper", hp: 9, slots: 3, hand: ["quake", "shove"], pitHold: 3, blurb: "Digs in. Pits hold 3 instead of 2; starts with Quake and Shove.", unlock: "Win a run" }
 };
+// The Cadence ladder: each level adds its effect to every level below it (see cadenceFx).
 const CADENCE = [
-  "Standard rules.",
-  "C1: one more enemy in every fight.",
-  "C2: frenzy starts 6 turns sooner.",
-  "C3: elites have +1 health, and rest heals 2 instead of 3.",
-  "C4: bosses have +4 health.",
-  "C5: start with 2 less health."
+  { text: "Standard rules." },
+  { text: "C1: one more enemy in every fight.", enemies: 1 },
+  { text: "C2: frenzy starts 6 turns sooner.", frenzy: -6 },
+  { text: "C3: elites have +1 health, and rest heals 2 instead of 3.", eliteHp: 1, restHeal: -1 },
+  { text: "C4: bosses have +4 health.", bossHp: 4 },
+  { text: "C5: start with 2 less health.", hp: -2 }
 ];
+// The summed effects of Cadence levels 1..cad.
+function cadenceFx(cad) {
+  const fx = { enemies: 0, frenzy: 0, eliteHp: 0, restHeal: 0, bossHp: 0, hp: 0 };
+  for (let i = 1; i <= cad && i < CADENCE.length; i++) for (const k of Object.keys(fx)) fx[k] += CADENCE[i][k] || 0;
+  return fx;
+}
 const NODE = {
   fight: { label: "Fight", text: "A fight. Clear the room for gold and a card." },
   elite: { label: "Elite", text: "A harder room with an elite. Better gold, a card and a free upgrade." },
@@ -171,14 +263,17 @@ const EVENTS = [
 /* ---------- Profile (unlocks only) ---------- */
 const BLANK_PROFILE = { v: 1, runs: 0, wins: 0, deaths: 0, bestAct: 0, beat: {}, chars: { recruit: true }, cards: {}, cad: { recruit: 0 }, drilled: false, seen: {} };
 const newSeed = () => (Math.random() * 4294967296) >>> 0;
+// Unlocks (meta progression). when(e) says which run event earns it: { beat: boss } after a boss fight, { act: n } on
+// reaching an act, { won: true } on winning a run, { deaths: n } after a fall.
 const UNLOCKS = [
-  { what: "Drummer (cadet)", how: "Beat the Colossus", has: p => p.chars.drummer },
-  { what: "Sapper (cadet)", how: "Win a run", has: p => p.chars.sapper },
-  { what: "Quake (card)", how: "Beat the Colossus", has: p => p.cards.quake },
-  { what: "Magnet (card)", how: "Reach act 2", has: p => p.cards.magnet },
-  { what: "Recall (card)", how: "Beat the Mirror", has: p => p.cards.recall },
-  { what: "Brace (card)", how: "Fall three times", has: p => p.cards.brace }
+  { what: "Drummer (cadet)", how: "Beat the Colossus", kind: "char", id: "drummer", label: "the Drummer", when: e => e.beat === "colossus" },
+  { what: "Sapper (cadet)", how: "Win a run", kind: "char", id: "sapper", label: "the Sapper", when: e => e.won },
+  { what: "Quake (card)", how: "Beat the Colossus", kind: "card", id: "quake", label: "Quake", when: e => e.beat === "colossus" },
+  { what: "Magnet (card)", how: "Reach act 2", kind: "card", id: "magnet", label: "Magnet", when: e => e.act === 2 },
+  { what: "Recall (card)", how: "Beat the Mirror", kind: "card", id: "recall", label: "Recall", when: e => e.beat === "mirror" },
+  { what: "Brace (card)", how: "Fall three times", kind: "card", id: "brace", label: "Brace", when: e => e.deaths >= 3 }
 ];
+for (const u of UNLOCKS) u.has = p => !!(u.kind === "char" ? p.chars : p.cards)[u.id];
 const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)), d, {
   chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen)
 });
@@ -252,6 +347,12 @@ function makeGame(run, opts = {}) {
   const pickOne = a => a[rand(a.length)];
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const cardPool = () => Object.keys(CARDS).filter(id => START_POOL.includes(id) || prof().cards[id]);
+  // Unlocks everything the run event e earns (UNLOCKS), in list order; true if any entry matched.
+  function earn(e) {
+    const hits = UNLOCKS.filter(u => u.when(e));
+    for (const u of hits) unlock(u.kind, u.id, u.label);
+    return hits.length > 0;
+  }
   function unlock(kind, id, label) {
     const P = prof(), bag = kind === "char" ? P.chars : P.cards;
     if (bag[id]) return;
@@ -273,7 +374,7 @@ function makeGame(run, opts = {}) {
     const c = CHARS[char];
     if (seed == null) seed = newSeed();
     R = {
-      v: RUN_V, seed, rng: seed | 0, char, cad, hp: c.hp - (cad >= 5 ? 2 : 0), maxhp: c.hp - (cad >= 5 ? 2 : 0), gold: 0, act: 1,
+      v: RUN_V, seed, rng: seed | 0, char, cad, hp: c.hp + cadenceFx(cad).hp, maxhp: c.hp + cadenceFx(cad).hp, gold: 0, act: 1,
       slots: c.slots, pitHold: c.pitHold || 2,
       hand: c.hand.map(id => ({ id, cd: 0, up: false })), orders: [],
       map: null, pos: null, walked: [], screen: "map", fight: null, reward: null, shop: null, event: null, end: null,
@@ -336,7 +437,7 @@ function makeGame(run, opts = {}) {
     const rm = fightRoom({ room: roomId, orient });
     R.fight = {
       kind, room: roomId, orient: orient || 0, turn: 0, arrivals: 0, pitFill: {}, traps: [], kegs: [...rm.kegs], frenzy: false,
-      frenzyAt: FRENZY - (R.cad >= 2 ? 6 : 0), flip: 0, flipIn: 5, brace: false, enemies: [], nextId: 1,
+      frenzyAt: FRENZY + cadenceFx(R.cad).frenzy, flip: 0, flipIn: 5, brace: false, enemies: [], nextId: 1,
       p: { x: rm.w >> 1, y: rm.h >> 1 }, log: [], over: null, gold: 0, lastHurt: 0, actKills: 0, bestChain: 0,
       iron: hasO("iron"), goal: null, pitKills: 0
     };
@@ -346,22 +447,20 @@ function makeGame(run, opts = {}) {
     return R.fight;
   }
   function startFight(kind) {
-    const act = R.act, id = kind === "boss" ? BOSS_ROOMS[act - 1] : pickOne(ACT_ROOMS[act - 1]);
+    const act = R.act, A = ACTS[act - 1], id = kind === "boss" ? A.bossRoom : pickOne(A.rooms);
     const F = newFight(kind, id, pickOne(roomOrients(roomById(id)))), rm = fightRoom(F);
-    const weights = act === 1 ? ["drone", "drone", "drone", "contra", "contra", "heavy", "rifle"]
-      : act === 2 ? ["drone", "drone", "contra", "contra", "heavy", "heavy", "rifle", "rifle"] : ["drone", "drone", "contra", "contra", "heavy", "heavy", "heavy", "rifle", "rifle"];
     if (kind !== "boss") setGoal(pickOne(Object.keys(GOALS)));
     const open = rm.w * rm.h - rm.walls.size - rm.pits.size - rm.kegs.length;
-    let n = Math.min(1 + act + (R.cad >= 1 ? 1 : 0) + rand(2), Math.floor(open / 9));
+    let n = Math.min(1 + act + cadenceFx(R.cad).enemies + rand(2), Math.floor(open / 9));
     if (kind === "boss") {
-      const b = BOSSES[act - 1];
+      const b = A.boss;
       spawn(b, true);
-      for (let i = 0; i < 2; i++) spawn(b === "mirror" ? "contra" : "drone");
+      for (let i = 0; i < 2; i++) spawn(FOES[b].adds);
       log(`The ${FOES[b].name} takes the field.`);
     } else {
-      if (kind === "elite") { spawn(act === 3 ? pickOne(["runner", "anchor"]) : act === 1 ? "runner" : "anchor"); if (act === 3) spawn(pickOne(["runner", "anchor"])); n = Math.max(3, n - 1); }
+      if (kind === "elite") { for (const el of A.elites) spawn(Array.isArray(el) ? pickOne(el) : el); n = Math.max(3, n - 1); }
       spawn("contra");
-      for (let i = 1; i < n; i++) spawn(pickOne(weights));
+      for (let i = 1; i < n; i++) spawn(pickOne(A.roster));
       log(`${rm.name}. ${F.enemies.length} enemies.`);
     }
     R.stats.fights++;
@@ -413,8 +512,8 @@ function makeGame(run, opts = {}) {
     const F = R.fight, c = edgeTile(boss ? 5 : 4); if (!c) return null;
     const d = FOES[type];
     let hp = d.hp;
-    if (d.elite && R.cad >= 3) hp += 1;
-    if (d.boss && R.cad >= 4) hp += 4;
+    if (d.elite) hp += cadenceFx(R.cad).eliteHp;
+    if (d.boss) hp += cadenceFx(R.cad).bossHp;
     // Anything that turns up during a frenzy arrives already broken free.
     const e = { id: F.nextId++, type, x: c.x, y: c.y, hp, max: hp, blocked: 0, free: !!d.chaser || (F.frenzy && !d.fixed && !d.boss), chased: 0, skip: false, dir: [0, 1] };
     if (d.rifle) e.load = RELOAD;
@@ -644,21 +743,20 @@ function makeGame(run, opts = {}) {
       if (F.frenzy && isLocked(e)) { e.free = true; e.chased = 0; log(`The frenzy takes the ${foe(e).name} again.`); }
     }
     const boss = F.enemies.find(e => foe(e).boss);
-    if (boss && boss.type === "mirror") {
+    if (boss && foe(boss).flips) {
       if (F.flip > 0) { if (--F.flip === 0) log("The Mirror settles. Everyone moves the usual way again."); }
       else if (--F.flipIn <= 0) { F.flip = 5; F.flipIn = 5; log("The Mirror flips direction: for 5 turns, everyone moves the opposite way."); }
     }
     if (F.kind === "boss" && boss) {
       // After turn 30 the boss enrages and calls help every 3 turns, so a boss fight can't be stalled.
-      const enraged = F.turn >= 30, every = enraged ? 3 : boss.type === "colossus" ? 6 : 7;
-      if (F.turn === 30) {
+      const enraged = F.turn >= ENRAGE, every = enraged ? ENRAGE_EVERY : foe(boss).addEvery;
+      if (F.turn === ENRAGE) {
         F.frenzy = true; F.frenzySince = F.turn;
         for (const e of F.enemies) if (!foe(e).boss && !fixed(e)) e.free = true;
-        log(`The ${foe(boss).name} enrages. Its line breaks step, and help arrives every 3 turns.`); sfx("frenzy");
+        log(`The ${foe(boss).name} enrages. Its line breaks step, and help arrives every ${ENRAGE_EVERY} turns.`); sfx("frenzy");
       }
       if (F.turn % every === 0 && F.enemies.length < 14) {
-        const n = boss.type === "warden" ? 2 : 1;
-        for (let i = 0; i < n; i++) { const e = spawn(boss.type === "mirror" ? "contra" : "drone"); if (e && enraged) e.free = true; }
+        for (let i = 0; i < foe(boss).addN; i++) { const e = spawn(foe(boss).adds); if (e && enraged) e.free = true; }
         log(`The ${foe(boss).name} calls in reinforcements.`);
       }
     } else if (F.kind !== "boss" && F.kind !== "drill") {
@@ -756,12 +854,7 @@ function makeGame(run, opts = {}) {
     if (c.cd > 0) return `${CARDS[c.id].name} is ready in ${c.cd}.`;
     const def = CARDS[c.id];
     if (def.dir && !dx && !dy) return "Pick a direction.";
-    const tx = F.p.x + dx, ty = F.p.y + dy;
-    if (c.id === "sidestep" && !floorFree(tx, ty)) return "Nowhere to sidestep there.";
-    if (c.id === "shove") { const e = inB(tx, ty) && enemyAt(tx, ty); if (!e) return "Shove needs an enemy right next to you."; }
-    if (c.id === "trapdoor" && !floorFree(tx, ty)) return "The trapdoor needs an empty tile beside you.";
-    if (c.id === "recall" && !F.enemies.some(e => e.free && !foe(e).chaser)) return "Nothing has broken free.";
-    return "";
+    return def.check ? def.check(cardKit, F, F.p.x + dx, F.p.y + dy) : "";
   }
 
   function play(slot, dx, dy) {
@@ -773,73 +866,15 @@ function makeGame(run, opts = {}) {
     if (dx || dy) F.pdir = [dx, dy];
     sfx("card");
     log(`${def.name}${c.up ? "+" : ""}.`);
-    const P = F.p;
-    switch (c.id) {
-      case "sidestep": P.x += dx; P.y += dy; arrive(P, dx, dy); break;
-      case "stomp":
-        if (syn("hobnail")) for (const e of [...F.enemies]) if (alive(e) && dist(e, P) === 1) damage(e, 1, "Your stomp catches");
-        roomShift(dx, dy); break;
-      case "doubletime": stepPlayer(dx, dy); roomShift(dx, dy); roomShift(dx, dy); break;
-      case "aboutface": stepPlayer(dx, dy); roomShift(-dx, -dy); break;
-      case "lunge": {
-        let dashed = false;
-        for (let i = 0; i < 2; i++) {
-          const tx = P.x + dx, ty = P.y + dy, e = inB(tx, ty) && enemyAt(tx, ty);
-          if (e) { damage(e, (c.up ? 3 : 2) + (syn("charge") ? 1 : 0), "Your lunge hits"); break; }
-          if (inB(tx, ty) && kegAt(tx, ty)) { explode(tx, ty); break; }
-          if (!inB(tx, ty) || isWall(tx, ty) || isPit(tx, ty)) break;
-          // Dashing on past a spike tile still hurts (the tile you stop on is handled by arrive).
-          if (dashed && hazard(P.x, P.y) === "spike" && !hasO("boots")) hurtSelf(1, "Spikes");
-          P.x = tx; P.y = ty; dashed = true;
-        }
-        if (dashed) arrive(P, dx, dy);
-        roomShift(dx, dy);
-        break;
-      }
-      case "shove": {
-        const e = enemyAt(P.x + dx, P.y + dy);
-        if (damage(e, 1, "You shove") && !fixed(e)) {
-          let knocked = false;
-          for (let i = 0; i < (c.up ? 3 : 2) && alive(e); i++) {
-            const bx = e.x + dx, by = e.y + dy;
-            if (inB(bx, by) && isPit(bx, by)) { fall(e, bx, by); break; }
-            if (inB(bx, by) && kegAt(bx, by)) { explode(bx, by); break; }
-            if (!floorFree(bx, by)) break;
-            e.x = bx; e.y = by; knocked = true;
-          }
-          if (knocked && alive(e)) arrive(e, dx, dy);
-        }
-        break;
-      }
-      case "quake": roomShift(dx, dy, { quake: syn("powder") ? 2 : 1, hitSet: new Set() }); sfx("quake"); fx("quake", P.x, P.y); break;
-      case "magnet": {
-        const list = F.enemies.filter(e => isLocked(e) && !foe(e).boss).sort((a, b) => dist(a, P) - dist(b, P));
-        for (const e of list) {
-          if (!alive(e) || dist(e, P) <= 1) continue;
-          const ax = Math.sign(P.x - e.x), ay = Math.sign(P.y - e.y);
-          const tries = Math.abs(P.x - e.x) >= Math.abs(P.y - e.y) ? [[ax, 0], [0, ay]] : [[0, ay], [ax, 0]];
-          for (const [mx, my] of tries) {
-            if (!mx && !my) continue;
-            const tx = e.x + mx, ty = e.y + my;
-            if (inB(tx, ty) && isPit(tx, ty)) { fall(e, tx, ty); break; }
-            if (floorFree(tx, ty)) { e.x = tx; e.y = ty; e.dir = [mx, my]; arrive(e, mx, my); break; }
-          }
-        }
-        break;
-      }
-      case "recall":
-        // In a frenzy the recall only holds for a few turns (see endTurn), so it can't freeze a fight for good.
-        for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
-        log(F.frenzy ? `The line snaps back into step, for ${RECALL_HOLD} turns.` : "The line snaps back into step.");
-        break;
-      case "trapdoor": F.traps.push({ x: P.x + dx, y: P.y + dy, t: 5 }); fx("trap", P.x + dx, P.y + dy); break;
-      case "brace": F.brace = true; fx("block", P.x, P.y); break;
-    }
+    def.play(cardKit, F, c, dx, dy);
     c.cd = c.up ? def.cdUp : def.cd;
     if (!F.over) chasersAct(false);
     endTurn(c);
     return true;
   }
+
+  // What a card's check() and play() get to work with (see CARDS).
+  const cardKit = { roomShift, stepPlayer, arrive, damage, explode, fall, hurtSelf, enemyAt, inB, isWall, isPit, kegAt, hazard, floorFree, alive, hasO, syn, log, fx, sfx };
 
   // Plays act(g) on a sim fork of this game and reports where everything ends up. The real run is never touched.
   function preview(act) {
@@ -862,8 +897,7 @@ function makeGame(run, opts = {}) {
     if (kind === "boss") {
       const b = BOSSES[R.act - 1];
       prof().beat[b] = true;
-      if (b === "colossus") { unlock("char", "drummer", "the Drummer"); unlock("card", "quake", "Quake"); }
-      if (b === "mirror") unlock("card", "recall", "Recall");
+      earn({ beat: b });
       save();
       R.hp = Math.min(R.maxhp, R.hp + Math.ceil((R.maxhp - R.hp) / 2));
     }
@@ -935,7 +969,7 @@ function makeGame(run, opts = {}) {
     if (R.map.nodes[R.pos] && R.map.nodes[R.pos].t === "boss") {
       if (R.act >= 3) return endRun(true);
       R.act++; R.map = genMap(R.act); R.pos = null; R.walked = [];
-      if (R.act === 2) { unlock("card", "magnet", "Magnet"); save(); }
+      if (earn({ act: R.act })) save();
     }
     R.reward = null; R.shop = null; R.event = null;
     R.screen = "map";
@@ -960,7 +994,7 @@ function makeGame(run, opts = {}) {
     Object.assign(sh, shopStock(), { pending: null });
     return true;
   }
-  const restHealAmount = () => (R.cad >= 3 ? 2 : 3);
+  const restHealAmount = () => 3 + cadenceFx(R.cad).restHeal;
   function restHeal() {
     if (R.screen !== "rest" || R.hp >= R.maxhp) return false;
     R.hp = Math.min(R.maxhp, R.hp + restHealAmount()); leaveNode();
@@ -1003,12 +1037,12 @@ function makeGame(run, opts = {}) {
     prof().bestAct = Math.max(prof().bestAct, R.act);
     if (won) {
       prof().wins++;
-      prof().beat.warden = true;
-      unlock("char", "sapper", "the Sapper");
+      prof().beat[BOSSES[BOSSES.length - 1]] = true;
+      earn({ won: true });
       prof().cad[R.char] = Math.max(prof().cad[R.char] || 0, Math.min(5, R.cad + 1));
     } else {
       prof().deaths++;
-      if (prof().deaths >= 3) unlock("card", "brace", "Brace");
+      earn({ deaths: prof().deaths });
     }
     save();
     R.end = { won, act: R.act, stats: { ...R.stats }, gold: R.gold, char: R.char, cad: R.cad };
@@ -1030,8 +1064,8 @@ function makeGame(run, opts = {}) {
 /* ---------- Node ---------- */
 if (typeof module === "object" && module.exports) {
   module.exports = {
-    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
-    roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
+    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
+    roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };
 }
