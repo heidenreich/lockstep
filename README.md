@@ -27,7 +27,7 @@ CI runs both on every PR and push to `main`.
 |---|---|
 | `rules.js` | All game rules, no DOM |
 | `index.html` | The page markup; loads `rules.js`, `styles.css` and `js/` |
-| `js/` | Page scripts, loaded in order: `store` (run, profile, play tally), `audio`, `screens`, `onboarding`, `board` (canvas and pieces), `input` (handlers, boot) |
+| `js/` | Page scripts, loaded in order: `store` (run, profile, play tally), `audio`, `screens`, `onboarding`, `board` (canvas and pieces), `mapboard` (the map as a toy board), `briefing` (the briefing before each fight), `input` (handlers, boot) |
 | `styles.css` | All page styles: theme colours, layout, cards, slate, phone layout |
 | `tests/` | Rule tests |
 | `sim/` | Bot harness and stall traces |

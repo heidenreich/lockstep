@@ -14,6 +14,7 @@
     <p class="logo">Lock<span>step</span></p>
     <div class="stats" id="runStats"></div>
     <div class="spacer"></div>
+    <button class="iconbtn" id="briefBtn" hidden>Briefing</button>
     <button class="iconbtn" id="helpBtn">How to play</button>
     <button class="iconbtn" id="muteBtn" aria-pressed="false">Sound on</button>
     <button class="iconbtn" id="quitBtn" hidden>Abandon run</button>
@@ -54,7 +55,7 @@
     <div class="mapwrap">
       <div class="panel map">
         <div class="row between maphead"><h3 id="mapTitle">Act 1</h3><span class="note">Pick the next room. Paths only go up.</span></div>
-        <svg id="mapSvg" viewBox="0 0 420 600" role="img" aria-label="Run map"></svg>
+        <div class="mapboard"><canvas id="mapCv" aria-hidden="true"></canvas><svg id="mapSvg" viewBox="0 0 420 660" role="group" aria-label="Run map: pick one of the lit spaces"></svg></div>
       </div>
       <div class="side">
         <div class="panel stack"><div class="eyebrow">Your hand</div><div class="hand" id="mapHand"></div></div>
@@ -73,6 +74,7 @@
         <div class="cover" id="fightCover" hidden></div>
       </div>
       <div class="side">
+        <div class="brief" id="brief" hidden aria-label="Briefing for this room"></div>
         <div class="coach" id="coach" hidden></div>
         <div class="panel stack tight" id="handPanel">
           <div class="row between"><span class="eyebrow">Move cards</span><span class="note" id="armNote"></span></div>
@@ -125,4 +127,6 @@
 <script src="js/screens.js"></script>
 <script src="js/onboarding.js"></script>
 <script src="js/board.js"></script>
+<script src="js/mapboard.js"></script>
+<script src="js/briefing.js"></script>
 <script src="js/input.js"></script>
