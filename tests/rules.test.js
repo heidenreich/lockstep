@@ -215,17 +215,6 @@ test("the preview of a wait shows the enemy that will really arrive", () => {
   assert.deepEqual(pv.enemies, g.run.fight.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })));
 });
 
-test("combining two profile copies keeps progress from both", () => {
-  const local = { runs: 5, wins: 1, deaths: 4, bestAct: 3, beat: { colossus: true }, chars: { drummer: true }, cards: { brace: true }, cad: { recruit: 1 } };
-  const account = { runs: 3, wins: 2, deaths: 1, bestAct: 2, beat: { mirror: true }, chars: { sapper: true }, cards: { quake: true }, cad: { recruit: 0, sapper: 2 } };
-  const p = K.combineProfiles(local, account);
-  assert.equal(p.runs, 5); assert.equal(p.wins, 2); assert.equal(p.deaths, 4); assert.equal(p.bestAct, 3);
-  assert.deepEqual(p.beat, { colossus: true, mirror: true });
-  assert.deepEqual(p.chars, { recruit: true, drummer: true, sapper: true });
-  assert.deepEqual(p.cards, { brace: true, quake: true });
-  assert.deepEqual(p.cad, { recruit: 1, sapper: 2 });
-});
-
 test("shop: a full hand asks which card to replace; no gold, no sale", () => {
   newRun("recruit", 0, 1);
   g.run.hand.push({ id: "lunge", cd: 0, up: false });
@@ -441,12 +430,6 @@ test("the training drill: two steps left drop a drone, pinning breaks one free, 
   assert.equal(g.run.hp, g.run.maxhp);
   assert.equal(g.run.stats.fights, 0);
   assert.equal(g.profile.drilled, true);
-});
-
-test("combining profiles keeps the drill and every first-time note seen on either copy", () => {
-  const p = K.combineProfiles({ drilled: true, seen: { keg: true } }, { seen: { rifle: true } });
-  assert.equal(p.drilled, true);
-  assert.deepEqual(p.seen, { keg: true, rifle: true });
 });
 
 test("nothing joins the line after the boss falls", () => {

@@ -140,7 +140,7 @@ function renderTitle() {
   let saved = null; try { saved = JSON.parse(localStorage.getItem("lockstep-run") || "null"); } catch (e) {}
   $("resumeBtn").hidden = !saved || saved.v !== 1;
   $("newHere").hidden = !!P.drilled;
-  $("saveNote").textContent = store.kind === "db" ? "Unlocks are saved to your account." : "Unlocks are saved in this browser.";
+  $("saveNote").textContent = "Unlocks are saved in this browser.";
   $("record").innerHTML = [
     `<span>Runs <b>${P.runs}</b> · wins <b>${P.wins}</b> · falls <b>${P.deaths}</b></span>`,
     `<span>Furthest act <b>${P.bestAct || "–"}</b></span>`,
@@ -218,7 +218,6 @@ function renderStage() {
       + `<div class="offers">${ev.opts.map((o, i) => itemHTML({ attrs: `data-ev="${i}"`, ico: "event", name: o.label, text: o.text })).join("")}</div>`;
   } else if (R.screen === "end") {
     const e = R.end, got = e.stats.unlocked || [], next = UNLOCKS.find(u => !u.has(P));
-    if (!e.tallied) { e.tallied = true; tally(e.won ? "win" : "loss", { char: e.char, cad: e.cad, act: e.act, fights: e.stats.fights }); }
     const unl = got.length ? `<p class="got">Unlocked this run: <b>${got.map(esc).join(", ")}</b></p>` : "";
     const nx = next ? `<p>Next unlock: <b>${esc(next.what)}</b> · ${esc(next.how)}</p>` : `<p>Everything is unlocked.</p>`;
     s.innerHTML = sceneHead("slatehead", e.won ? "Victory" : "Run over", e.won ? "The citadel falls" : `Fell in act ${e.act}`, unl + nx)

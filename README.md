@@ -12,7 +12,7 @@ python3 -m http.server 8000
 
 ## Play it online
 
-GitHub Pages serves `main` at https://heidenreich.github.io/lockstep/ (`.github/workflows/pages.yml` publishes only the files the page loads: `index.html`, `rules.js`, `styles.css`, `js/`). Saves there stay in the player's browser; as a claude.ai Artifact they follow the player's account.
+GitHub Pages serves `main` at https://heidenreich.github.io/lockstep/ (`.github/workflows/pages.yml` publishes only the files the page loads: `index.html`, `rules.js`, `styles.css`, `js/`). Saves stay in the player's browser.
 
 ## Develop
 
@@ -27,7 +27,7 @@ CI runs both on every PR and push to `main`.
 |---|---|
 | `rules.js` | All game rules, no DOM |
 | `index.html` | The page markup; loads `rules.js`, `styles.css` and `js/` |
-| `js/` | Page scripts, loaded in order: `store` (run, profile, play tally), `audio`, `screens`, `onboarding`, `board` (canvas and pieces), `mapboard` (the map as a toy board), `briefing` (the briefing before each fight), `input` (handlers, boot) |
+| `js/` | Page scripts, loaded in order: `store` (run and profile), `audio`, `screens`, `onboarding`, `board` (canvas and pieces), `mapboard` (the map as a toy board), `briefing` (the briefing before each fight), `input` (handlers, boot) |
 | `styles.css` | All page styles: theme colours, layout, cards, slate, phone layout |
 | `tests/` | Rule tests |
 | `sim/` | Bot harness and stall traces |

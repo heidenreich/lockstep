@@ -142,16 +142,6 @@ const UNLOCKS = [
 const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)), d, {
   chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen)
 });
-// Combines two saved copies of a profile (this browser's and the account's) without losing progress from either:
-// unlocks and bosses beaten are kept from both, counts and cadence levels take the higher value.
-function combineProfiles(a, b) {
-  const x = mergeProfile(a || {}), y = mergeProfile(b || {}), out = mergeProfile({});
-  for (const k of ["runs", "wins", "deaths", "bestAct"]) out[k] = Math.max(x[k] || 0, y[k] || 0);
-  for (const k of ["beat", "chars", "cards", "seen"]) out[k] = Object.assign({}, x[k], y[k]);
-  out.drilled = !!(x.drilled || y.drilled);
-  for (const id of new Set([...Object.keys(x.cad), ...Object.keys(y.cad)])) out.cad[id] = Math.max(x.cad[id] || 0, y.cad[id] || 0);
-  return out;
-}
 
 /* ---------- Pure helpers ---------- */
 const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -933,6 +923,6 @@ if (typeof module === "object" && module.exports) {
   module.exports = {
     makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, DIRS, BELT, ROOMS, ACT_ROOMS, BOSS_ROOMS,
     CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
-    room, newSeed, mergeProfile, combineProfiles, dist, foe, fixed, isLocked
+    room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };
 }
