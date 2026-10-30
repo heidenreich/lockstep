@@ -8,6 +8,8 @@ let P = mergeProfile({}), game = null, R = null;
 // Board size of the current fight, for drawing.
 let W = 9, H = 9;
 const GAME_OPTS = { profile: () => P, hooks: { save: () => saveProfile(), toast: msg => toast(msg) } };
+// The page's own notes about a fight (drill coach progress, briefing state) live under fight.ui; rules never read it.
+const fightUi = F => F.ui || (F.ui = {});
 function useRun(run) { game = run ? makeGame(run, GAME_OPTS) : null; R = run; return R; }
 // Until a player has finished or skipped the training drill, their next run opens with it; the title screen can also start one.
 function startRun(char, cad, drill) {
@@ -37,7 +39,7 @@ function resumeRun() {
   const run = savedRun();
   try {
     if (!run) throw new Error("unplayable save");
-    useRun(run); vis = {}; render();
+    useRun(run); vis = {}; observeFight(); render();
   } catch (e) {
     clearSavedRun(); useRun(null); render();
     toast("That saved run can't be continued with this version of the game, so it was cleared.");

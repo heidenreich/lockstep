@@ -1,6 +1,14 @@
 // Lockstep page: keyboard, pointer and button handlers, then boot.
 
 /* ---------- Input ---------- */
+// After anything that changes a fight: fix what's new for its briefing and queue first-time notes, then save the
+// profile once if either learned something. (Drawing only reads this; it never records or saves.)
+function observeFight() {
+  const F = R && R.fight;
+  if (!F || F.over || F.kind === "drill") return;
+  const a = prepareBrief(F), b = noteCheck(F);
+  if (a || b) saveProfile();
+}
 function act(fn) {
   // Your first move folds the briefing away.
   if (briefOpen) closeBrief();
@@ -19,6 +27,7 @@ function act(fn) {
   pvKey = "";
   flushSounds();
   if (before && before.over == null && R.fight && R.fight.over) setTimeout(() => SOUNDS[R.fight && R.fight.over === "win" ? "win" : "lose"](), 120);
+  observeFight();
   render();
   return ok;
 }
@@ -76,7 +85,7 @@ $("chars").addEventListener("click", ev => { const b = ev.target.closest("[data-
 $("cads").addEventListener("click", ev => { const b = ev.target.closest("[data-cad]"); if (b && !b.disabled) { pickCad = +b.dataset.cad; renderTitle(); } });
 $("startBtn").addEventListener("click", () => { startRun(pickChar, pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
 $("resumeBtn").addEventListener("click", resumeRun);
-$("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === "fight" && R.fight) R.fight.over = "lose"; R.hp = Math.min(R.hp, 0); game.endRun(false); render(); });
+$("quitBtn").addEventListener("click", () => { if (!R) return; game.quit(); render(); });
 $("drillBtn").addEventListener("click", () => { startRun(pickChar, pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);
 $("briefBtn").addEventListener("click", () => { briefOpen = true; render(); });
@@ -97,7 +106,7 @@ $("muteBtn").addEventListener("click", () => { muted = !muted; try { localStorag
 // A perk that completes a synergy leaves the "Synergy!" toast showing instead of covering it.
 const synCount = () => (R.synSeen || []).length;
 const perkToast = (id, n) => { if (synCount() === n) toast(`${ORDERS[id].name}: in effect for the rest of the run.`); };
-function mapPick(k) { briefOpen = false; if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
+function mapPick(k) { briefOpen = false; if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; observeFight(); render(); } }
 $("mapSvg").addEventListener("click", ev => { const g = ev.target.closest("[data-node]"); if (g) mapPick(g.dataset.node); });
 $("mapSvg").addEventListener("keydown", ev => { if (ev.key !== "Enter" && ev.key !== " ") return; const g = ev.target.closest("[data-node]"); if (g) { ev.preventDefault(); mapPick(g.dataset.node); } });
 
@@ -113,22 +122,22 @@ document.addEventListener("click", ev => {
   if (a.act === "fallen") { game.endRun(false); render(); return; }
   if (a.act === "title") { useRun(null); render(); return; }
   if (a.act === "leave") { game.leaveNode(); render(); return; }
-  if (a.act === "cancelReplace") { R.reward.pending = null; render(); return; }
+  if (a.act === "cancelReplace") { game.cancelPending(); render(); return; }
   if (a.act === "heal") { game.restHeal(); render(); return; }
   if (a.act === "buyHeal") { game.buyHeal(); render(); return; }
   if (a.act === "buyHp") { game.buyHp(); render(); return; }
-  if (a.act === "cancelShop") { R.shop.pending = null; render(); return; }
+  if (a.act === "cancelShop") { game.cancelPending(); render(); return; }
   if (a.act === "restock") { if (game.restock()) toast("The quartermaster brings out new stock."); render(); return; }
   if (a.act === "buyOrder") { const n = synCount(); if (game.buyOrder()) perkToast(R.shop.order.id, n); render(); return; }
-  if (a.order) { const n = synCount(); if (!R.reward.tookOrder && game.takeOrder(a.order)) { R.reward.tookOrder = true; perkToast(a.order, n); } render(); return; }
+  if (a.order) { const n = synCount(); if (game.takeRewardOrder(a.order)) perkToast(a.order, n); render(); return; }
   if (a.take) { game.takeCard(a.take); render(); return; }
   if (a.replace != null) { game.takeCard(R.reward.pending, +a.replace); render(); return; }
-  if (a.up != null) { if (game.upgradeCard(+a.up)) { R.reward.upgrade = false; toast(`${CARDS[R.hand[+a.up].id].name} upgraded.`); } render(); return; }
+  if (a.up != null) { if (game.claimUpgrade(+a.up)) toast(`${CARDS[R.hand[+a.up].id].name} upgraded.`); render(); return; }
   if (a.restup != null) { const id = R.hand[+a.restup]?.id; if (game.restUpgrade(+a.restup)) toast(`${CARDS[id].name} upgraded.`); render(); return; }
   if (a.buy != null) { game.buyCard(+a.buy); render(); return; }
   if (a.shopreplace != null) { game.buyCard(R.shop.pending.idx, +a.shopreplace); render(); return; }
   if (a.buyup != null) { if (game.buyUpgrade(+a.buyup)) toast(`${CARDS[R.hand[+a.buyup].id].name} upgraded.`); render(); return; }
-  if (a.ev != null) { EVENTS[R.event].opts[+a.ev].go(game); game.leaveNode(); render(); return; }
+  if (a.ev != null) { game.chooseEvent(+a.ev); render(); return; }
 });
 
 /* ---------- Boot ---------- */

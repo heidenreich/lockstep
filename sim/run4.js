@@ -55,9 +55,9 @@ function runOne(bot, { char = "recruit", cad = 0, policy = { draft: "random" }, 
       game.fightReward();
       const rw = R.reward, id = draft(rw.cards, policy);
       if (rw.goal) { const g = st.goals[rw.goal.id] = st.goals[rw.goal.id] || [0, 0]; g[0]++; if (rw.goal.ok) g[1]++; }
-      if (rw.orders && rw.orders.length && policy.orders !== "none" && game.takeOrder(rw.orders[0])) st.orders++;
+      if (rw.orders && rw.orders.length && policy.orders !== "none" && game.takeRewardOrder(rw.orders[0])) st.orders++;
       if (id) { if (R.hand.length < R.slots) game.takeCard(id); else game.takeCard(id, worst(policy)); }
-      if (rw.upgrade) { const i = R.hand.findIndex(c => !c.up); if (i >= 0) game.upgradeCard(i); }
+      if (rw.upgrade) { const i = R.hand.findIndex(c => !c.up); if (i >= 0) game.claimUpgrade(i); }
       game.leaveNode(); st.act = R.act; continue;
     }
     if (R.screen === "rest") {
@@ -90,7 +90,7 @@ function runOne(bot, { char = "recruit", cad = 0, policy = { draft: "random" }, 
       else if (ev.title.includes("kit")) i = R.hand.length < R.slots ? 1 : 0;
       else if (ev.title.includes("sergeant")) i = R.hp >= 5 && R.hand.some(c => !c.up) ? 0 : 1;
       else if (ev.title.includes("drum")) i = R.maxhp >= 8 ? 0 : 1;
-      ev.opts[i].go(game); game.leaveNode(); continue;
+      game.chooseEvent(i); continue;
     }
     if (R.screen === "reward") { game.leaveNode(); continue; }
     break;

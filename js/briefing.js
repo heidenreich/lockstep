@@ -45,21 +45,13 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const briefKnown = id => !!P.seen[id] || (P.drilled && ["drone", "pit", "wall"].includes(id));
 function renderBrief() {
   const box = $("brief"), F = R.fight, was = !box.hidden;
-  const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || (F.turn === 0 && !F.briefed && briefAuto())));
+  const show = !!(F && !F.over && F.kind !== "drill" && (briefOpen || (F.turn === 0 && !fightUi(F).briefed && briefAuto())));
   $("briefBtn").hidden = !(F && !F.over && F.kind !== "drill" && !show);
   box.hidden = !show;
   if (!show) { briefHi = null; briefHtml = ""; if (!F || F.over) briefOpen = false; return false; }
   briefOpen = true;
-  const rows = briefRows(F);
-  // What's new is fixed the first time this room's briefing opens; after that everything here counts as met, and the
-  // one-off "New" notes for pieces and ground would only repeat the briefing.
-  if (!F.briefNew) {
-    F.briefNew = rows.filter(r => !briefKnown(r.id)).map(r => r.id);
-    for (const r of rows) P.seen[r.id] = true;
-    if (F.goal) P.seen.goal = true;
-    saveProfile();
-  }
-  const fresh = rows.filter(r => F.briefNew.includes(r.id)), known = rows.filter(r => !F.briefNew.includes(r.id));
+  const rows = briefRows(F), isNew = fightUi(F).briefNew || [];
+  const fresh = rows.filter(r => isNew.includes(r.id)), known = rows.filter(r => !isNew.includes(r.id));
   const boss = F.enemies.find(e => foe(e).boss), G = F.goal && GOALS[F.goal.id];
   box.className = "brief" + (boss ? " boss" : F.kind === "elite" ? " elite" : "");
   const sw = (r, w, h) => `<canvas data-sw="${r.sw}" width="${w * 2}" height="${h * 2}" style="width:${w}px;height:${h}px" aria-hidden="true"></canvas>`;
@@ -93,9 +85,20 @@ function setBriefHi(key) {
   const d = $("briefDetail"), li = briefHi && box.querySelector(`.briefchips li[data-hi="${briefHi}"]`);
   if (d) d.textContent = li ? `${li.querySelector("b").textContent}: ${li.title}` : "Point at one to see its rule and where it is.";
 }
+// What's new in this room is fixed when the fight starts (observeFight); after that everything here counts as met, so
+// the one-off "New" notes for pieces and ground don't repeat the briefing.
+function prepareBrief(F) {
+  const ui = fightUi(F);
+  if (ui.briefNew || F.kind === "drill") return false;
+  const rows = briefRows(F);
+  ui.briefNew = rows.filter(r => !briefKnown(r.id)).map(r => r.id);
+  for (const r of rows) P.seen[r.id] = true;
+  if (F.goal) P.seen.goal = true;
+  return true;
+}
 function closeBrief() {
   const F = R && R.fight;
-  if (F) F.briefed = true;
+  if (F) fightUi(F).briefed = true;
   briefOpen = false; briefHi = null;
 }
 // Small portraits for the briefing: tin soldiers for pieces, a painted tile for each kind of ground.
