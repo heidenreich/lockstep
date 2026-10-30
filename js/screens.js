@@ -87,7 +87,12 @@ const GLYPHS = {
 };
 const glyphSvg = (t, cx, cy, scale) => `<g transform="translate(${cx - 10 * scale} ${cy - 10 * scale}) scale(${scale})"><path class="glyph" d="${GLYPHS[t]}"/></g>`;
 
-function show(id) { for (const s of ["sTitle", "sMap", "sFight", "sStage"]) $(s).hidden = s !== id; }
+// Switching screens starts the new one at the top (a scrolled map would otherwise open the fight half off-screen).
+function show(id) {
+  if (!$(id).hidden) return;
+  for (const s of ["sTitle", "sMap", "sFight", "sStage"]) $(s).hidden = s !== id;
+  window.scrollTo(0, 0);
+}
 function renderBar() {
   $("quitBtn").hidden = !R || R.screen === "end";
   $("muteBtn").textContent = muted ? "Sound off" : "Sound on";
