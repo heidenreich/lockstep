@@ -8,8 +8,9 @@ const RUN_EVERY = 3, RECALL_HOLD = 4;
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 // Rooms are drawn as text: # wall, o pit, ~ ice, ^ spikes, K powder keg, > < v A conveyor belts.
 const BELT = { ">": [1, 0], "<": [-1, 0], "v": [0, 1], "A": [0, -1] };
-function room(name, rows) {
-  const r = { name, w: rows[0].length, h: rows.length, walls: new Set(), pits: new Set(), kegs: [], tiles: {} };
+// Rooms are known by a text id (saved runs store it), so the list can be reordered or grown freely.
+function room(id, name, rows) {
+  const r = { id, name, w: rows[0].length, h: rows.length, walls: new Set(), pits: new Set(), kegs: [], tiles: {} };
   rows.forEach((row, y) => [...row].forEach((ch, x) => {
     const k = x + "," + y;
     if (ch === "#") r.walls.add(k);
@@ -22,22 +23,26 @@ function room(name, rows) {
   return r;
 }
 const ROOMS = [
-  room("Drill square", [".......", ".o...o.", ".......", "...#...", ".......", ".o...o.", "......."]),
-  room("Ice yard", [".........", "..~~~~~..", ".o.....o.", "..~~~~~..", ".........", "....#....", "........."]),
-  room("Spike lanes", [".........", ".^^^.^^^.", "....o....", ".#.....#.", "....o....", ".^^^.^^^.", "........."]),
-  room("Colossus court", [".........", ".o.....o.", ".........", "...#.#...", ".........", "...#.#...", ".........", ".o.....o.", "........."]),
-  room("Powder store", [".........", ".K..o..K.", ".........", "..#...#..", ".........", ".K..o..K.", "........."]),
-  room("Belt room", [".........", ".>>>>>>v.", ".A.....v.", ".A..o..v.", ".A.....v.", ".A<<<<<<.", ".........", ".o.....o.", "........."]),
-  room("Mess hall", [".......", ".K.^.K.", "...o...", ".^.#.^.", "...o...", ".K.^.K.", "......."]),
-  room("Hall of mirrors", [".........", ".o..^..o.", ".........", "..#...#..", ".^.....^.", "..#...#..", ".........", ".o..^..o.", "........."]),
-  room("Gatehouse", [".........", ".o.~~~.o.", "...~~~...", ".#.....#.", "..K...K..", ".#.....#.", "...^^^...", ".o.^^^.o.", "........."]),
-  room("Battlements", ["...........", ".o..>>>..o.", "..#.....#..", "...........", "..#.....#..", ".o..<<<..o.", "..........."]),
-  room("The keep", [".........", ".~~...~~.", ".~o...o~.", "...#K#...", ".........", "...#K#...", ".~o...o~.", ".~~...~~.", "........."]),
-  room("Warden's yard", ["...........", ".o.......o.", "...~~~~~...", "..#.....#..", ".....^.....", "..#.....#..", "...~~~~~...", ".o.......o.", "..........."]),
-  room("Training ground", [".......", ".......", ".o.....", ".......", "......#", "......."])
+  room("drill-square", "Drill square", [".......", ".o...o.", ".......", "...#...", ".......", ".o...o.", "......."]),
+  room("ice-yard", "Ice yard", [".........", "..~~~~~..", ".o.....o.", "..~~~~~..", ".........", "....#....", "........."]),
+  room("spike-lanes", "Spike lanes", [".........", ".^^^.^^^.", "....o....", ".#.....#.", "....o....", ".^^^.^^^.", "........."]),
+  room("colossus-court", "Colossus court", [".........", ".o.....o.", ".........", "...#.#...", ".........", "...#.#...", ".........", ".o.....o.", "........."]),
+  room("powder-store", "Powder store", [".........", ".K..o..K.", ".........", "..#...#..", ".........", ".K..o..K.", "........."]),
+  room("belt-room", "Belt room", [".........", ".>>>>>>v.", ".A.....v.", ".A..o..v.", ".A.....v.", ".A<<<<<<.", ".........", ".o.....o.", "........."]),
+  room("mess-hall", "Mess hall", [".......", ".K.^.K.", "...o...", ".^.#.^.", "...o...", ".K.^.K.", "......."]),
+  room("hall-of-mirrors", "Hall of mirrors", [".........", ".o..^..o.", ".........", "..#...#..", ".^.....^.", "..#...#..", ".........", ".o..^..o.", "........."]),
+  room("gatehouse", "Gatehouse", [".........", ".o.~~~.o.", "...~~~...", ".#.....#.", "..K...K..", ".#.....#.", "...^^^...", ".o.^^^.o.", "........."]),
+  room("battlements", "Battlements", ["...........", ".o..>>>..o.", "..#.....#..", "...........", "..#.....#..", ".o..<<<..o.", "..........."]),
+  room("the-keep", "The keep", [".........", ".~~...~~.", ".~o...o~.", "...#K#...", ".........", "...#K#...", ".~o...o~.", ".~~...~~.", "........."]),
+  room("wardens-yard", "Warden's yard", ["...........", ".o.......o.", "...~~~~~...", "..#.....#..", ".....^.....", "..#.....#..", "...~~~~~...", ".o.......o.", "..........."]),
+  room("training-ground", "Training ground", [".......", ".......", ".o.....", ".......", "......#", "......."])
 ];
-const ACT_ROOMS = [[0, 1, 2], [4, 5, 6], [8, 9, 10]];
-const BOSS_ROOMS = [3, 7, 11];
+const ROOM_BY_ID = new Map(ROOMS.map(r => [r.id, r]));
+const roomById = id => ROOM_BY_ID.get(id);
+// Tests and tools can add rooms of their own.
+const addRoom = rm => { ROOM_BY_ID.set(rm.id, rm); return rm; };
+const ACT_ROOMS = [["drill-square", "ice-yard", "spike-lanes"], ["powder-store", "belt-room", "mess-hall"], ["gatehouse", "battlements", "the-keep"]];
+const BOSS_ROOMS = ["colossus-court", "hall-of-mirrors", "wardens-yard"];
 // Each fight turns its room: mirrored either way, and square rooms rotated too. Only turns that change the layout count.
 // F.orient bits: 1 flips x, 2 flips y, 4 swaps x and y (square rooms only). 0 is the room as drawn.
 const ORIENTS = new Map();
@@ -54,19 +59,21 @@ function turnRoom(rm, o) {
   const vec = ([dx, dy]) => { const a = o & 1 ? -dx : dx, b = o & 2 ? -dy : dy; return sw ? [b, a] : [a, b]; };
   const key = k => pt(...k.split(",").map(Number)).join(",");
   const beltCh = v => Object.keys(BELT).find(ch => BELT[ch][0] === v[0] && BELT[ch][1] === v[1]);
-  const out = { name: rm.name, w: sw ? rm.h : rm.w, h: sw ? rm.w : rm.h, walls: new Set([...rm.walls].map(key)), pits: new Set([...rm.pits].map(key)), kegs: rm.kegs.map(key), tiles: {} };
+  const out = { id: rm.id, name: rm.name, w: sw ? rm.h : rm.w, h: sw ? rm.w : rm.h, walls: new Set([...rm.walls].map(key)), pits: new Set([...rm.pits].map(key)), kegs: rm.kegs.map(key), tiles: {} };
   for (const [k, t] of Object.entries(rm.tiles)) out.tiles[key(k)] = BELT[t] ? beltCh(vec(BELT[t])) : t;
   return out;
 }
 const TURNED = new Map();
 function fightRoom(F) {
-  if (!F.orient) return ROOMS[F.room];
-  const k = F.room + ":" + F.orient;
-  if (!TURNED.has(k)) TURNED.set(k, turnRoom(ROOMS[F.room], F.orient));
-  return TURNED.get(k);
+  const rm = roomById(F.room);
+  if (!F.orient) return rm;
+  if (!TURNED.has(rm)) TURNED.set(rm, new Map());
+  const turned = TURNED.get(rm);
+  if (!turned.has(F.orient)) turned.set(F.orient, turnRoom(rm, F.orient));
+  return turned.get(F.orient);
 }
 // The training drill: a first-run lesson room with a fixed line, no bonus, arrivals or frenzy. The page coaches it.
-const DRILL_ROOM = 12, DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]], DRILL_START = { x: 3, y: 4 };
+const DRILL_ROOM = "training-ground", DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]], DRILL_START = { x: 3, y: 4 };
 const CHAIN = ["", "", "Double drop", "Triple drop", "Quad drop", "Rout"];
 const FOES = {
   drone: { name: "drone", hp: 1, dmg: 1 },
@@ -176,6 +183,26 @@ const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)
   chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen)
 });
 
+/* ---------- Saved runs ---------- */
+// A saved run carries its shape's version. Bump RUN_V whenever the run's shape changes, and teach migrateRun the step.
+//   v1: fights stored their room as a position in ROOMS (in the order below); v2 stores the room's id.
+const RUN_V = 2;
+const V1_ROOMS = ["drill-square", "ice-yard", "spike-lanes", "colossus-court", "powder-store", "belt-room", "mess-hall", "hall-of-mirrors", "gatehouse", "battlements", "the-keep", "wardens-yard", "training-ground"];
+// Brings a saved run up to date, or returns null if it can't be played any more (unknown version, or it names a card,
+// perk, enemy, room or character this version of the game doesn't have).
+function migrateRun(r) {
+  if (!r || typeof r !== "object" || !Number.isInteger(r.v)) return null;
+  if (r.v === 1) { if (r.fight) r.fight.room = V1_ROOMS[r.fight.room]; r.v = 2; }
+  if (r.v !== RUN_V) return null;
+  // Runs saved before the seeded RNG have no RNG state; give them one.
+  if (r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
+  const ok = !!CHARS[r.char] && Array.isArray(r.hand) && r.hand.every(c => c && CARDS[c.id]) && (r.orders || []).every(id => ORDERS[id])
+    && !!(r.map && r.map.nodes) && (!r.fight || (!!roomById(r.fight.room) && r.fight.enemies.every(e => FOES[e.type]) && (!r.fight.goal || !!GOALS[r.fight.goal.id])))
+    && (!r.reward || ((r.reward.cards || []).every(id => CARDS[id]) && (r.reward.orders || []).every(id => ORDERS[id])))
+    && (!r.shop || ((r.shop.cards || []).every(o => CARDS[o.id]) && (!r.shop.order || !!ORDERS[r.shop.order.id])));
+  return ok ? r : null;
+}
+
 /* ---------- Pure helpers ---------- */
 const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const foe = e => FOES[e.type];
@@ -234,15 +261,13 @@ function makeGame(run, opts = {}) {
   // A sim copy of this game: same run (deep-copied, RNG state included), a copy of the profile, no effects or saving.
   const fork = () => makeGame(JSON.parse(JSON.stringify(R)), { sim: true, profile: JSON.parse(JSON.stringify(prof())) });
 
-  function fx(kind, x, y, extra) { if (!SIM) FX.push(Object.assign({ kind, x, y }, extra || {})); }
-  function sfx(name) { if (!SIM) SFX.push(name); }
   function log(msg) { if (!R || !R.fight) return; R.fight.log.unshift({ t: R.fight.turn, msg }); R.fight.log.length = Math.min(R.fight.log.length, 8); }
 
   function newRun(char, cad, seed) {
     const c = CHARS[char];
     if (seed == null) seed = newSeed();
     R = {
-      v: 1, seed, rng: seed | 0, char, cad, hp: c.hp - (cad >= 5 ? 2 : 0), maxhp: c.hp - (cad >= 5 ? 2 : 0), gold: 0, act: 1,
+      v: RUN_V, seed, rng: seed | 0, char, cad, hp: c.hp - (cad >= 5 ? 2 : 0), maxhp: c.hp - (cad >= 5 ? 2 : 0), gold: 0, act: 1,
       slots: c.slots, pitHold: c.pitHold || 2,
       hand: c.hand.map(id => ({ id, cd: 0, up: false })), orders: [],
       map: null, pos: null, walked: [], screen: "map", fight: null, reward: null, shop: null, event: null, end: null,
@@ -301,10 +326,10 @@ function makeGame(run, opts = {}) {
   }
 
   /* ---------- Fight setup ---------- */
-  function newFight(kind, roomIdx, orient) {
-    const rm = fightRoom({ room: roomIdx, orient });
+  function newFight(kind, roomId, orient) {
+    const rm = fightRoom({ room: roomId, orient });
     R.fight = {
-      kind, room: roomIdx, orient: orient || 0, turn: 0, arrivals: 0, pitFill: {}, traps: [], kegs: [...rm.kegs], frenzy: false,
+      kind, room: roomId, orient: orient || 0, turn: 0, arrivals: 0, pitFill: {}, traps: [], kegs: [...rm.kegs], frenzy: false,
       frenzyAt: FRENZY - (R.cad >= 2 ? 6 : 0), flip: 0, flipIn: 5, brace: false, enemies: [], nextId: 1,
       p: { x: rm.w >> 1, y: rm.h >> 1 }, log: [], over: null, gold: 0, lastHurt: 0, actKills: 0, bestChain: 0,
       iron: hasO("iron"), goal: null, pitKills: 0
@@ -315,8 +340,8 @@ function makeGame(run, opts = {}) {
     return R.fight;
   }
   function startFight(kind) {
-    const act = R.act, idx = kind === "boss" ? BOSS_ROOMS[act - 1] : pickOne(ACT_ROOMS[act - 1]);
-    const F = newFight(kind, idx, pickOne(roomOrients(ROOMS[idx]))), rm = fightRoom(F);
+    const act = R.act, id = kind === "boss" ? BOSS_ROOMS[act - 1] : pickOne(ACT_ROOMS[act - 1]);
+    const F = newFight(kind, id, pickOne(roomOrients(roomById(id)))), rm = fightRoom(F);
     const weights = act === 1 ? ["drone", "drone", "drone", "contra", "contra", "heavy", "rifle"]
       : act === 2 ? ["drone", "drone", "contra", "contra", "heavy", "heavy", "rifle", "rifle"] : ["drone", "drone", "contra", "contra", "heavy", "heavy", "heavy", "rifle", "rifle"];
     if (kind !== "boss") setGoal(pickOne(Object.keys(GOALS)));
@@ -968,7 +993,7 @@ function makeGame(run, opts = {}) {
 /* ---------- Node ---------- */
 if (typeof module === "object" && module.exports) {
   module.exports = {
-    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, DIRS, BELT, ROOMS, ACT_ROOMS, BOSS_ROOMS,
+    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
     roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };

@@ -22,10 +22,26 @@ function startRun(char, cad, drill) {
 function saveProfile() {
   try { localStorage.setItem("lockstep-profile", JSON.stringify(P)); } catch (e) {}
 }
-// Runs saved before the seeded RNG have no RNG state; give them one.
-function adoptRun(r) {
-  if (r && r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
-  return r;
+// The saved run, brought up to date (rules.js migrateRun). A save the game can no longer play is cleared.
+function savedRun() {
+  let r = null;
+  try { r = JSON.parse(localStorage.getItem("lockstep-run") || "null"); } catch (e) {}
+  if (r == null) return null;
+  const run = migrateRun(r);
+  if (!run) clearSavedRun();
+  return run;
+}
+function clearSavedRun() { try { localStorage.removeItem("lockstep-run"); } catch (e) {} }
+// Continue: if anything about the save goes wrong while loading it, drop it and say so rather than break the page.
+function resumeRun() {
+  const run = savedRun();
+  try {
+    if (!run) throw new Error("unplayable save");
+    useRun(run); vis = {}; render();
+  } catch (e) {
+    clearSavedRun(); useRun(null); render();
+    toast("That saved run can't be continued with this version of the game, so it was cleared.");
+  }
 }
 function loadProfile() {
   try { const s = localStorage.getItem("lockstep-profile"); if (s) P = mergeProfile(JSON.parse(s)); } catch (e) {}

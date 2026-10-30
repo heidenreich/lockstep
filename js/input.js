@@ -75,7 +75,7 @@ $("hand").addEventListener("click", ev => { const b = ev.target.closest("button[
 $("chars").addEventListener("click", ev => { const b = ev.target.closest("[data-char]"); if (b && !b.disabled) { pickChar = b.dataset.char; renderTitle(); } });
 $("cads").addEventListener("click", ev => { const b = ev.target.closest("[data-cad]"); if (b && !b.disabled) { pickCad = +b.dataset.cad; renderTitle(); } });
 $("startBtn").addEventListener("click", () => { startRun(pickChar, pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
-$("resumeBtn").addEventListener("click", () => { try { useRun(adoptRun(JSON.parse(localStorage.getItem("lockstep-run")))); } catch (e) { useRun(null); } vis = {}; render(); });
+$("resumeBtn").addEventListener("click", resumeRun);
 $("quitBtn").addEventListener("click", () => { if (!R) return; if (R.screen === "fight" && R.fight) R.fight.over = "lose"; R.hp = Math.min(R.hp, 0); game.endRun(false); render(); });
 $("drillBtn").addEventListener("click", () => { startRun(pickChar, pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);

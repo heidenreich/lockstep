@@ -4,6 +4,10 @@
   "description": "Turn-based tactical roguelite: the room copies your every move.",
   "scripts": {
     "test": "node --test",
+    "test:e2e": "node --test \"e2e/*.e2e.js\"",
     "sim": "node sim/run4.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }
