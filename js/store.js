@@ -1,5 +1,5 @@
 // Lockstep page: the current game and run, and the player profile (kept in browser storage).
-// Classic scripts sharing one global scope, loaded in order after rules.js: store, audio, screens, onboarding, board, input.
+// Classic scripts sharing one global scope, loaded in order after rules.js: store, audio, screens, onboarding, board, mapboard, briefing, input.
 
 /* ---------- The game ---------- */
 // The page owns one game at a time (rules.js makeGame). R is its run, kept here for the many places that read it;
