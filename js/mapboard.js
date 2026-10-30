@@ -128,7 +128,9 @@ function drawSpace(g, x, y, type, o, t) {
   g.save();
   if (o.open) {
     const glow = reduced() ? 0.5 : 0.5 + Math.sin(t * 3.2) * 0.25;
-    g.strokeStyle = `rgba(240,194,94,${glow})`; g.lineWidth = 3; g.beginPath(); g.arc(x, y, r + 7, 0, Math.PI * 2); g.stroke();
+    // A dark ring under the brass glow, so open spaces stand out on the pale act 1 board too.
+    g.strokeStyle = "rgba(43,29,18,0.55)"; g.lineWidth = 6; g.beginPath(); g.arc(x, y, r + 7, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = `rgba(240,194,94,${0.55 + glow * 0.45})`; g.lineWidth = 3; g.beginPath(); g.arc(x, y, r + 7, 0, Math.PI * 2); g.stroke();
   }
   g.fillStyle = "rgba(0,0,0,0.3)"; g.beginPath(); g.ellipse(x + 2, y + 6, r + 1, r * 0.85, 0, 0, Math.PI * 2); g.fill();
   g.fillStyle = st.rim; g.beginPath(); g.ellipse(x, y + 4 - lift, r, r * 0.92, 0, 0, Math.PI * 2); g.fill();

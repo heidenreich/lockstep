@@ -29,7 +29,7 @@ const NOTES = {
   warden: ["The Warden", "It chases every other turn and marches in step on the turns between (the slate says which). Step it into a pit then."],
   keg: ["Powder keg", "Blocks like a wall. Crash, shove or bump anything into it and it blows: 1 to everything beside it, and nearby kegs go too."],
   ice: ["Ice", "Anything that steps onto ice slides until something stops it, you included."],
-  spike: ["Spikes", "Stepping onto spikes costs 1 health, for you and the line alike. Bosses don't feel them."],
+  spike: ["Spikes", "Stepping onto spikes costs 1 health, for you and enemies alike. Bosses don't feel them."],
   belt: ["Conveyor belt", "At the end of each turn a belt carries whatever stands on it one tile, into pits too."],
   goal: ["Bonus order", "Every room has a bonus order on the slate. Carry it out for extra gold."],
   free: ["Broken free", "Blocked 3 turns running, it now chases you instead of copying you. Stay 4 tiles away for 4 turns and it falls back into step."],
