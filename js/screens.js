@@ -1,18 +1,6 @@
 // Lockstep page: shared HTML helpers (cards, offers, glyphs) and the title, map, reward, shop, rest, event and end screens.
 
 /* ---------- Rendering: shared ---------- */
-const $ = id => document.getElementById(id);
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const C = {};
-function readColors() {
-  for (const k of ["bg", "bg2", "floor", "floor2", "chalk", "wall", "pit", "ink", "muted", "brass", "cadet", "drone", "contra", "heavy", "elite", "boss", "good", "danger"]) C[k] = css("--" + k);
-  C.wallTop = css("--wall-top"); C.wallSide = css("--wall-side");
-}
-const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
-let toastT;
-function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
 
 function cardText(c) { const d = CARDS[c.id]; return c.up && d.textUp ? d.textUp : d.text; }
 function cardCd(c) { const d = CARDS[c.id]; return c.up ? d.cdUp : d.cd; }
@@ -45,7 +33,7 @@ const ICONS = {
 const cardIcon = id => `<svg viewBox="0 0 40 40" aria-hidden="true">${ICONS[id] ? ICONS[id]() : ""}</svg>`;
 function cardHTML(c, i, opts) {
   const o = opts || {}, d = CARDS[c.id];
-  const cls = ["card", o.cls || "", c.cd > 0 && o.inFight ? "cooling" : "", o.armed ? "armed" : ""].join(" ");
+  const cls = ["card", o.cls || "", c.cd > 0 && o.inFight ? "cooling" : "", o.armed ? "ui.armed" : ""].join(" ");
   const cd = o.inFight ? (c.cd > 0 ? `${c.cd} turn${c.cd === 1 ? "" : "s"}` : "ready") : `cd ${cardCd(c)}`;
   const key = o.inFight ? `<span class="k">${i + 1}</span>` : "";
   // Upgrade pickers show what drilling the card changes; a disabled pick says why.
@@ -111,41 +99,31 @@ function renderBar() {
 }
 function saveRun() { try { if (R && R.screen !== "end") localStorage.setItem("lockstep-run", JSON.stringify(R)); else localStorage.removeItem("lockstep-run"); } catch (e) {} }
 
-// Each act has its own light: daylight sandstone, lamplit barracks, a torchlit citadel at night.
-const ACT_THEME = [
-  { floor: "#3b3328", floor2: "#433a2d", chalk: "#5c503d", wall: "#6e5f49", wallTop: "#a38d68", wallSide: "#4a3e30", pit: "#0b0806", light: "day" },
-  { floor: "#2b2219", floor2: "#33291e", chalk: "#4b3c2b", wall: "#574735", wallTop: "#86694b", wallSide: "#382c20", pit: "#050302", light: "lamp" },
-  { floor: "#121a2a", floor2: "#162036", chalk: "#26334f", wall: "#33425e", wallTop: "#58709a", wallSide: "#222d45", pit: "#03050a", light: "torch" }
-];
 function applyTheme() {
   if (R) document.body.dataset.act = R.act; else delete document.body.dataset.act;
   readColors();
   if (R) Object.assign(C, ACT_THEME[R.act - 1]);
 }
 function render() {
-  if (R && R.fight) ({ w: W, h: H } = fightRoom(R.fight));
   applyTheme();
   renderBar();
   if (!R) { renderTitle(); return; }
   saveRun();
-  if (R.screen === "map") renderMap();
-  else if (R.screen === "fight") renderFight();
-  else renderStage();
+  (SCREENS[R.screen] || renderStage)();
 }
 
 /* ---------- Title ---------- */
-let pickChar = "recruit", pickCad = 0;
 function renderTitle() {
   show("sTitle"); renderBar();
-  if (!P.chars[pickChar]) pickChar = "recruit";
+  if (!P.chars[ui.pickChar]) ui.pickChar = "recruit";
   $("chars").innerHTML = Object.entries(CHARS).map(([id, c]) => {
     const has = P.chars[id];
-    return `<button class="char ${pickChar === id ? "on" : ""} ${has ? "" : "locked"}" data-char="${id}"${has ? "" : " disabled"}><span class="nm">${esc(c.name)}</span><span class="meta">${c.hp} health · ${c.slots} card slots</span><span class="muted">${esc(has ? c.blurb : "Locked. " + c.unlock + ".")}</span></button>`;
+    return `<button class="char ${ui.pickChar === id ? "on" : ""} ${has ? "" : "locked"}" data-char="${id}"${has ? "" : " disabled"}><span class="nm">${esc(c.name)}</span><span class="meta">${c.hp} health · ${c.slots} card slots</span><span class="muted">${esc(has ? c.blurb : "Locked. " + c.unlock + ".")}</span></button>`;
   }).join("");
-  const maxCad = P.cad[pickChar] || 0;
-  pickCad = Math.min(pickCad, maxCad);
-  $("cads").innerHTML = CADENCE.map((_, i) => `<button data-cad="${i}" class="${i === pickCad ? "on" : ""}"${i > maxCad ? " disabled" : ""}>${i === 0 ? "Off" : "C" + i}</button>`).join("");
-  $("cadNote").textContent = pickCad ? CADENCE.slice(1, pickCad + 1).map(c => c.text.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
+  const maxCad = P.cad[ui.pickChar] || 0;
+  ui.pickCad = Math.min(ui.pickCad, maxCad);
+  $("cads").innerHTML = CADENCE.map((_, i) => `<button data-cad="${i}" class="${i === ui.pickCad ? "on" : ""}"${i > maxCad ? " disabled" : ""}>${i === 0 ? "Off" : "C" + i}</button>`).join("");
+  $("cadNote").textContent = ui.pickCad ? CADENCE.slice(1, ui.pickCad + 1).map(c => c.text.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
   $("resumeBtn").hidden = !savedRun();
   $("newHere").hidden = !!P.drilled;
   $("saveNote").textContent = "Unlocks are saved in this browser.";
@@ -158,26 +136,6 @@ function renderTitle() {
 }
 
 /* ---------- Map screen ---------- */
-function renderMap() {
-  show("sMap");
-  const m = R.map, open = new Set(game.openNodes());
-  $("mapTitle").textContent = `Act ${R.act} · ${ACTS[R.act - 1].name}`;
-  // The board itself is painted on the canvas underneath (mapboard.js); the SVG carries clicks, focus and names.
-  let svg = "";
-  for (const [k, n] of Object.entries(m.nodes)) {
-    if (!open.has(k)) continue;
-    // The route only exists on the canvas, so the name says where each space leads.
-    const r = n.t === "boss" ? 34 : 25, label = spaceName(n.t);
-    const next = [...new Set(m.edges.filter(e => e.startsWith(k + ">")).map(e => spaceName(m.nodes[e.split(">")[1]].t)))];
-    const name = n.t === "boss" ? `Boss: the ${FOES[BOSSES[R.act - 1]].name}` : `${label}${next.length ? `, then ${next.join(" or ")}` : ""}`;
-    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${esc(name)}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
-  }
-  $("mapSvg").innerHTML = svg;
-  drawMap(performance.now() / 1000);
-  $("mapHand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" })).join("") + (R.hand.length < R.slots ? `<div class="card empty">${R.slots - R.hand.length} empty slot${R.slots - R.hand.length === 1 ? "" : "s"}</div>` : "");
-  $("mapOrders").innerHTML = (R.orders || []).length ? R.orders.map(orderChip).join("") : `<p class="note">None yet. Bosses and the shop hand them out.</p>`;
-  $("legend").innerHTML = Object.entries(NODE).map(([t, n]) => `<div><svg viewBox="0 0 20 20" aria-hidden="true"><path class="glyph" d="${GLYPHS[t]}"/></svg><span><b>${n.label === "?" ? "Event" : n.label}</b> <span class="muted">${esc(n.text)}</span></span></div>`).join("");
-}
 
 /* ---------- Stage screens ---------- */
 // Each screen between fights gets its own setting: a chalk slate, the quartermaster's counter, a campfire, a letter.
@@ -194,7 +152,11 @@ function renderStage() {
   show("sStage");
   const s = $("stage");
   s.dataset.scene = R.screen;
-  if (R.screen === "reward") {
+  STAGES[R.screen](s);
+}
+// The screens between fights, each drawn into the shared stage element s.
+const STAGES = {
+  reward(s) {
     const rw = R.reward;
     const pend = rw.pending ? box(`Your hand is full. Replace a card with ${esc(CARDS[rw.pending].name)}, or cancel.`, handPick("replace", {}), "hand") + `<div><button class="btn ghost" data-act="cancelReplace">Cancel</button></div>` : "";
     const ups = rw.upgrade ? box("Free upgrade: pick a card", handPick("up", c => ({ disabled: c.up, upgrade: true })), "hand") : "";
@@ -203,14 +165,16 @@ function renderStage() {
     const cards = rw.took ? "" : box("Take a card, or skip", rw.cards.map(id => offerHTML(id, `data-take="${id}"`)).join("") || '<p class="note">No new cards to offer.</p>');
     s.innerHTML = sceneHead("slatehead", R.fight && R.fight.kind === "boss" ? "Boss down" : "Room cleared", `+${rw.gold} gold`, gl) + ord + cards + pend + ups
       + `<div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
-  } else if (R.screen === "rest") {
+  },
+  rest(s) {
     const heal = game.restHealAmount();
     s.innerHTML = sceneHead("fire", "Campfire", "Rest", `<p>Do one thing before you march on. Health ${R.hp}/${R.maxhp}.</p>`)
       + box("Rest", itemHTML({ attrs: 'data-act="heal"', ico: "rest", name: "Rest by the fire", text: `Heal ${heal} health.`, why: R.hp >= R.maxhp ? "Full health" : "" }))
       + box("Or upgrade a card", handPick("restup", c => ({ disabled: c.up, upgrade: true })), "hand")
       + (R.shop && R.shop.wagon ? box(`Supply wagon · you have ${R.gold} gold`, supplies(R.shop)) : "")
       + `<div class="row"><button class="btn" data-act="leave">March on</button></div>`;
-  } else if (R.screen === "shop") {
+  },
+  shop(s) {
     const sh = R.shop;
     const pend = sh.pending ? box(`Hand full: replace a card with ${esc(CARDS[sh.pending.id].name)}`, handPick("shopreplace", {}), "hand") + `<div><button class="btn ghost" data-act="cancelShop">Cancel</button></div>` : "";
     const order = sh.order ? (sh.order.sold ? soldHTML : orderOfferHTML(sh.order.id, 'data-act="buyOrder"', `${sh.order.price} gold`, needGold(sh.order.price))) : "";
@@ -220,11 +184,13 @@ function renderStage() {
       + box("Supplies and perks", supplies(sh) + order)
       + box(`Upgrade a card · ${sh.upPrice} gold`, handPick("buyup", c => ({ disabled: c.up || R.gold < sh.upPrice, upgrade: true, why: c.up ? "" : needGold(sh.upPrice) })), "hand")
       + `<div class="row"><button class="btn ghost" data-act="restock"${R.gold < (sh.restockPrice ?? Infinity) ? " disabled" : ""}>Restock cards and perk · ${sh.restockPrice ?? "–"} gold</button><button class="btn" data-act="leave">Leave</button></div>`;
-  } else if (R.screen === "event") {
+  },
+  event(s) {
     const ev = EVENTS[R.event];
     s.innerHTML = sceneHead("letter", "Along the way", esc(ev.title), `<p>${esc(ev.text)}</p>`)
       + `<div class="offers">${ev.opts.map((o, i) => itemHTML({ attrs: `data-ev="${i}"`, ico: "event", name: o.label, text: o.text })).join("")}</div>`;
-  } else if (R.screen === "end") {
+  },
+  end(s) {
     const e = R.end, got = e.stats.unlocked || [], next = UNLOCKS.find(u => !u.has(P));
     const unl = got.length ? `<p class="got">Unlocked this run: <b>${got.map(esc).join(", ")}</b></p>` : "";
     const nx = next ? `<p>Next unlock: <b>${esc(next.what)}</b> · ${esc(next.how)}</p>` : `<p>Everything is unlocked.</p>`;
@@ -232,4 +198,4 @@ function renderStage() {
       + `<div class="panel status"><span>Cadet <b>${esc(CHARS[e.char].name)}</b>${e.cad ? ` · Cadence <b>C${e.cad}</b>` : ""}</span><span>Rooms fought <b>${e.stats.fights}</b> · turns <b>${e.stats.turns}</b></span><span>Enemies beaten <b>${e.stats.kills}</b>, <b>${e.stats.pitKills}</b> of them into pits</span><span>Gold collected <b>${e.gold}</b></span></div>
       <div class="row"><button class="btn" data-act="title">Back to the barracks</button></div>`;
   }
-}
+};

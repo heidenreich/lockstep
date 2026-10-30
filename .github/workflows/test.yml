@@ -14,6 +14,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run typecheck
       # A short, repeatable bot run: fails on a crash, or if stalls stop being rare.
       - run: node sim/run4.js check 10
         env:

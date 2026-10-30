@@ -3,7 +3,7 @@
 /* ---------- Audio ---------- */
 let actx = null, muted = false;
 try { muted = localStorage.getItem("lockstep-muted") === "1"; } catch (e) {}
-function audio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} return actx; }
+function audio() { try { actx = actx || new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)(); } catch (e) {} return actx; }
 function tone(freq, dur, type, vol, slide, at) {
   if (muted || !audio()) return;
   try {

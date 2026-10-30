@@ -25,7 +25,6 @@ const SPACE = {
   event: { fill: "#efe6cf", rim: "#a8987a", ink: "#3a2a18" },
   boss: { fill: "#2a2730", rim: "#b8322b", ink: "#f0c25e" }
 };
-const TABLE = ["#b07a4c", "#2c4433", "#1b1726"];
 const mapCv = $("mapCv"), mctx = mapCv.getContext("2d");
 const glyphPath = {};
 const gp = t => glyphPath[t] || (glyphPath[t] = new Path2D(GLYPHS[t]));
@@ -89,7 +88,6 @@ function drawMap(t) {
   const top = tin(g, hx, hy - bob, 0.42, TIN.cadet, { ring: "#e0ac45", drum: R.char === "drummer", spade: R.char === "sapper" });
   drawYouBeside(g, hx, top, hy, 52, t, true, hx > 300);
 }
-function rrect(g, x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
 // A small painted name tag under a space.
 function mapTag(g, x, y, text, boss) {
   g.save(); g.font = `600 ${boss ? 10 : 9}px ${css("--f-mono")}`;
@@ -238,3 +236,26 @@ function drawSpace(g, x, y, type, o, t) {
   }
   g.restore();
 }
+
+/* ---------- Map screen ---------- */
+function renderMap() {
+  show("sMap");
+  const m = R.map, open = new Set(game.openNodes());
+  $("mapTitle").textContent = `Act ${R.act} · ${ACTS[R.act - 1].name}`;
+  // The board itself is painted on the canvas underneath (mapboard.js); the SVG carries clicks, focus and names.
+  let svg = "";
+  for (const [k, n] of Object.entries(m.nodes)) {
+    if (!open.has(k)) continue;
+    // The route only exists on the canvas, so the name says where each space leads.
+    const r = n.t === "boss" ? 34 : 25, label = spaceName(n.t);
+    const next = [...new Set(m.edges.filter(e => e.startsWith(k + ">")).map(e => spaceName(m.nodes[e.split(">")[1]].t)))];
+    const name = n.t === "boss" ? `Boss: the ${FOES[BOSSES[R.act - 1]].name}` : `${label}${next.length ? `, then ${next.join(" or ")}` : ""}`;
+    svg += `<g class="node open" data-node="${k}" tabindex="0" role="button" aria-label="${esc(name)}"><title>${label}: ${esc(NODE[n.t].text)}</title><circle cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r}"/><circle class="ring" cx="${mapX(n.c)}" cy="${mapY(n.r)}" r="${r + 5}"/></g>`;
+  }
+  $("mapSvg").innerHTML = svg;
+  drawMap(performance.now() / 1000);
+  $("mapHand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { cls: "pick" })).join("") + (R.hand.length < R.slots ? `<div class="card empty">${R.slots - R.hand.length} empty slot${R.slots - R.hand.length === 1 ? "" : "s"}</div>` : "");
+  $("mapOrders").innerHTML = (R.orders || []).length ? R.orders.map(orderChip).join("") : `<p class="note">None yet. Bosses and the shop hand them out.</p>`;
+  $("legend").innerHTML = Object.entries(NODE).map(([t, n]) => `<div><svg viewBox="0 0 20 20" aria-hidden="true"><path class="glyph" d="${GLYPHS[t]}"/></svg><span><b>${n.label === "?" ? "Event" : n.label}</b> <span class="muted">${esc(n.text)}</span></span></div>`).join("");
+}
+SCREENS.map = renderMap;

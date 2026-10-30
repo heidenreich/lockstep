@@ -10,7 +10,7 @@ const DRILL_STEPS = [
   { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: `Real fights turn into a frenzy at turn ${FRENZY}.` }
 ];
 function coachTrack(F) {
-  const ui = fightUi(F), c = ui.coach = ui.coach || {};
+  const ui = fightUi(F), c = ui.coach = ui.coach || /** @type {any} */ ({});
   if (F.turn >= 1) c.step = true;
   if (F.pitKills >= 1) c.pit = true;
   if (F.enemies.some(e => e.free)) c.free = true;
@@ -37,7 +37,6 @@ function noteText(k) {
   const d = FOES[k];
   return d && k !== "drone" ? [d.boss ? "The " + d.name : cap(d.name), d.rule] : null;
 }
-let noteQueue = [];
 function noteCheck(F) {
   const tiles = Object.values(fightRoom(F).tiles);
   const keys = [...F.enemies.map(e => e.type), F.kegs.length && "keg", tiles.includes("ice") && "ice", tiles.includes("spike") && "spike",
@@ -45,12 +44,12 @@ function noteCheck(F) {
     F.frenzy && F.kind !== "boss" && "frenzy", F.bestChain >= 2 && "combo", Object.values(F.pitFill).some(n => n >= R.pitHold) && "pitfull",
     R.hand.some(c => c.cd > 0) && "card"];
   let added = false;
-  for (const k of keys) if (k && noteText(k) && !P.seen[k]) { noteQueue.push(k); P.seen[k] = true; added = true; }
+  for (const k of keys) if (k && noteText(k) && !P.seen[k]) { ui.notes.push(k); P.seen[k] = true; added = true; }
   return added;
 }
 function renderCoach() {
   const box = $("coach"), F = R.fight;
-  if (F.over) { box.hidden = true; noteQueue = []; return; }
+  if (F.over) { box.hidden = true; ui.notes = []; return; }
   if (F.kind === "drill") {
     const c = coachTrack(F), i = DRILL_STEPS.findIndex(st => !c[st.id]), st = DRILL_STEPS[i];
     box.hidden = !st;
@@ -58,9 +57,9 @@ function renderCoach() {
       <p>${esc(st.text())}</p><div class="row"><span class="note hint">${esc(st.how)}</span><button class="btn ghost" data-act="skipDrill">Skip drill</button></div>`;
     return;
   }
-  const k = noteQueue[0];
+  const k = ui.notes[0];
   box.hidden = !k;
-  if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(noteText(k)[0])}</span>${noteQueue.length > 1 ? `<span class="note hint">${noteQueue.length - 1} more</span>` : ""}</div>
+  if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(noteText(k)[0])}</span>${ui.notes.length > 1 ? `<span class="note hint">${ui.notes.length - 1} more</span>` : ""}</div>
     <p>${esc(noteText(k)[1])}</p><div class="row"><button class="btn ghost" data-act="helpOpen">How to play</button><button class="btn" data-act="noteOk">Got it</button></div>`;
 }
 // How to play: the rules in six lines and the line drawn as tin soldiers.

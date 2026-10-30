@@ -480,7 +480,7 @@ function makeGame(run, opts = {}) {
     F.p.x = best.x; F.p.y = best.y;
   }
   function setGoal(id) {
-    const F = R.fight, g = F.goal = { id, ok: true };
+    const F = R.fight, g = F.goal = /** @type {{ id: string, ok: boolean, flag?: { x: number, y: number } }} */ ({ id, ok: true });
     if (id !== "colours") return;
     // The flag stands well away from you, so fetching it drags the whole line along.
     for (let md = 4; md >= 2 && !g.flag; md--) {
@@ -1062,8 +1062,11 @@ function makeGame(run, opts = {}) {
 }
 
 /* ---------- Node ---------- */
-if (typeof module === "object" && module.exports) {
-  module.exports = {
+// (Through an alias: written as module.exports, type checkers would treat this file as a module and hide its globals
+// from the page scripts that share them.)
+const nodeModule = typeof module === "object" && module.exports ? module : null;
+if (nodeModule) {
+  nodeModule.exports = {
     makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
     roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
