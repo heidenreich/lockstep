@@ -46,6 +46,9 @@ function arm(slot) {
 const KEYS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], s: [0, 1], a: [-1, 0], d: [1, 0], " ": [0, 0], ".": [0, 0] };
 window.addEventListener("keydown", e => {
   if (["INPUT", "BUTTON", "SELECT", "TEXTAREA"].includes(e.target.tagName) && (e.key === " " || e.key === "Enter")) return;
+  // Space or Enter on a focused briefing line lights it up on the board (Space would otherwise be Wait).
+  const line = e.target.closest && e.target.closest("#brief li[data-hi]");
+  if (line && (e.key === " " || e.key === "Enter")) { e.preventDefault(); briefHi = line.dataset.hi; return; }
   if (e.metaKey || e.ctrlKey || e.altKey || $("help").open) return;
   if (!R || R.screen !== "fight") return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -82,7 +85,7 @@ const briefLine = ev => ev.target.closest && ev.target.closest("#brief li[data-h
 $("brief").addEventListener("mouseover", ev => { const li = briefLine(ev); briefHi = li ? li.dataset.hi : null; });
 $("brief").addEventListener("mouseleave", () => { briefHi = null; });
 $("brief").addEventListener("focusin", ev => { const li = briefLine(ev); if (li) briefHi = li.dataset.hi; });
-$("brief").addEventListener("click", ev => { const li = briefLine(ev); if (li) briefHi = briefHi === li.dataset.hi ? null : li.dataset.hi; });
+$("brief").addEventListener("click", ev => { const li = briefLine(ev); if (li) briefHi = li.dataset.hi; });
 $("brief").addEventListener("change", ev => { if (ev.target.id === "briefAuto") setBriefAuto(ev.target.checked); });
 for (const id of ["helpClose", "helpOk"]) $(id).addEventListener("click", () => $("help").close());
 // A click on the dimmed backdrop (outside the dialog box) closes it too; Esc already does.
