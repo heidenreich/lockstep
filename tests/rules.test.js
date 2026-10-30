@@ -571,3 +571,73 @@ test("saved runs the game can't play any more are refused, not loaded", () => {
   assert.equal(K.migrateRun(null), null);
   assert.equal(K.migrateRun("junk"), null);
 });
+
+// Reaches a boss reward (perks on offer, a free upgrade) on a fresh run.
+function bossReward(seed = 2) {
+  newRun("recruit", 0, seed);
+  g.run.map.nodes = { "0:0": { r: 0, c: 0, t: "boss" } }; g.run.map.edges = []; g.run.pos = null;
+  g.enterNode("0:0");
+  const F = g.run.fight;
+  g.kill(F.enemies.find(e => K.FOES[e.type].boss), "test");
+  g.endTurn(null);
+  g.fightReward();
+  return g.run.reward;
+}
+
+test("a boss reward's perks: take one, and only one", () => {
+  const rw = bossReward();
+  assert.equal(rw.orders.length, 3);
+  assert.equal(g.takeRewardOrder("no-such-perk"), false);
+  assert.equal(g.takeRewardOrder(rw.orders[0]), true);
+  assert.deepEqual(g.run.orders, [rw.orders[0]]);
+  assert.equal(g.takeRewardOrder(rw.orders[1]), false, "a second perk");
+  assert.deepEqual(g.run.orders, [rw.orders[0]]);
+});
+
+test("a reward's free upgrade can be claimed once", () => {
+  const rw = bossReward();
+  assert.equal(rw.upgrade, true);
+  assert.equal(g.claimUpgrade(0), true);
+  assert.equal(g.run.hand[0].up, true);
+  assert.equal(g.claimUpgrade(1), false, "a second free upgrade");
+  assert.equal(g.run.hand[1].up, false);
+});
+
+test("backing out of a hand-full swap clears it on the reward and in the shop", () => {
+  bossReward();
+  g.run.reward.pending = "lunge";
+  g.run.shop = { pending: { id: "lunge", idx: 0 } };
+  g.cancelPending();
+  assert.equal(g.run.reward.pending, null);
+  assert.equal(g.run.shop.pending, null);
+});
+
+test("an event's choice is played, then the run moves on to the map", () => {
+  newRun("recruit", 0, 5);
+  const i = K.EVENTS.findIndex(e => e.title === "An abandoned kit");
+  g.run.screen = "event"; g.run.event = i;
+  const gold = g.run.gold;
+  assert.equal(g.chooseEvent(0), true);  // Take the coin
+  assert.equal(g.run.gold, gold + 35);
+  assert.equal(g.run.screen, "map");
+  assert.equal(g.chooseEvent(0), false, "not on an event any more");
+});
+
+test("quitting mid-fight ends the run as a fall", () => {
+  fight(["D....", "..@..", "....."]);
+  g.quit();
+  assert.equal(g.run.fight.over, "lose");
+  assert.equal(g.run.hp, 0);
+  assert.equal(g.run.screen, "end");
+  assert.equal(g.run.end.won, false);
+});
+
+test("saved runs: a v2 save's page notes move under fight.ui", () => {
+  newRun("recruit", 0, 3); g.startFight("fight");
+  const v2 = JSON.parse(JSON.stringify(g.run));
+  v2.v = 2; Object.assign(v2.fight, { coach: { step: true }, briefed: true, briefNew: ["contra"] });
+  const r = K.migrateRun(v2);
+  assert.equal(r.v, K.RUN_V);
+  assert.deepEqual(r.fight.ui, { coach: { step: true }, briefed: true, briefNew: ["contra"] });
+  for (const k of ["coach", "briefed", "briefNew"]) assert.ok(!(k in r.fight));
+});

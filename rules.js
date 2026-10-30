@@ -186,13 +186,19 @@ const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)
 /* ---------- Saved runs ---------- */
 // A saved run carries its shape's version. Bump RUN_V whenever the run's shape changes, and teach migrateRun the step.
 //   v1: fights stored their room as a position in ROOMS (in the order below); v2 stores the room's id.
-const RUN_V = 2;
+//   v3: the page's own per-fight notes (coach, briefed, briefNew) live under fight.ui; rules never read it.
+const RUN_V = 3;
 const V1_ROOMS = ["drill-square", "ice-yard", "spike-lanes", "colossus-court", "powder-store", "belt-room", "mess-hall", "hall-of-mirrors", "gatehouse", "battlements", "the-keep", "wardens-yard", "training-ground"];
 // Brings a saved run up to date, or returns null if it can't be played any more (unknown version, or it names a card,
 // perk, enemy, room or character this version of the game doesn't have).
 function migrateRun(r) {
   if (!r || typeof r !== "object" || !Number.isInteger(r.v)) return null;
   if (r.v === 1) { if (r.fight) r.fight.room = V1_ROOMS[r.fight.room]; r.v = 2; }
+  if (r.v === 2) {
+    const F = r.fight;
+    if (F) { F.ui = F.ui || {}; for (const k of ["coach", "briefed", "briefNew"]) if (k in F) { F.ui[k] = F[k]; delete F[k]; } }
+    r.v = 3;
+  }
   if (r.v !== RUN_V) return null;
   // Runs saved before the seeded RNG have no RNG state; give them one.
   if (r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
@@ -888,6 +894,35 @@ function makeGame(run, opts = {}) {
     return true;
   }
   function upgradeCard(slot) { const c = R.hand[slot]; if (c && !c.up) { c.up = true; return true; } return false; }
+  // A boss reward offers perks: take one of them (only one).
+  function takeRewardOrder(id) {
+    const rw = R.reward;
+    if (!rw || rw.tookOrder || !(rw.orders || []).includes(id) || !takeOrder(id)) return false;
+    rw.tookOrder = true;
+    return true;
+  }
+  // Elite and boss rewards come with one free upgrade.
+  function claimUpgrade(slot) {
+    const rw = R.reward;
+    if (!rw || !rw.upgrade || !upgradeCard(slot)) return false;
+    rw.upgrade = false;
+    return true;
+  }
+  // Backs out of "your hand is full: pick a card to replace" on a reward or in the shop.
+  function cancelPending() { if (R.reward) R.reward.pending = null; if (R.shop) R.shop.pending = null; }
+  // An event: play one of its choices, then move on.
+  function chooseEvent(i) {
+    const opt = R.screen === "event" && EVENTS[R.event] && EVENTS[R.event].opts[i];
+    if (!opt) return false;
+    opt.go(api); leaveNode();
+    return true;
+  }
+  // Abandon the run: it ends as a fall.
+  function quit() {
+    if (R.fight && !R.fight.over) R.fight.over = "lose";
+    R.hp = Math.min(R.hp, 0);
+    endRun(false);
+  }
   function upgradeRandom() { const c = shuffle(R.hand.filter(c => !c.up))[0]; if (c) c.up = true; }
   function gainRandomCard() {
     const owned = new Set(R.hand.map(c => c.id)), id = pickOne(cardPool().filter(i => !owned.has(i)));
@@ -981,13 +1016,15 @@ function makeGame(run, opts = {}) {
   }
 
   setDims();
-  return {
+  const api = {
     get run() { return R; }, get W() { return W; }, get H() { return H; }, get sim() { return SIM; },
     get profile() { return prof(); },
     newRun, genMap, openNodes, enterNode, startFight, startDrill, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
     trapAt, isPit, enemyAt, alive, floorFree, hasO, syn, synergies, cardPool, unlock, hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, runTurn, chasersAct, endTurn, sightLine, riflesFire, stepPlayer, step, cardBlock,
-    play, preview, fork, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle
+    play, preview, fork, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,
+    takeRewardOrder, claimUpgrade, cancelPending, chooseEvent, quit
   };
+  return api;
 }
 
 /* ---------- Node ---------- */

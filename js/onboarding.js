@@ -10,7 +10,7 @@ const DRILL_STEPS = [
   { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: "Real fights turn into a frenzy at turn 30." }
 ];
 function coachTrack(F) {
-  const c = F.coach = F.coach || {};
+  const ui = fightUi(F), c = ui.coach = ui.coach || {};
   if (F.turn >= 1) c.step = true;
   if (F.pitKills >= 1) c.pit = true;
   if (F.enemies.some(e => e.free)) c.free = true;
@@ -47,7 +47,7 @@ function noteCheck(F) {
     R.hand.some(c => c.cd > 0) && "card"];
   let added = false;
   for (const k of keys) if (k && NOTES[k] && !P.seen[k]) { noteQueue.push(k); P.seen[k] = true; added = true; }
-  if (added) saveProfile();
+  return added;
 }
 function renderCoach() {
   const box = $("coach"), F = R.fight;
@@ -59,7 +59,6 @@ function renderCoach() {
       <p>${esc(st.text())}</p><div class="row"><span class="note hint">${esc(st.how)}</span><button class="btn ghost" data-act="skipDrill">Skip drill</button></div>`;
     return;
   }
-  noteCheck(F);
   const k = noteQueue[0];
   box.hidden = !k;
   if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(NOTES[k][0])}</span>${noteQueue.length > 1 ? `<span class="note hint">${noteQueue.length - 1} more</span>` : ""}</div>
