@@ -22,7 +22,7 @@ function fight(rows, { char = "recruit", cad = 0, kind = "fight" } = {}) {
   }).join(""));
   K.ROOMS.push(K.room("test", clean));
   const F = g.run.fight;
-  F.room = K.ROOMS.length - 1;
+  F.room = K.ROOMS.length - 1; F.orient = 0;
   F.kegs = [...K.ROOMS[F.room].kegs];
   F.enemies = []; F.goal = null; F.log = []; F.p = p;
   g.setDims();
@@ -443,4 +443,99 @@ test("nothing joins the line after the boss falls", () => {
   assert.equal(F.over, "win");
   assert.equal(F.arrivals, 0);
   assert.equal(F.enemies.length, n - 1);
+});
+
+test("turned rooms keep every wall, pit, keg and tile in bounds; belts turn with the room", () => {
+  const sig = t => JSON.stringify([[...t.walls].sort(), [...t.pits].sort(), [...t.kegs].sort(), Object.entries(t.tiles).sort()]);
+  K.ROOMS.slice(0, 12).forEach((rm, i) => {
+    const os = K.roomOrients(rm);
+    assert.equal(os[0], 0);
+    assert.equal(new Set(os.map(o => sig(K.fightRoom({ room: i, orient: o })))).size, os.length, `${rm.name} repeats a layout`);
+    for (const o of os) {
+      const t = K.fightRoom({ room: i, orient: o });
+      const keys = [...t.walls, ...t.pits, ...t.kegs, ...Object.keys(t.tiles)];
+      assert.equal(t.walls.size + t.pits.size + t.kegs.length + Object.keys(t.tiles).length, rm.walls.size + rm.pits.size + rm.kegs.length + Object.keys(rm.tiles).length);
+      for (const k of keys) { const [x, y] = k.split(",").map(Number); assert.ok(x >= 0 && y >= 0 && x < t.w && y < t.h, `${rm.name} ${o} ${k}`); }
+    }
+  });
+  const belt = K.turnRoom(K.room("b", [">.", ".."]), 1), swap = K.turnRoom(K.room("b", [">.", ".."]), 4);
+  assert.deepEqual(belt.tiles, { "1,0": "<" });
+  assert.deepEqual(swap.tiles, { "0,0": "v" });
+  assert.equal(K.fightRoom({ room: 0, orient: 0 }), K.ROOMS[0]);
+  assert.deepEqual(K.roomOrients(K.room("sym", ["...", ".o.", "..."])), [0]);
+});
+
+test("every turn of the Belt room keeps each belt pointing at the same neighbour", () => {
+  const i = K.ROOMS.findIndex(r => r.name === "Belt room"), rm = K.ROOMS[i];
+  assert.equal(K.roomOrients(rm).length, 8);
+  for (const o of K.roomOrients(rm)) {
+    const T = (x, y) => { const a = o & 1 ? rm.w - 1 - x : x, b = o & 2 ? rm.h - 1 - y : y; return o & 4 ? [b, a] : [a, b]; };
+    const t = K.fightRoom({ room: i, orient: o });
+    for (const [k, ch] of Object.entries(rm.tiles)) {
+      if (!K.BELT[ch]) continue;
+      const [x, y] = k.split(",").map(Number), [dx, dy] = K.BELT[ch];
+      const [tx, ty] = T(x, y), [nx, ny] = T(x + dx, y + dy), v = K.BELT[t.tiles[tx + "," + ty]];
+      assert.deepEqual([tx + v[0], ty + v[1]], [nx, ny], `orient ${o} at ${k}`);
+    }
+  }
+});
+
+test("boss fights set up cleanly on every turn of their rooms", () => {
+  for (const act of [1, 2, 3]) {
+    for (let seed = 1; seed <= 30; seed++) {
+      newRun("recruit", 0, seed); g.run.act = act; g.startFight("boss");
+      const F = g.run.fight, rm = K.fightRoom(F), bad = (x, y) => rm.walls.has(x + "," + y) || rm.pits.has(x + "," + y) || x < 0 || y < 0 || x >= rm.w || y >= rm.h;
+      assert.ok(!bad(F.p.x, F.p.y));
+      assert.ok(F.enemies.some(e => K.FOES[e.type].boss));
+      for (const e of F.enemies) assert.ok(!bad(e.x, e.y), `act ${act} seed ${seed} ${e.type} at ${e.x},${e.y}`);
+    }
+  }
+});
+
+test("a fight picks a turn of its room and the board takes its size", () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 40; seed++) {
+    newRun("recruit", 0, seed); g.startFight("fight");
+    const F = g.run.fight, rm = K.fightRoom(F);
+    assert.ok(K.roomOrients(K.ROOMS[F.room]).includes(F.orient));
+    assert.equal(g.W, rm.w); assert.equal(g.H, rm.h);
+    assert.ok(!rm.walls.has(F.p.x + "," + F.p.y) && !rm.pits.has(F.p.x + "," + F.p.y));
+    seen.add(F.orient);
+  }
+  assert.ok(seen.size >= 2);
+});
+
+test("synergies: Bayonet charge lunges harder, Powder quake and Hobnail stomp hit harder", () => {
+  let F = fight(["@N....", "......"]);
+  g.run.hand = [{ id: "lunge", cd: 0, up: false }]; g.run.orders = [];
+  g.play(0, 1, 0);
+  assert.equal(F.enemies[0].hp, 1);
+  F = fight(["@N....", "......"]);
+  g.run.hand = [{ id: "lunge", cd: 0, up: false }]; g.run.orders = ["bayonet"];
+  assert.deepEqual(g.synergies(), ["charge"]);
+  g.play(0, 1, 0);
+  assert.equal(F.enemies.length, 0);
+  for (const [orders, hp] of [[[], 2], [["fuse"], 1]]) {
+    F = fight(["@....D"]);
+    g.run.hand = [{ id: "quake", cd: 0, up: false }]; g.run.orders = orders;
+    F.enemies[0].hp = F.enemies[0].max = 3; F.enemies[0].blocked = 1;
+    g.play(0, 1, 0);
+    assert.equal(F.enemies[0].hp, hp, `quake with ${orders}`);
+  }
+  for (const [orders, hp] of [[[], 3], [["boots"], 2]]) {
+    F = fight([".....", "..D..", ".D@D.", "..D..", "....."]);
+    g.run.hand = [{ id: "stomp", cd: 0, up: false }]; g.run.orders = orders;
+    for (const e of F.enemies) e.hp = e.max = 3;
+    g.play(0, 0, -1);
+    assert.equal(Math.min(...F.enemies.map(e => e.hp)), hp, `stomp with ${orders}`);
+  }
+});
+
+test("a synergy is announced once, when its pair comes together", () => {
+  const msgs = [], game = K.makeGame(null, { hooks: { toast: m => msgs.push(m) } });
+  game.newRun("recruit", 0, 1);
+  game.takeOrder("boots");
+  assert.deepEqual(msgs, ["Synergy! Hobnail stomp: Stomp first hits every enemy beside you for 1."]);
+  game.takeOrder("fuse");
+  assert.equal(msgs.length, 1);
 });

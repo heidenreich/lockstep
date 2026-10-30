@@ -205,6 +205,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .card .tag { grid-column: 2; justify-self: start; margin-top: 4px; font-family: var(--f-mono); font-size: 12px; background: var(--brass); color: var(--brass-ink); border-radius: 999px; padding: 2px 9px; }
 .card .tag.why { background: transparent; color: var(--danger); border: 1px dashed currentColor; }
 .card .upn { grid-column: 2; font-family: var(--f-mono); font-size: 12px; color: var(--brass); }
+.card .syn, .ribbon .syn { grid-column: 2; display: block; margin-top: 4px; font-size: 12px; font-weight: 600; color: var(--brass); }
 .card.pick:disabled { opacity: .62; }
 .card.order .ico { background: #f3e1d4; border-color: #d9b3a0; }
 .card.sold { background: transparent; border: 1px dashed rgba(255,255,255,.22); box-shadow: none; color: rgba(255,255,255,.45); grid-template-columns: 1fr; place-content: center; min-height: 68px; }

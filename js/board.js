@@ -13,7 +13,7 @@ function renderFight() {
   $("hand").innerHTML = R.hand.map((c, i) => cardHTML(c, i, { inFight: true, armed: armed === i })).join("") + (R.hand.length < R.slots ? `<div class="card empty">Empty slot</div>` : "");
   $("armNote").innerHTML = armed != null ? `${esc(CARDS[R.hand[armed].id].name)}: pick a direction<span class="armtx">. ${esc(cardText(R.hand[armed]))}</span>` : "";
   const boss = F.enemies.find(e => foe(e).boss);
-  const lines = [`<span>${esc(ROOMS[F.room].name)} · turn <b>${F.turn}</b></span>`];
+  const lines = [`<span>${esc(fightRoom(F).name)} · turn <b>${F.turn}</b></span>`];
   if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= 30 ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${30 - F.turn}</b>`}</span>`);
   if (boss && foe(boss).march) lines.push(`<span>${boss.skip ? "This turn it <b>marches in step</b>" : "This turn it <b>chases</b>"}</span>`);
   else {
@@ -425,7 +425,7 @@ function drawPlinth(g, S) {
   g.fillStyle = S.rim; g.beginPath(); g.moveTo(T0[0], T0[1]); g.lineTo(T1[0], T1[1]); g.lineTo(B1[0], B1[1]); g.lineTo(B0[0], B0[1]); g.closePath(); g.fill();
   g.strokeStyle = "rgba(255,255,255,0.2)"; g.lineWidth = 1.5; g.beginPath(); g.moveTo(B0[0], B0[1] + 0.5); g.lineTo(B1[0], B1[1] + 0.5); g.stroke();
   // Brass name plate on the front.
-  const name = ROOMS[R.fight.room].name.toUpperCase();
+  const name = fightRoom(R.fight).name.toUpperCase();
   g.font = `600 ${Math.max(9, Math.round(tw * 0.17))}px ${css("--f-mono")}`;
   const pw = g.measureText(name).width + tw * 0.5, ph = pd * 0.56;
   const grd = g.createLinearGradient(0, B0[1] + pd * 0.22, 0, B0[1] + pd * 0.22 + ph);
@@ -545,7 +545,7 @@ function draw(dt) {
   ctx.stroke();
   { const bi = 0.12, q = [proj(bi, bi), proj(W - bi, bi), proj(W - bi, H - bi), proj(bi, H - bi)];
     ctx.strokeStyle = hexRgba(S.chalk, 0.55); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(q[i][0], q[i][1]); ctx.closePath(); ctx.stroke(); }
-  const R0 = ROOMS[F.room];
+  const R0 = fightRoom(F);
   // Hazards painted on the board: ice, spikes, conveyor belts.
   for (const [key, t] of Object.entries(R0.tiles)) {
     const [x, y] = key.split(",").map(Number);

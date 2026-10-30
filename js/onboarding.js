@@ -40,7 +40,7 @@ const NOTES = {
 };
 let noteQueue = [];
 function noteCheck(F) {
-  const tiles = Object.values(ROOMS[F.room].tiles);
+  const tiles = Object.values(fightRoom(F).tiles);
   const keys = [...F.enemies.map(e => e.type), F.kegs.length && "keg", tiles.includes("ice") && "ice", tiles.includes("spike") && "spike",
     tiles.some(t => BELT[t]) && "belt", F.goal && "goal", !F.frenzy && F.enemies.some(e => e.free && !foe(e).chaser) && "free",
     F.frenzy && F.kind !== "boss" && "frenzy", F.bestChain >= 2 && "combo", Object.values(F.pitFill).some(n => n >= R.pitHold) && "pitfull",

@@ -49,7 +49,7 @@ function cardHTML(c, i, opts) {
   const key = o.inFight ? `<span class="k">${i + 1}</span>` : "";
   // Upgrade pickers show what drilling the card changes; a disabled pick says why.
   const note = o.upgrade ? `<span class="upn">${c.up ? "Already drilled" : esc(upNote(c))}</span>` : "";
-  return `<button class="${cls}" data-slot="${i}"${o.disabled ? " disabled" : ""}><span class="ico">${cardIcon(c.id)}${key}</span><span class="nm">${esc(d.name)}${c.up ? '<span class="up">+</span>' : ""}</span><span class="tx">${esc(cardText(c))}</span><span class="cd">${cd}</span>${note}${tagHTML(o.price, o.why)}</button>`;
+  return `<button class="${cls}" data-slot="${i}"${o.disabled ? " disabled" : ""}><span class="ico">${cardIcon(c.id)}${key}</span><span class="nm">${esc(d.name)}${c.up ? '<span class="up">+</span>' : ""}</span><span class="tx">${esc(cardText(c))}</span><span class="cd">${cd}</span>${note}${o.inFight ? "" : synNote("card", c.id)}${tagHTML(o.price, o.why)}</button>`;
 }
 const UP_GAIN = { lunge: "first hit deals 3", shove: "knocks back 3" };
 const upNote = c => { const d = CARDS[c.id]; return d.cdUp < d.cd ? `Drilled: cooldown ${d.cd} → ${d.cdUp}` : `Drilled: ${UP_GAIN[c.id] || "stronger"}`; };
@@ -58,7 +58,16 @@ const needGold = price => R.gold < price ? `Need ${price - R.gold} more gold` : 
 // Everything you can take or buy is a paper card: move cards, supplies and perks alike.
 function offerHTML(id, attrs, price, why) {
   const d = CARDS[id];
-  return `<button class="card pick offer" ${attrs}${why ? " disabled" : ""}><span class="ico">${cardIcon(id)}</span><span class="nm">${esc(d.name)}</span><span class="tx">${esc(d.text)}</span><span class="cd">cd ${d.cd}</span>${tagHTML(price, why)}</button>`;
+  return `<button class="card pick offer" ${attrs}${why ? " disabled" : ""}><span class="ico">${cardIcon(id)}</span><span class="nm">${esc(d.name)}</span><span class="tx">${esc(d.text)}</span><span class="cd">cd ${d.cd}</span>${synNote("card", id, true)}${tagHTML(price, why)}</button>`;
+}
+// Synergies: a held pair is marked on its card and perk; an offer says which of your pieces it would pair with.
+function synNote(kind, id, offer) {
+  if (!R) return "";
+  const orders = R.orders || [], has = s => R.hand.some(c => c.id === s.card) && orders.includes(s.order);
+  const s = Object.values(SYNERGIES).find(s => s[kind] === id && (offer ? (kind === "card" ? orders.includes(s.order) : R.hand.some(c => c.id === s.card)) : has(s)));
+  if (!s) return "";
+  const partner = kind === "card" ? ORDERS[s.order].name : CARDS[s.card].name;
+  return `<span class="syn">★ ${esc(s.name)}${offer ? ` with your ${esc(partner)}` : ""}: ${esc(s.text)}</span>`;
 }
 const ITEM_ICONS = {
   heal: `<rect x="15" y="7" width="10" height="26" rx="2" style="fill:var(--drone)"/><rect x="7" y="15" width="26" height="10" rx="2" style="fill:var(--drone)"/>`,
@@ -68,9 +77,9 @@ const ITEM_ICONS = {
   event: () => `<g transform="translate(5 5) scale(1.5)"><path d="${GLYPHS.event}" style="fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round"/></g>`
 };
 const itemIcon = k => typeof ITEM_ICONS[k] === "function" ? ITEM_ICONS[k]() : ITEM_ICONS[k];
-const itemHTML = o => `<button class="card pick offer${o.cls ? " " + o.cls : ""}" ${o.attrs}${o.why ? " disabled" : ""}><span class="ico"><svg viewBox="0 0 40 40" aria-hidden="true">${itemIcon(o.ico)}</svg></span><span class="nm">${esc(o.name)}</span><span class="tx">${esc(o.text)}</span>${tagHTML(o.price, o.why)}</button>`;
-const orderChip = id => `<span class="ribbon" title="${esc(ORDERS[id].text)}"><b>${esc(ORDERS[id].name)}</b> <span>${esc(ORDERS[id].text)}</span></span>`;
-const orderOfferHTML = (id, attrs, price, why) => itemHTML({ cls: "order", attrs, ico: "seal", name: ORDERS[id].name, text: ORDERS[id].text, price, why });
+const itemHTML = o => `<button class="card pick offer${o.cls ? " " + o.cls : ""}" ${o.attrs}${o.why ? " disabled" : ""}><span class="ico"><svg viewBox="0 0 40 40" aria-hidden="true">${itemIcon(o.ico)}</svg></span><span class="nm">${esc(o.name)}</span><span class="tx">${esc(o.text)}</span>${o.extra || ""}${tagHTML(o.price, o.why)}</button>`;
+const orderChip = id => `<span class="ribbon" title="${esc(ORDERS[id].text)}"><b>${esc(ORDERS[id].name)}</b> <span>${esc(ORDERS[id].text)}</span>${synNote("order", id)}</span>`;
+const orderOfferHTML = (id, attrs, price, why) => itemHTML({ cls: "order", attrs, ico: "seal", name: ORDERS[id].name, text: ORDERS[id].text, extra: synNote("order", id, true), price, why });
 function goalLine(F) {
   const g = F.goal; if (!g) return "";
   const G = GOALS[g.id];
@@ -114,7 +123,7 @@ function applyTheme() {
   if (R) Object.assign(C, ACT_THEME[R.act - 1]);
 }
 function render() {
-  if (R && R.fight) ({ w: W, h: H } = ROOMS[R.fight.room]);
+  if (R && R.fight) ({ w: W, h: H } = fightRoom(R.fight));
   applyTheme();
   renderBar();
   if (!R) { renderTitle(); return; }

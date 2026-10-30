@@ -97,3 +97,19 @@ Bot check, win % per character (recruit / drummer / sapper), 150 runs (1-ply) or
 | C5 | 9 / 11 / 11 | 7 / 20 / 13 | 20 / 55 / 32 | 52 / 77 / 53 |
 
 Stalls per 150 1-ply runs went from 12–36 to 1–6. The game is clearly **easier** now, mostly because the Warden is no longer a draft check and spare gold turns into max health. No difficulty target is written down yet; set one from playtests, then tune with the obvious levers (Rations price, wagon contents, Warden HP, Cadence steps). The 2-ply bot still beats the Mirror 100% of the time (13–22 turns), so it remains the softest boss.
+
+## Variety pass: turned rooms and synergies (2026-10-30)
+
+From a comparison with Enter the Gungeon: its run wrapper (room variety, item synergies, a codex, boss pools) is where Lockstep was thinnest. The two cheapest were built.
+- **Turned rooms.** Every fight mirrors its room at random, and square rooms also rotate, so the 12 layouts play up to 8 ways each. Non-square rooms only mirror, so a wide room never becomes a tall board.
+- **Synergies.** Six card + perk pairs with a small bonus each, announced when they come together (Gungeon's "!" pop).
+- Bots, `check 100` at C0, before → after: Recruit 43% → 48%, Drummer 65% → 55%, Sapper 55% → 44%, stalls 1–2 either way. The swings go both ways, so they read as noise from the reshuffled rooms; the bot drafts at random and rarely completes a synergy.
+- Not built: a codex of discovered pieces, boss pools per act, a limited panic button.
+
+Review round the same day (three code reviews, a browser playtest, a design read, a balance run of ~23k bot runs plus 18k single fights):
+- Turning added little: most rooms are symmetric, so only turns that change the layout are kept (5 rooms never turn). No room played harder or easier in any turn.
+- Synergy bonuses measured on their own (pair held, bonus on vs off): Hobnail stomp +5.5 pts, Bayonet charge +4 (Recruit +12), Powder quake +3.6 (borderline). Bottomless, Drum roll and Mined ground did nothing and were dropped; Bottomless also failed when the shoved enemy slid into the pit on ice. Pairs complete in only ~20–30% of runs because perks come from bosses and shops only.
+- Bots after the trim, `check 100` at C0: Recruit 48%, Drummer 56%, Sapper 51%, stalls 0–2.
+- Fixed: taking a perk that completed a pair covered the "Synergy!" toast with the perk's own, and the pair was never announced again.
+- Open from the reviews: hard to read which row a figure is on (the playtest's biggest complaint); act-3 Warden causes 20–31% of deaths; Recruit trails (42% vs 51–58%); Spike lanes never kills; the act-3 boss perk offer is wasted; cadets differ only by hand; 4 events, one boss per act; no enemy twists the copy rule. Small bugs: last room's pit mark shows on the next board, "Take the orders" replaces a card without asking, the pre-boss wagon resets Rations' price, "Into the pits" offered with 2 enemies, Abandon run has no confirm, Briefing button on the title screen.
+

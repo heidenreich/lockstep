@@ -94,6 +94,9 @@ $("help").addEventListener("click", ev => { const r = $("help").getBoundingClien
 $("helpDrill").addEventListener("click", () => { $("help").close(); startRun(pickChar, pickCad, true); render(); });
 $("muteBtn").addEventListener("click", () => { muted = !muted; try { localStorage.setItem("lockstep-muted", muted ? "1" : "0"); } catch (e) {} renderBar(); });
 
+// A perk that completes a synergy leaves the "Synergy!" toast showing instead of covering it.
+const synCount = () => (R.synSeen || []).length;
+const perkToast = (id, n) => { if (synCount() === n) toast(`${ORDERS[id].name}: in effect for the rest of the run.`); };
 function mapPick(k) { briefOpen = false; if (game.enterNode(k)) { vis = {}; armed = null; pvKey = ""; render(); } }
 $("mapSvg").addEventListener("click", ev => { const g = ev.target.closest("[data-node]"); if (g) mapPick(g.dataset.node); });
 $("mapSvg").addEventListener("keydown", ev => { if (ev.key !== "Enter" && ev.key !== " ") return; const g = ev.target.closest("[data-node]"); if (g) { ev.preventDefault(); mapPick(g.dataset.node); } });
@@ -116,8 +119,8 @@ document.addEventListener("click", ev => {
   if (a.act === "buyHp") { game.buyHp(); render(); return; }
   if (a.act === "cancelShop") { R.shop.pending = null; render(); return; }
   if (a.act === "restock") { if (game.restock()) toast("The quartermaster brings out new stock."); render(); return; }
-  if (a.act === "buyOrder") { if (game.buyOrder()) toast(`${ORDERS[R.shop.order.id].name}: in effect for the rest of the run.`); render(); return; }
-  if (a.order) { if (!R.reward.tookOrder && game.takeOrder(a.order)) { R.reward.tookOrder = true; toast(`${ORDERS[a.order].name}: in effect for the rest of the run.`); } render(); return; }
+  if (a.act === "buyOrder") { const n = synCount(); if (game.buyOrder()) perkToast(R.shop.order.id, n); render(); return; }
+  if (a.order) { const n = synCount(); if (!R.reward.tookOrder && game.takeOrder(a.order)) { R.reward.tookOrder = true; perkToast(a.order, n); } render(); return; }
   if (a.take) { game.takeCard(a.take); render(); return; }
   if (a.replace != null) { game.takeCard(R.reward.pending, +a.replace); render(); return; }
   if (a.up != null) { if (game.upgradeCard(+a.up)) { R.reward.upgrade = false; toast(`${CARDS[R.hand[+a.up].id].name} upgraded.`); } render(); return; }

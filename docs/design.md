@@ -6,7 +6,7 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 
 ## Core rules
 
-- One hand-made room per fight (12 rooms, 7×7 to 11×9: 3 per act plus a boss room each). Each turn: Step (WASD/arrows), wait, or play a card.
+- One hand-made room per fight (12 rooms, 7×7 to 11×9: 3 per act plus a boss room each). Each fight turns its room at random: mirrored left-right and/or top-bottom, and square rooms also rotated (`F.orient`; belts turn with the room). Only turns that change the layout count, so symmetric rooms always play as drawn: Belt room has 8, Gatehouse 4, six rooms 2, and Drill square, Spike lanes, Colossus court, Powder store and Warden's yard 1. Each turn: Step (WASD/arrows), wait, or play a card.
 - **Lockstep:** when you Step, every locked drone and heavy tries to move the same way; contrarians move the opposite way. Leaders move first.
 - An enemy that moves into your tile hits you; a locked enemy that ends its move beside you strikes too.
 - Enemies that step into a **pit** die (+gold). Each pit holds 2 per fight, then fills.
@@ -36,6 +36,14 @@ Step is always available. Cards are extra actions with **cooldowns** (no draw pi
 | Brace | You stay; no damage until your next turn. Room holds | 4 | CD 3 |
 
 Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a full hand replaces a card.
+
+**Synergies** (`SYNERGIES`): holding a card and its paired perk turns on a bonus. The first time a pair comes together in a run it's announced; held pairs are marked on the card and the perk outside fights, and an offer says which of your pieces it would pair with.
+
+| Synergy | Card + perk | Bonus |
+|---|---|---|
+| Bayonet charge | Lunge + Fixed bayonets | Lunge hits 1 harder |
+| Powder quake | Quake + Short fuses | Quake deals 2 to pinned enemies |
+| Hobnail stomp | Stomp + Hobnail boots | Stomp first hits every enemy beside you for 1 |
 
 ## Enemies
 

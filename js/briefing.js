@@ -23,7 +23,7 @@ function setBriefAuto(on) { try { localStorage.setItem("lockstep-brief", on ? "1
 // What the room holds, as briefing rows: { key, id, sw, title, text }. key names what to light up on the board;
 // id is what the profile remembers as met (enemy type or kind of ground).
 function briefRows(F) {
-  const rm = ROOMS[F.room], tiles = Object.values(rm.tiles), boss = F.kind === "boss", rows = [];
+  const rm = fightRoom(F), tiles = Object.values(rm.tiles), boss = F.kind === "boss", rows = [];
   const add = (key, sw, title, text) => rows.push({ key, id: key.slice(2), sw, title, text });
   const byType = new Map();
   for (const e of F.enemies) { const b = byType.get(e.type) || { n: 0, hp: e.max }; b.n++; byType.set(e.type, b); }
@@ -66,7 +66,7 @@ function renderBrief() {
   const win = boss ? `Beat the ${esc(foe(boss).name)}. The fight ends the moment it falls; its helpers don't matter.` : "Clear the room: every enemy down, into a pit or out of the fight.";
   const clock = boss ? [`Turn 30: the ${esc(foe(boss).name)} enrages. Its helpers break free and more arrive every 3 turns.`]
     : [`Turn ${F.frenzyAt}: frenzy. Every enemy breaks free and chases you.`, `Every ${ARRIVE_EVERY} turns one more joins (${MAX_ARRIVALS} at most) while 2 or more are left. Waiting brings one at once.`];
-  const html = `<div class="briefhead"><div><span class="eyebrow">Briefing</span><h3 id="briefTitle" tabindex="-1">${esc(ROOMS[F.room].name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
+  const html = `<div class="briefhead"><div><span class="eyebrow">Briefing</span><h3 id="briefTitle" tabindex="-1">${esc(fightRoom(F).name)}${boss ? ' <span class="brieftag boss">Boss</span>' : F.kind === "elite" ? ' <span class="brieftag">Elite</span>' : ""}</h3></div><button class="btn" data-act="briefClose">To the field</button></div>
     <p class="briefwin"><b>Win:</b> ${win}</p>
     ${fresh.length ? `<div class="eyebrow">New here</div><ul class="brieflist">${fresh.map(r => `<li data-hi="${r.key}" tabindex="0"${r.sw === "tin:" + (boss && boss.type) ? ' class="big"' : ""}>${r.sw === "tin:" + (boss && boss.type) ? sw(r, 64, 70) : sw(r, 52, 57)}<span><span class="newtag">New</span> <b>${esc(r.title)}</b> ${esc(r.text)}</span></li>`).join("")}</ul>` : ""}
     ${known.length ? `<div class="eyebrow">${fresh.length ? "Also here" : "Here"}</div><ul class="briefchips">${known.map(r => `<li data-hi="${r.key}" tabindex="0" title="${esc(r.text)}" aria-label="${esc(r.title + ": " + r.text)}">${sw(r, 32, 35)}<b>${esc(r.title)}</b></li>`).join("")}</ul><p class="briefdetail" id="briefDetail" aria-live="polite">Point at one to see its rule and where it is.</p>` : ""}
@@ -132,7 +132,7 @@ function paintSwatch(c, sw) {
 // Lights up what a briefing line is about, on the board (called from draw, before the pieces stand on it).
 function drawBriefHi(g, F, now) {
   if (!briefHi || !briefOpen) return;
-  const [kind, what] = briefHi.split(":"), rm = ROOMS[F.room], a = reduced() ? 0.9 : 0.65 + Math.sin(now * 5) * 0.3;
+  const [kind, what] = briefHi.split(":"), rm = fightRoom(F), a = reduced() ? 0.9 : 0.65 + Math.sin(now * 5) * 0.3;
   const mark = (x, y, round) => {
     g.save(); tileSpace(g, x, y); g.strokeStyle = `rgba(255,214,110,${a})`; g.lineWidth = 0.09; g.setLineDash([0.16, 0.08]);
     if (round) { g.beginPath(); g.ellipse(0, 0.05, 0.47, 0.47, 0, 0, Math.PI * 2); } else rr(-0.47, -0.47, 0.94, 0.94, 0.12);
