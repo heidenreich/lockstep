@@ -18,7 +18,7 @@ CI runs all four on every PR and push to `main`. Its bot check is shorter (`SEED
 |---|---|
 | `rules.js` | All game rules, no DOM |
 | `index.html` | The page markup; loads `rules.js`, `styles.css` and `js/` |
-| `js/` | Page scripts, loaded in order: `kit` (helpers, page state `ui`), `art` (act looks, tin soldiers), `store` (run and profile), `audio`, `screens` (render, stage screens), `onboarding`, `briefing` (the briefing before each fight), `board` (fight canvas and pieces), `mapboard` (the map as a toy board), `input` (handlers, `ACTIONS`, boot) |
+| `js/` | Page scripts, loaded in order: `kit` (helpers, page state `ui`), `art` (act looks, tin soldiers), `store` (run and profile), `audio`, `screens` (render, stage screens), `onboarding`, `briefing` (the briefing before each fight), `board` (fight canvas and pieces; `draw()` calls one function per layer), `title` (the title screen's animated strip), `mapboard` (the map as a toy board), `input` (handlers, `ACTIONS`, boot) |
 | `styles.css` | All page styles: theme colours, layout, cards, slate, phone layout |
 | `tests/` | Rule tests |
 | `types/`, `jsconfig.json` | Type checking: the globals the scripts share |
