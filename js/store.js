@@ -2,7 +2,9 @@
 
 /* ---------- The game ---------- */
 // The page owns one game at a time (rules.js makeGame): set it with useRun() or startRun().
-let P = mergeProfile({}), game = null;
+let P = mergeProfile({});
+/** @type {ReturnType<typeof makeGame> | null} */
+let game = null;
 // R (the run) and W, H (the board size of its fight) are read-only views of the current game, so they can't drift.
 Object.defineProperty(globalThis, "R", { get: () => game ? game.run : null });
 Object.defineProperty(globalThis, "W", { get: () => game ? game.W : 9 });
