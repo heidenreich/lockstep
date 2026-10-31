@@ -57,7 +57,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 Bosses (a pit deals 3 and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
 2. **Mirror**: locked contrarian, 9 HP; every 5 turns it flips direction for 5 turns (telegraphed). A pit it climbs out of is sealed.
-3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns.
+3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns. The Warden is meant as a draft check (decided 2026-10-31): Trapdoor is its answer (2-ply bot 98% with it, 28–65% with other cards), and it stays that way.
 
 ## Run
 
