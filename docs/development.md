@@ -21,7 +21,7 @@ CI runs all four on every PR and push to `main`. Its bot check is shorter (`SEED
 | `js/` | Page scripts, loaded in order: `kit` (helpers, page state `ui`), `art` (act looks, tin soldiers), `store` (run and profile), `audio`, `screens` (render, stage screens), `onboarding`, `briefing` (the briefing before each fight), `board` (fight canvas and pieces), `mapboard` (the map as a toy board), `input` (handlers, `ACTIONS`, boot) |
 | `styles.css` | All page styles: theme colours, layout, cards, slate, phone layout |
 | `tests/` | Rule tests |
-| `types/`, `jsconfig.json` | Type checking: the globals the scripts share |
+| `types/`, `jsconfig.json` | Type checking: the shape of a saved run (`game.d.ts`: `Run`, `Fight`, `Enemy`, `HandCard` and the rest) and the few globals the scripts can't declare themselves |
 | `e2e/` | Browser smoke tests (Playwright) |
 | `sim/` | Bot harness (`run4.js`), the bots (`bot.js`) and stall traces |
 | `design/` | Visual mockups |
@@ -30,7 +30,7 @@ CI runs all four on every PR and push to `main`. Its bot check is shorter (`SEED
 ## Making changes
 
 - **Before you push:** `npm test`, `npm run typecheck`, `npm run test:e2e`, and `node sim/run4.js check 30` if you touched the rules. Keep [design.md](design.md) in step with what you changed.
-- **Saved runs:** players' runs are saved in their browser. If you change the shape of the run (fields on the run, fight, enemies, hand), bump `RUN_V` in `rules.js` and add the step to `migrateRun`, with a test that loads an old save. Renaming or removing a card, perk, enemy or room id makes old saves unplayable: `migrateRun` then refuses them and the page clears them, so prefer keeping ids.
+- **Saved runs:** players' runs are saved in their browser. Their shape is written down in `types/game.d.ts`, and `npm run typecheck` flags any field the code uses that isn't there. If you change the shape of the run (fields on the run, fight, enemies, hand), update `game.d.ts`, bump `RUN_V` in `rules.js` and add the step to `migrateRun`, with a test that loads an old save. Renaming or removing a card, perk, enemy or room id makes old saves unplayable: `migrateRun` then refuses them and the page clears them, so prefer keeping ids.
 - **Rules vs page:** anything that decides what happens in the game belongs in `rules.js` (with a test); `js/` only draws and passes input on.
 
 ### Adding content

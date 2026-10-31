@@ -100,7 +100,7 @@ function renderBar() {
 function saveRun() { try { if (R && R.screen !== "end") localStorage.setItem("lockstep-run", JSON.stringify(R)); else localStorage.removeItem("lockstep-run"); } catch (e) {} }
 
 function applyTheme() {
-  if (R) document.body.dataset.act = R.act; else delete document.body.dataset.act;
+  if (R) document.body.dataset.act = String(R.act); else delete document.body.dataset.act;
   readColors();
   if (R) Object.assign(C, ACT_THEME[R.act - 1]);
 }

@@ -75,7 +75,9 @@ function fightRoom(F) {
   return turned.get(F.orient);
 }
 // The training drill: a first-run lesson room with a fixed line, no bonus, arrivals or frenzy. The page coaches it.
-const DRILL_ROOM = "training-ground", DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]], DRILL_START = { x: 3, y: 4 };
+const DRILL_ROOM = "training-ground", DRILL_START = { x: 3, y: 4 };
+/** @type {[string, number, number][]} */
+const DRILL_LINE = [["drone", 3, 2], ["drone", 5, 0], ["drone", 4, 5]];
 const CHAIN = ["", "", "Double drop", "Triple drop", "Quad drop", "Rout"];
 // Enemies. rule is what it does (the briefing and its first-time note both show it); look is how to spot it (How to play).
 // Flags the rules read: contra (steps the opposite way), slow (moves every other turn), fast (moves 2), fixed (holds its
@@ -326,7 +328,9 @@ function makeGame(run, opts = {}) {
   const save = () => { if (!SIM) hooks.save(); };
   // FALLS and BLOCKS: where pieces dropped into pits and which enemies were blocked (and which way), kept only on sim
   // forks so preview() can point at them (fx are off in sims).
-  let R = run || null, W = 9, H = 9, FX = [], SFX = [], FALLS = [], BLOCKS = [];
+  /** @type {Run} */
+  let R = run || null;
+  let W = 9, H = 9, FX = [], SFX = [], FALLS = [], BLOCKS = [];
   // Board size follows the current room.
   function setDims() { if (R && R.fight) { const rm = fightRoom(R.fight); W = rm.w; H = rm.h; } }
   const hasO = id => !!(R && R.orders && R.orders.includes(id));
@@ -390,7 +394,9 @@ function makeGame(run, opts = {}) {
 
   /* ---------- Map ---------- */
   function genMap(act) {
-    const ROWS = 6, COLS = 4, nodes = {}, edges = new Set();
+    const ROWS = 6, COLS = 4, edges = new Set();
+    /** @type {Record<string, MapNode>} */
+    const nodes = {};
     const key = (r, c) => r + ":" + c;
     const starts = shuffle([0, 1, 2, 3]).slice(0, 3);
     for (const s of starts) {
@@ -519,6 +525,7 @@ function makeGame(run, opts = {}) {
     if (d.elite) hp += cadenceFx(R.cad).eliteHp;
     if (d.boss) hp += cadenceFx(R.cad).bossHp;
     // Anything that turns up during a frenzy arrives already broken free.
+    /** @type {Enemy} */
     const e = { id: F.nextId++, type, x: c.x, y: c.y, hp, max: hp, blocked: 0, free: !!d.chaser || (F.frenzy && !d.fixed && !d.boss), chased: 0, skip: false, dir: [0, 1] };
     if (d.rifle) e.load = RELOAD;
     F.enemies.push(e);
@@ -734,7 +741,7 @@ function makeGame(run, opts = {}) {
       const [bx, by] = beltAt(u.x, u.y), nx = u.x + bx, ny = u.y + by;
       if (u !== F.p && inB(nx, ny) && isPit(nx, ny)) { fall(u, nx, ny); continue; }
       if (!inB(nx, ny) || isWall(nx, ny) || isPit(nx, ny) || enemyAt(nx, ny) || (nx === F.p.x && ny === F.p.y)) continue;
-      u.x = nx; u.y = ny; if (u !== F.p) u.dir = [bx, by];
+      u.x = nx; u.y = ny; if (u !== F.p) /** @type {Enemy} */ (u).dir = [bx, by];
       arrive(u, bx, by);
     }
     riflesFire();
