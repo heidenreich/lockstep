@@ -110,12 +110,17 @@ function paintSwatch(c, sw) {
       // The tower block seen face on: frame, wood panel, tower.
       g.fillStyle = BLOCK.frame; g.fillRect(9, 15, 26, 25); g.fillStyle = BLOCK.wood; g.fillRect(12, 18, 20, 19);
       g.save(); g.translate(22, 28); drawTower(g, 13, BLOCK.frame, BLOCK.wood); g.restore();
+    } else if (R.act === 2) {
+      // The book stack's top cover seen face on: brown cloth, the cover panel, the cream tower stamp; navy below.
+      g.fillStyle = BOOKS.cloth[0]; g.fillRect(9, 33, 26, 7); g.fillStyle = BOOKS.pages; g.fillRect(12, 35, 20, 3);
+      g.fillStyle = BOOKS.cloth[1]; g.fillRect(9, 13, 26, 21); g.fillStyle = BOOKS.cover; g.fillRect(11, 15, 22, 17);
+      g.save(); g.translate(22, 23.5); drawTower(g, 12, BOOKS.stamp, BOOKS.cover); g.restore();
     } else {
-      const cols = [["#2f4a6b", "#efe6cf"], ["#5d4027", "#7d5a3a"]][R.act - 2];
-      g.fillStyle = cols[0]; g.fillRect(9, 18, 26, 22); g.fillStyle = cols[1]; g.fillRect(9, 13, 26, 6);
+      // The crate's lid seen face on: slats and the stencilled tower.
+      g.fillStyle = CRATE.lid; g.fillRect(9, 15, 26, 25);
+      g.strokeStyle = CRATE.gap; g.lineWidth = 1; for (const y of [23.5, 31.5]) { g.beginPath(); g.moveTo(9, y); g.lineTo(35, y); g.stroke(); }
+      g.save(); g.translate(22, 27.5); drawTower(g, 13, CRATE.stencil, CRATE.lid); g.restore();
     }
-    if (R.act === 2) { g.fillStyle = "#7a2a2a"; g.fillRect(9, 26, 26, 7); g.fillStyle = "rgba(240,194,94,0.6)"; for (const y of [22, 29, 36]) g.fillRect(13, y, 18, 1.4); }
-    if (R.act === 3) { g.strokeStyle = "#3a2716"; g.lineWidth = 2; g.beginPath(); g.moveTo(11, 38); g.lineTo(33, 20); g.stroke(); }
   } else if (sw === "keg") drawKeg(g, 21, 40, 0.68, 0);
   else if (sw === "ice") {
     tile(1, "rgba(190,228,255,0.95)"); g.strokeStyle = "#fff"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(10, 38); g.lineTo(18, 27); g.moveTo(20, 41); g.lineTo(31, 28); g.stroke();

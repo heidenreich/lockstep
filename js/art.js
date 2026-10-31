@@ -30,6 +30,10 @@ const HAND = '"Caveat", "Segoe Print", cursive';
 // no piece uses (red, violet, orange, magenta and green are enemies and bases; blue and brass are yours), and there is no
 // letter, so nothing on the board reads as a key or a label.
 const BLOCK = { frame: "#2a7479", wood: "#e0b06c", woodSide: "#bf8a4c" };
+// Act 2 walls: two books in navy and brown cloth (no enemy colours) with a cream tower stamped on the top cover.
+const BOOKS = { cloth: ["#34506e", "#5b4a33"], cover: "#665238", pages: "#e9dfc6", stamp: "#efe2c2" };
+// Act 3 walls: a low slatted crate with a stencilled tower on the lid.
+const CRATE = { side: "#6e5236", lid: "#8c6a47", gap: "rgba(0,0,0,0.35)", brace: "#3a2716", stencil: "#3a2716" };
 // The tower glyph, centred on (0, 0) and gh tall: a body, three merlons and an arched door cut in `hole`.
 function drawTower(g, gh, fill, hole) {
   const w = gh * 0.7, top = -gh / 2, bot = gh / 2, mh = gh * 0.22, mw = w / 5;

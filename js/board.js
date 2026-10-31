@@ -237,47 +237,52 @@ function drawPlinth(g, S) {
   g.fillStyle = grd; rr(ox - pw / 2, B0[1] + pd * 0.22, pw, ph, 3); g.fill();
   g.fillStyle = "#4a3510"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(name, ox, B0[1] + pd * 0.22 + ph / 2 + 1);
 }
-// Walls are toys from the act's room: framed tower blocks, stacked books, toy-box crates.
+// Walls are toys from the act's room: framed tower blocks, a stack of two books, a toy-box crate. All three share one
+// shape (half a tile tall, filling the square, lower than a soldier) and one mark, a castle tower, so a wall reads the
+// same in every act. None uses an enemy colour, and the books' stamp is cream, not gilt: brass is the player's.
 function drawWall(g, x, y, act, fade) {
-  const m = 0.07, sc = rowScale(y + 1), h = tw * 0.62 * sc;
+  const m = 0.07, sc = rowScale(y + 1), h = tw * 0.5 * sc;
   const a = proj(x + m, y + m), b = proj(x + 1 - m, y + m), c = proj(x + 1 - m, y + 1 - m), d = proj(x + m, y + 1 - m);
-  const n = tileNoise(x, y);
   g.save(); g.globalAlpha = fade ? 0.5 : 1;
   g.fillStyle = "rgba(0,0,0,0.28)"; g.beginPath(); g.moveTo(d[0] + 4, d[1] + 3); g.lineTo(c[0] + 8, c[1] + 3); g.lineTo(b[0] + 8, b[1]); g.lineTo(c[0], c[1]); g.closePath(); g.fill();
   const quad = (p, q, r, s, fill) => { g.fillStyle = fill; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.lineTo(r[0], r[1]); g.lineTo(s[0], s[1]); g.closePath(); g.fill(); };
-  const up = p => [p[0], p[1] - h];
-  const fw = c[0] - d[0];
+  const up = p => [p[0], p[1] - h], fw = c[0] - d[0];
+  const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+  const ctr = [(a[0] + c[0]) / 2, (a[1] + c[1]) / 2 - h], inner = (p, t) => lerp(up(p), ctr, t);
+  // The tower mark on the top face, foreshortened like the face it sits on.
+  const tower = (fill, hole) => { g.save(); g.translate(ctr[0], ctr[1]); g.scale(1, TILT); drawTower(g, tw * 0.36 * sc, fill, hole); g.restore(); };
   if (act === 1) {
-    // A framed wooden tower block, lower than a soldier so it reads as ground, not as a piece.
-    const hh = tw * 0.5 * sc, upp = p => [p[0], p[1] - hh];
-    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
-    const ctr = [(a[0] + c[0]) / 2, (a[1] + c[1]) / 2 - hh], inner = p => lerp(upp(p), ctr, 0.24);
-    quad(d, c, upp(c), upp(d), BLOCK.frame);
-    quad([d[0] + fw * 0.09, d[1] - hh * 0.13], [c[0] - fw * 0.09, c[1] - hh * 0.13], [c[0] - fw * 0.09, c[1] - hh * 0.87], [d[0] + fw * 0.09, d[1] - hh * 0.87], BLOCK.woodSide);
-    quad(upp(a), upp(b), upp(c), upp(d), BLOCK.frame);
-    quad(inner(a), inner(b), inner(c), inner(d), BLOCK.wood);
-    g.save(); g.translate(ctr[0], ctr[1]); g.scale(1, TILT); drawTower(g, tw * 0.36 * sc, BLOCK.frame, BLOCK.wood); g.restore();
-    g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 1.1; const ud = upp(d), uc = upp(c); g.beginPath(); g.moveTo(ud[0], ud[1]); g.lineTo(uc[0], uc[1]); g.stroke();
-    g.restore();
-    return;
-  }
-  if (act === 2) {
-    const spines = [["#7a2a2a", "#2f4a6b", "#5a6b2f"], ["#2f4a6b", "#8a6420", "#6b2f4a"], ["#3b5a3a", "#7a2a2a", "#2f4a6b"]][n % 3];
-    for (let i = 0; i < 3; i++) {
-      const y0 = d[1] - h * i / 3, y1 = d[1] - h * (i + 1) / 3, inset = (i % 2 ? 0.03 : -0.01) * fw;
-      g.fillStyle = spines[i]; g.fillRect(d[0] + inset, y1, fw - inset * 2, y0 - y1);
-      g.fillStyle = "rgba(240,194,94,0.6)"; g.fillRect(d[0] + inset + fw * 0.15, y1 + (y0 - y1) * 0.4, fw * 0.7 - inset * 2, Math.max(1, (y0 - y1) * 0.12));
+    // A framed wooden block: one teal frame per face, honey wood inside.
+    quad(d, c, up(c), up(d), BLOCK.frame);
+    quad([d[0] + fw * 0.09, d[1] - h * 0.13], [c[0] - fw * 0.09, c[1] - h * 0.13], [c[0] - fw * 0.09, c[1] - h * 0.87], [d[0] + fw * 0.09, d[1] - h * 0.87], BLOCK.woodSide);
+    quad(up(a), up(b), up(c), up(d), BLOCK.frame);
+    quad(inner(a, 0.24), inner(b, 0.24), inner(c, 0.24), inner(d, 0.24), BLOCK.wood);
+    tower(BLOCK.frame, BLOCK.wood);
+  } else if (act === 2) {
+    // Two fat books, navy under brown cloth, page edges showing; the top cover carries a cream tower stamp.
+    const B = BOOKS;
+    for (let k = 0; k < 2; k++) {
+      const y0 = d[1] - h * k / 2, y1 = d[1] - h * (k + 1) / 2, ins = (k ? 0.04 : 0) * fw;
+      g.fillStyle = B.cloth[k]; g.fillRect(d[0] + ins, y1, fw - ins * 2, y0 - y1);
+      g.fillStyle = B.pages; g.fillRect(d[0] + ins + fw * 0.08, y1 + (y0 - y1) * 0.22, fw * 0.84 - ins * 2, (y0 - y1) * 0.56);
+      g.strokeStyle = "rgba(90,70,40,0.35)"; g.lineWidth = 1;
+      for (let r = 1; r < 3; r++) { const yy = y1 + (y0 - y1) * (0.22 + 0.56 * r / 3); g.beginPath(); g.moveTo(d[0] + ins + fw * 0.1, yy); g.lineTo(c[0] - ins - fw * 0.1, yy); g.stroke(); }
     }
-    quad(up(a), up(b), up(c), up(d), spines[2]);
-    quad([up(a)[0] + fw * 0.05, up(a)[1] + 2], [up(b)[0] - fw * 0.05, up(b)[1] + 2], [up(c)[0] - fw * 0.05, up(c)[1] - 1], [up(d)[0] + fw * 0.05, up(d)[1] - 1], "#efe6cf");
+    quad(up(a), up(b), up(c), up(d), B.cloth[1]);
+    quad(inner(a, 0.12), inner(b, 0.12), inner(c, 0.12), inner(d, 0.12), B.cover);
+    tower(B.stamp, B.cover);
   } else {
-    quad(d, c, up(c), up(d), "#5d4027");
-    quad(up(a), up(b), up(c), up(d), "#7d5a3a");
-    g.strokeStyle = "rgba(0,0,0,0.35)"; g.lineWidth = 1.5;
-    for (let i = 1; i < 3; i++) { g.beginPath(); g.moveTo(d[0], d[1] - h * i / 3); g.lineTo(c[0], c[1] - h * i / 3); g.stroke(); }
-    g.strokeStyle = "#3a2716"; g.lineWidth = Math.max(2, tw * 0.05); g.beginPath(); g.moveTo(d[0] + 3, d[1] - 3); g.lineTo(c[0] - 3, c[1] - h + 3); g.stroke();
+    // A low slatted crate with a braced front; the lid carries a stencilled tower.
+    const C = CRATE;
+    quad(d, c, up(c), up(d), C.side);
+    g.strokeStyle = C.gap; g.lineWidth = 1.5; g.beginPath(); g.moveTo(d[0], d[1] - h / 2); g.lineTo(c[0], c[1] - h / 2); g.stroke();
+    g.strokeStyle = C.brace; g.lineWidth = Math.max(2, tw * 0.045); g.beginPath(); g.moveTo(d[0] + 3, d[1] - 3); g.lineTo(c[0] - 3, c[1] - h + 3); g.stroke();
+    quad(up(a), up(b), up(c), up(d), C.lid);
+    g.strokeStyle = C.gap; g.lineWidth = 1.2;
+    for (let k = 1; k < 3; k++) { const p = lerp(up(a), up(d), k / 3), q = lerp(up(b), up(c), k / 3); g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.stroke(); }
+    tower(C.stencil, C.lid);
   }
-  g.strokeStyle = "rgba(255,255,255,0.4)"; g.lineWidth = 1.2; g.beginPath(); const ud = up(d), uc = up(c); g.moveTo(ud[0], ud[1]); g.lineTo(uc[0], uc[1]); g.stroke();
+  g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 1.1; const ud = up(d), uc = up(c); g.beginPath(); g.moveTo(ud[0], ud[1]); g.lineTo(uc[0], uc[1]); g.stroke();
   g.restore();
 }
 function chalkArrow(g, p0, p1, color, w, opts) {
