@@ -358,12 +358,13 @@ function draw(dt) {
     ctx.fillStyle = tt != null ? "#b7862a" : S.pitRim; rr(-0.45, -0.45, 0.9, 0.9, 0.12); ctx.fill();
     const hole = ctx.createLinearGradient(0, -0.4, 0, 0.4); hole.addColorStop(0, "#000"); hole.addColorStop(1, "#1d140d");
     ctx.fillStyle = hole; rr(-0.37, -0.37, 0.74, 0.74, 0.08); ctx.fill();
-    // A normal fight's pit carries one dot per place: brass while open, dirt once used, so what's left reads at a glance.
+    // A normal fight's pit carries one mark per place: a solid brass dot while open, a hollow ring once used, so what's
+    // left reads at a glance by shape as well as colour. They sit high in the hole, clear of a piece standing in front.
     if (tt == null && F.kind !== "boss") {
-      const used = F.pitFill[x + "," + y] || 0, n = R.pitHold, gap = Math.min(0.22, 0.6 / n);
+      const used = F.pitFill[x + "," + y] || 0, n = R.pitHold, gap = Math.min(0.26, 0.66 / n), r = Math.min(0.1, gap * 0.45);
       for (let i = 0; i < n; i++) {
-        ctx.beginPath(); ctx.arc((i - (n - 1) / 2) * gap, 0.1, 0.075, 0, Math.PI * 2);
-        if (i < used) { ctx.fillStyle = "#7a6248"; ctx.fill(); }
+        ctx.beginPath(); ctx.arc((i - (n - 1) / 2) * gap, -0.05, i < used ? r * 0.82 : r, 0, Math.PI * 2);
+        if (i < used) { ctx.strokeStyle = "#a08a6c"; ctx.lineWidth = r * 0.36; ctx.stroke(); }
         else { ctx.fillStyle = "#e0ac45"; ctx.fill(); ctx.strokeStyle = "#6b4a14"; ctx.lineWidth = 0.025; ctx.stroke(); }
       }
     }
