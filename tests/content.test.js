@@ -76,6 +76,18 @@ test("Recall puts enemies that broke free back in step (and can't be played when
   assert.equal(F.enemies[0].free, false);
 });
 
+test("Recall in a frenzy holds the line 4 turns and cools down twice as long, so it can't be chained", () => {
+  for (const up of [false, true]) {
+    const F = fight(BOARD);
+    g().run.hand = [{ id: "recall", cd: 0, up }];
+    F.frenzy = true; F.frenzySince = F.turn; F.enemies[0].free = true;
+    assert.ok(g().play(0, 0, 0));
+    const c = K.CARDS.recall, want = (up ? c.cdUp : c.cd) * 2;
+    assert.equal(g().run.hand[0].cd, want, `${up ? "upgraded" : "base"} Recall: cooldown ${want}`);
+    assert.ok(want > K.RECALL_HOLD, "the frenzy gets turns back before the next Recall");
+  }
+});
+
 test("Trapdoor opens a pit beside you for a few turns", () => {
   const F = playCard("trapdoor", 1, 0);
   assert.deepEqual(F.traps.map(t => [t.x, t.y]), [[5, 3]]);
