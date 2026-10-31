@@ -123,3 +123,12 @@ Run on top of the card fixes (cooldowns reset each fight; Brace covers the end o
 - Tried (not kept): cooldown 7, open 3 turns, both: no change (95–100%). Closing after one catch: Warden still 95% (one drop per trapdoor, 4 trapdoors), Colossus 98 → 78%.
 - So it is a Warden problem as much as a Trapdoor one: hard without it, free with it. Options were: bosses see trapdoors, or take less from them, together with an easier Warden.
 - **Decision (Todd):** keep it, no rule change. The Warden is a draft check; Trapdoor, Recall and Double Time answer it.
+
+## Recall stalls (2026-10-31)
+
+The Trapdoor check had Recall stalling at C3. `SEED=1..4 BOT=2ply CAD=3 ONLY=recall node sim/run4.js cards 60`, with a trace of each stalled fight:
+
+- Found: 15 stalls in 240 runs with Recall preferred (0 in 60 with random drafts). Every traced stall (9) was a frenzy with Recall played 26–37 times: in a frenzy Recall holds the line in step for 4 turns, and upgraded Recall's cooldown is also 4, so it came back just as the hold ended and kept the last one to three enemies (often a slow heavy) in step for good. One stall used base Recall (cooldown 6), so a shorter hold alone wouldn't do.
+- Tried: Recall once per fight in a frenzy: 6 stalls, win rate 66% (was 92%): the chain was most of Recall's strength, so this was too harsh.
+- Changed: played in a frenzy, Recall's cooldown doubles (`frenzyCd: 2`; 8 upgraded, 12 base). Same runs: 1 stall in 240 (a Colossus fight after enrage, Recall every 10 turns), win rate 87%.
+- `check 30` at C0, seeds 1–4, old vs new: Recruit 42% vs 36% (seed 1 dropped to 17%; seeds 2–4 average 42% both ways), Drummer 59% vs 58%, Sapper 51% both; 3 stalls either way. No change beyond noise.

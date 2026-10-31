@@ -140,7 +140,7 @@ const SYNERGIES = {
 };
 // Move cards. Each card carries its own rule: check(k, F, tx, ty) returns why it can't be played toward (tx, ty) ("" if it
 // can), and play(k, F, c, dx, dy) does it. k is the game's kit (k.roomShift, k.damage, k.fall, ...; see cardKit in makeGame);
-// F is the fight and c the card in hand. Upgraded cards use cdUp and textUp. After play(), the game runs the chasers and the
+// F is the fight and c the card in hand. Upgraded cards use cdUp and textUp; frenzyCd multiplies the cooldown when played in a frenzy. After play(), the game runs the chasers and the
 // end of the turn. The page draws each card's icon from ICONS (js/screens.js) and the bots rank them in sim/run4.js.
 const CARDS = {
   sidestep: { name: "Sidestep", cd: 3, cdUp: 2, dir: true, text: "You move 1. The room holds still.",
@@ -203,9 +203,10 @@ const CARDS = {
         }
       }
     } },
-  recall: { name: "Recall", cd: 6, cdUp: 4, dir: false, text: "Every enemy that broke free falls back into step (in a frenzy, for 4 turns). Room holds.",
+  recall: { name: "Recall", cd: 6, cdUp: 4, frenzyCd: 2, dir: false, text: "Every enemy that broke free falls back into step. In a frenzy it holds 4 turns and Recall cools down twice as long. Room holds.",
     check: (k, F) => F.enemies.some(e => e.free && !foe(e).chaser) ? "" : "Nothing has broken free.",
-    // In a frenzy the recall only holds for a few turns (see endTurn), so it can't freeze a fight for good.
+    // In a frenzy the recall only holds for a few turns (see endTurn), and frenzyCd doubles its cooldown, so the frenzy
+    // gets turns back between recalls: chaining Recall used to hold the line in step for good and stall the fight.
     play: (k, F) => {
       for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
       k.log(F.frenzy ? `The line snaps back into step, for ${RECALL_HOLD} turns.` : "The line snaps back into step.");
@@ -877,7 +878,7 @@ function makeGame(run, opts = {}) {
     sfx("card");
     log(`${def.name}${c.up ? "+" : ""}.`);
     def.play(cardKit, F, c, dx, dy);
-    c.cd = c.up ? def.cdUp : def.cd;
+    c.cd = (c.up ? def.cdUp : def.cd) * (F.frenzy && def.frenzyCd || 1);
     if (!F.over) chasersAct(false);
     endTurn(c);
     return true;

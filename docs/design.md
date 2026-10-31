@@ -31,7 +31,7 @@ Step is always available. Cards are extra actions with **cooldowns** (no draw pi
 | Shove | Hit an adjacent enemy for 1, knock it back 2 (pits count). Room holds | 2 | Knock back 3 |
 | Quake | You stay; the room moves 1; enemies pinned last turn take 1 | 5 | CD 4 |
 | Magnet | You stay; every locked enemy steps 1 toward you | 4 | CD 3 |
-| Recall | Every free enemy falls back into step (in a frenzy, for 4 turns). Room holds | 6 | CD 4 |
+| Recall | Every free enemy falls back into step (in a frenzy, for 4 turns, and its cooldown doubles). Room holds | 6 | CD 4 |
 | Trapdoor | Hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
 | Brace | You stay; no damage until your next move (a wait or a card counts). Room holds | 4 | CD 3 |
 
