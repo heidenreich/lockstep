@@ -5,9 +5,9 @@
 const DRILL_STEPS = [
   { id: "step", text: () => "You're the blue cadet on the brass tile. Take a step: the line copies you.", how: "Arrow keys or WASD, or tap a tile beside you." },
   { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", get how() { return `You can't fall in. Each pit holds ${R.pitHold} per fight (its brass dots), then fills.`; } },
-  { id: "free", text: () => "Step right until a drone is pinned against the tower block or the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
+  { id: "free", text: () => `Step right until a drone is pinned against the tower block or the edge. At ${game.breakAt()} red marks it breaks free and chases you.`, how: "A free enemy tilts inside a red scribble." },
   { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
-  { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: `Real fights turn into a frenzy at turn ${FRENZY}.` }
+  { id: "clear", text: () => `Now clear the room. Bump an enemy to hit it for ${game.bumpDamage()}.`, get how() { return `Real fights turn into a frenzy at turn ${game.frenzyAt()}.`; } }
 ];
 function coachTrack(F) {
   const ui = fightUi(F), c = ui.coach = ui.coach || /** @type {any} */ ({});
@@ -25,15 +25,16 @@ const NOTES = {
   spike: ["Spikes", "Stepping onto spikes costs 1 health, for you and enemies alike. Bosses don't feel them."],
   belt: ["Conveyor belt", "At the end of each turn a belt carries whatever stands on it one tile, into pits too."],
   goal: ["Bonus", "Every room has a bonus on the slate. Carry it out for extra gold."],
-  free: ["Broken free", "Blocked 3 turns running, it now chases you instead of copying you. Stay 4 tiles away for 4 turns and it falls back into step."],
-  frenzy: ["Frenzy", `Turn ${FRENZY}: every enemy breaks free, and every third turn they run two steps. Finish rooms before this.`],
+  free: () => ["Broken free", `Blocked ${game.breakAt()} turns running, it now chases you instead of copying you. Stay ${RELOCK} tiles away for ${RELOCK} turns and it falls back into step.`],
+  frenzy: () => ["Frenzy", `Turn ${game.frenzyAt()}: every enemy breaks free, and every ${RUN_EVERY} turns they run two steps. Finish rooms before this.`],
   combo: ["Combo", "Two or more down from one move pays extra gold and brings every card a turn closer."],
   card: ["Cooldown", "A card you play goes on cooldown for a few turns. Step and wait are always free."]
 };
 // A note's [title, text]: from NOTES, or for an enemy (not drones) its name and rule.
 function noteText(k) {
   if (k === "pitfull") return ["Pit full", `That pit has filled in and is floor now. Each pit takes ${R.pitHold} per fight this run; watch its brass dots.`];
-  if (NOTES[k]) return NOTES[k];
+  const n = NOTES[k];
+  if (n) return typeof n === "function" ? n() : n;
   const d = FOES[k];
   return d && k !== "drone" ? [d.boss ? "The " + d.name : cap(d.name), d.rule] : null;
 }
@@ -75,6 +76,14 @@ function openHelp() {
       g.scale(2, 2); tin(g, 22, 50, t === "heavy" || t === "anchor" ? 0.42 : 0.5, TIN[t], { ring: t === "cadet" ? "#e0ac45" : null, elite: el, mirror: t === "contra", reloading: t === "rifle" });
     }
   }
+  // The rules' numbers, from this run (its perks and Cadence) or, on the title screen, the Cadence picked there.
+  const num = {
+    breakAt: game ? game.breakAt() : BREAK,
+    bumpDamage: game ? game.bumpDamage() : 1,
+    frenzyAt: game ? game.frenzyAt() : FRENZY + cadenceFx(ui.pickCad || 0).frenzy,
+    relock: RELOCK
+  };
+  for (const el of $("help").querySelectorAll("[data-rule]")) el.textContent = String(num[/** @type {HTMLElement} */ (el).dataset.rule]);
   $("helpDrill").hidden = !!(R && R.screen !== "end");
   $("help").showModal();
 }

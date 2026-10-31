@@ -131,7 +131,7 @@ function tinMarks(g, e, x, top, k) {
   }
   if (e.blocked > 0 && !fixed(e) && !e.free && !d.chaser) {
     // One slot per blocked turn it takes to break free; the filled ones are red, so "one more" is plain.
-    const n = game && game.hasO("steady") ? BREAK + 1 : BREAK;
+    const n = game ? game.breakAt() : BREAK;
     g.save(); g.lineWidth = Math.max(2, 3 * k); g.lineCap = "round";
     for (let i = 0; i < n; i++) {
       const tx = x - 20 * k - (n - 1 - i) * 6 * k;

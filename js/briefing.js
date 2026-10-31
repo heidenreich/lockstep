@@ -20,7 +20,7 @@ function briefRows(F) {
     add(`e:${type}`, `tin:${type}`, `${d.boss ? d.name : cap(d.name)}${b.n > 1 ? ` ×${b.n}` : ""}`, `${b.hp} health. ${d.rule}${hits}`);
   }
   if (rm.pits.size) add("t:pit", "pit", `Pits ×${rm.pits.size}`, boss ? `The boss takes 3 and climbs back out at an edge; any other enemy is gone. You stop at the edge. ${F.enemies.some(e => foe(e).seals) ? "Any pit the Mirror climbs out of is sealed." : "Pits never fill in a boss fight."}` : `Enemies that step in are gone; you stop at the edge. Each pit takes ${R.pitHold} this fight, then fills in: its brass dots count the places left.`);
-  if (rm.walls.size) add("t:wall", "wall", WALL_NAME[R.act - 1], "Walls stop everything. An enemy blocked 3 turns running breaks free and chases you.");
+  if (rm.walls.size) add("t:wall", "wall", WALL_NAME[R.act - 1], `Walls stop everything. An enemy blocked ${game.breakAt()} turns running breaks free and chases you.`);
   if (F.kegs.length) add("t:keg", "keg", `Powder kegs ×${F.kegs.length}`, NOTES.keg[1]);
   if (tiles.includes("ice")) add("t:ice", "ice", "Ice", NOTES.ice[1]);
   if (tiles.includes("spike")) add("t:spike", "spike", "Spikes", NOTES.spike[1]);

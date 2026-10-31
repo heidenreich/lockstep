@@ -102,3 +102,16 @@ test("with the briefing switched off, a new enemy gets its first-time note inste
   assert.ok(await page.isHidden("#brief"));
   assert.match(await page.textContent("#coach .eyebrow"), /New · Contrarian/);
 });
+
+test("How to play shows this run's numbers: perks and Cadence change them", async t => {
+  const page = await open(t);
+  await page.click("#startBtn");
+  await page.click('[data-act="skipDrill"]');
+  const nums = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#help [data-rule]")].map(el => [el.dataset.rule, el.textContent])));
+  await page.evaluate(() => openHelp());
+  assert.deepEqual(await nums(), { bumpDamage: "1", breakAt: "3", relock: "4", frenzyAt: "30" });
+  await page.click("#helpClose");
+  // Steady drum, Fixed bayonets and Cadence 2.
+  await page.evaluate(() => { R.orders.push("steady", "bayonet"); R.cad = 2; openHelp(); });
+  assert.deepEqual(await nums(), { bumpDamage: "2", breakAt: "4", relock: "4", frenzyAt: "24" });
+});
