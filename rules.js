@@ -323,8 +323,9 @@ function makeGame(run, opts = {}) {
   const ownProfile = opts.profile && typeof opts.profile === "object" ? opts.profile : mergeProfile({});
   const prof = typeof opts.profile === "function" ? opts.profile : () => ownProfile;
   const save = () => { if (!SIM) hooks.save(); };
-  // FALLS: where pieces dropped into pits, kept only on sim forks so preview() can point at them (fx are off in sims).
-  let R = run || null, W = 9, H = 9, FX = [], SFX = [], FALLS = [];
+  // FALLS and BLOCKS: where pieces dropped into pits and which enemies were blocked (and which way), kept only on sim
+  // forks so preview() can point at them (fx are off in sims).
+  let R = run || null, W = 9, H = 9, FX = [], SFX = [], FALLS = [], BLOCKS = [];
   // Board size follows the current room.
   function setDims() { if (R && R.fight) { const rm = fightRoom(R.fight); W = rm.w; H = rm.h; } }
   const hasO = id => !!(R && R.orders && R.orders.includes(id));
@@ -536,6 +537,9 @@ function makeGame(run, opts = {}) {
   const roomPit = (x, y) => fightRoom(R.fight).pits.has(x + "," + y) && !(R.fight.sealed || []).includes(x + "," + y) && (R.fight.kind === "boss" || (R.fight.pitFill[x + "," + y] || 0) < R.pitHold);
   const trapAt = (x, y) => R.fight.traps.some(t => t.x === x && t.y === y);
   const isPit = (x, y) => roomPit(x, y) || trapAt(x, y);
+  // A wall of the room itself (kegs block too, but they blow instead of wobbling).
+  const roomWall = (x, y) => fightRoom(R.fight).walls.has(x + "," + y);
+  const bumpWall = (x, y) => { fx("bump", x, y); sfx("thunk"); };
   const enemyAt = (x, y) => R.fight.enemies.find(e => e.x === x && e.y === y);
   const alive = e => R.fight.enemies.includes(e);
   const floorFree = (x, y) => inB(x, y) && !isWall(x, y) && !isPit(x, y) && !enemyAt(x, y) && !(x === R.fight.p.x && y === R.fight.p.y);
@@ -650,6 +654,8 @@ function makeGame(run, opts = {}) {
           if (kegAt(tx, ty)) { explode(tx, ty); if (!alive(e)) break; }
           // Quake only hurts enemies that were already pinned before this turn.
           if (o.quake && e.blocked >= 1 && !o.hitSet.has(e)) { o.hitSet.add(e); if (!damage(e, o.quake, "The quake slams")) break; }
+          if (inB(tx, ty) && roomWall(tx, ty)) bumpWall(tx, ty);
+          if (SIM) BLOCKS.push({ id: e.id, dx: vx, dy: vy });
           if (!marching(e) && ++e.blocked >= 1) goalFail("line", `A ${foe(e).name} is blocked.`);
           if (!marching(e) && e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
           break;
@@ -827,6 +833,7 @@ function makeGame(run, opts = {}) {
     if (e) { damage(e, dmg || (hasO("bayonet") ? 2 : 1), "You hit"); return true; }
     if (inB(tx, ty) && kegAt(tx, ty)) { explode(tx, ty); return true; }
     if (inB(tx, ty) && !isWall(tx, ty) && !isPit(tx, ty)) { F.p.x = tx; F.p.y = ty; sfx("step"); arrive(F.p, dx, dy); return true; }
+    if (inB(tx, ty) && roomWall(tx, ty)) bumpWall(tx, ty);
     return false;
   }
 
@@ -882,7 +889,7 @@ function makeGame(run, opts = {}) {
   // Plays act(g) on a sim fork of this game and reports where everything ends up. The real run is never touched.
   function preview(act) {
     const g = fork(), ok = act(g), F = g.run.fight;
-    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills, drops: g.falls() };
+    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills, drops: g.falls(), blocks: g.blocks() };
   }
 
   /* ---------- After the fight ---------- */
@@ -1058,7 +1065,7 @@ function makeGame(run, opts = {}) {
     get profile() { return prof(); },
     newRun, genMap, openNodes, enterNode, startFight, startDrill, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
     trapAt, isPit, enemyAt, alive, floorFree, hasO, syn, synergies, cardPool, unlock, hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, runTurn, chasersAct, endTurn, sightLine, riflesFire, stepPlayer, step, cardBlock,
-    play, preview, fork, falls: () => FALLS, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,
+    play, preview, fork, falls: () => FALLS, blocks: () => BLOCKS, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,
     takeRewardOrder, claimUpgrade, cancelPending, chooseEvent, quit
   };
   return api;

@@ -3,6 +3,8 @@
 /* ---------- Fight screen & canvas ---------- */
 let cell = 52, parts = [], floats = [], shake = 0, lastFrame = 0;
 let visBefore = {}, fallers = [], banners = [], shots = [], hitStop = 0, nudge = { x: 0, y: 0 };
+// Walls something just bumped into: "x,y" -> when, for a short wobble.
+const wobbles = new Map();
 const cv = $("cv"), ctx = cv.getContext("2d");
 function renderFight() {
   show("sFight");
@@ -103,6 +105,7 @@ function consumeFX() {
     if (f.kind === "combo") { banners.push({ n: f.n, life: 1.6 }); shake = reduced() ? 0 : Math.max(shake, 5); hitStop = performance.now() + 110; }
     if (f.kind === "block") floats.push({ x: cx, y: cy - 10, text: "braced", color: C.good, life: 1 });
     if (f.kind === "quake") shake = reduced() ? 0 : 4;
+    if (f.kind === "bump" && !reduced()) wobbles.set(f.x + "," + f.y, performance.now());
     if (f.kind === "spawn") burst(bx, by, "#fffaf0", 8);
     if (f.kind === "trap") burst(bx, by, C.brass, 10, true);
     if (f.kind === "shot") { const b = chest(f.tx, f.ty); shots.push({ a: [cx, cy], b, life: 0.35 }); burst(cx, cy, "#ffd27a", 8); burst(b[0], b[1], "#fffaf0", 8); shake = reduced() ? 0 : Math.max(shake, 3); }
@@ -244,6 +247,13 @@ function drawWall(g, x, y, act, fade) {
   const m = 0.07, sc = rowScale(y + 1), h = tw * 0.5 * sc;
   const a = proj(x + m, y + m), b = proj(x + 1 - m, y + m), c = proj(x + 1 - m, y + 1 - m), d = proj(x + m, y + 1 - m);
   g.save(); g.globalAlpha = fade ? 0.5 : 1;
+  // A bumped wall rocks side to side for a moment, so you see what stopped the piece.
+  const w0 = wobbles.get(x + "," + y);
+  if (w0 != null) {
+    const t = (performance.now() - w0) / 320;
+    if (t >= 1) wobbles.delete(x + "," + y);
+    else g.translate(Math.sin(t * Math.PI * 4) * tw * 0.05 * (1 - t), 0);
+  }
   g.fillStyle = "rgba(0,0,0,0.28)"; g.beginPath(); g.moveTo(d[0] + 4, d[1] + 3); g.lineTo(c[0] + 8, c[1] + 3); g.lineTo(b[0] + 8, b[1]); g.lineTo(c[0], c[1]); g.closePath(); g.fill();
   const quad = (p, q, r, s, fill) => { g.fillStyle = fill; g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(q[0], q[1]); g.lineTo(r[0], r[1]); g.lineTo(s[0], s[1]); g.closePath(); g.fill(); };
   const up = p => [p[0], p[1] - h], fw = c[0] - d[0];
@@ -387,6 +397,19 @@ function draw(dt) {
   if (pv && pv.ok) {
     const after = new Map(pv.enemies.map(e => [e.id, e]));
     const aw = Math.max(2.2, tw * 0.055);
+    // An enemy that will be blocked gets a short stub toward where it tries to go, ending in a bar: red if this block
+    // is the one that breaks it free.
+    const blockedBy = new Map(pv.blocks.map(k => [k.id, k]));
+    for (const e of F.enemies) {
+      const k = blockedBy.get(e.id), a = after.get(e.id);
+      if (!k || !a || a.x !== e.x || a.y !== e.y) continue;
+      // From the edge of the piece's base to the edge of its square, where the bar sits against whatever stops it.
+      const [x0, y0] = at(e.x + k.dx * 0.3, e.y + k.dy * 0.3), [x1, y1] = at(e.x + k.dx * 0.52, e.y + k.dy * 0.52);
+      const len = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / len, ny = (x1 - x0) / len, bar = tw * 0.22 * rowScale(e.y + 0.5);
+      ctx.save(); ctx.strokeStyle = a.free && !e.free ? "#e2483d" : hexRgba(S.chalk, 0.95); ctx.lineWidth = aw * 1.2; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.moveTo(x1 + nx * bar, y1 + ny * bar); ctx.lineTo(x1 - nx * bar, y1 - ny * bar); ctx.stroke();
+      ctx.restore();
+    }
     for (const e of F.enemies) {
       const a = after.get(e.id);
       if (!a) {

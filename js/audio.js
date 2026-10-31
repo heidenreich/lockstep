@@ -34,6 +34,7 @@ function drum(kind, at, vol) {
 const SOUNDS = {
   step: () => drum("snare", 0, 0.05),
   march: () => drum("tom", 0, 0.07),
+  thunk: () => { tone(210, 0.07, "triangle", 0.06, 120); drum("kick", 0, 0.05); },
   hit: () => tone(320, 0.08, "square", 0.04, 160),
   hurt: () => tone(110, 0.18, "sawtooth", 0.05, 60),
   fall: () => tone(520, 0.32, "triangle", 0.05, 90),
