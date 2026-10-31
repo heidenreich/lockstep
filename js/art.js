@@ -6,7 +6,7 @@
 // walls are called in the briefing, and the page theme colours.
 const ACT_ART = [
   { board: { g1: "#d8c193", g2: "#d1b987", chalk: "#ffffff", rim: "#8a5a36", front: "#6b4428", shade: "#55351f", pitRim: "#5a4330" },
-    table: "#b07a4c", wallName: "Alphabet blocks",
+    table: "#b07a4c", wallName: "Tower blocks",
     theme: { floor: "#3b3328", floor2: "#433a2d", chalk: "#5c503d", wall: "#6e5f49", wallTop: "#a38d68", wallSide: "#4a3e30", pit: "#0b0806", light: "day" } },
   { board: { g1: "#b59b72", g2: "#ad936a", chalk: "#fff4dc", rim: "#4b2f1c", front: "#3b2416", shade: "#2c1a10", pitRim: "#3e2a1a" },
     table: "#2c4433", wallName: "Stacked books",
@@ -24,6 +24,22 @@ function hexRgba(hex, a) {
 }
 function rrect(g, x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
 const HAND = '"Caveat", "Segoe Print", cursive';
+
+/* ---------- Act 1 walls: framed wooden tower blocks ---------- */
+// Honey wood with one painted frame per face and a castle tower on top, the same on every block. The frame is a teal
+// no piece uses (red, violet, orange, magenta and green are enemies and bases; blue and brass are yours), and there is no
+// letter, so nothing on the board reads as a key or a label.
+const BLOCK = { frame: "#2a7479", wood: "#e0b06c", woodSide: "#bf8a4c" };
+// The tower glyph, centred on (0, 0) and gh tall: a body, three merlons and an arched door cut in `hole`.
+function drawTower(g, gh, fill, hole) {
+  const w = gh * 0.7, top = -gh / 2, bot = gh / 2, mh = gh * 0.22, mw = w / 5;
+  g.fillStyle = fill;
+  g.fillRect(-w / 2, top + mh, w, bot - top - mh);
+  for (let k = 0; k < 3; k++) g.fillRect(-w / 2 + k * 2 * mw, top, mw, mh + 1);
+  const dw = w * 0.34, dh = gh * 0.38;
+  g.fillStyle = hole; g.beginPath();
+  g.moveTo(-dw / 2, bot); g.lineTo(-dw / 2, bot - dh + dw / 2); g.arc(0, bot - dh + dw / 2, dw / 2, Math.PI, 0); g.lineTo(dw / 2, bot); g.closePath(); g.fill();
+}
 
 /* ---------- Tin soldiers ---------- */
 // Tin soldiers. Contrarians are cast facing backwards; bosses are the big display pieces.

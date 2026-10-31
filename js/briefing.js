@@ -105,10 +105,15 @@ function paintSwatch(c, sw) {
   } else if (sw === "pit") {
     tile(2, S.pitRim); const h = g.createLinearGradient(0, 26, 0, 40); h.addColorStop(0, "#000"); h.addColorStop(1, "#1d140d"); g.fillStyle = h; rrect(g, 9, 26, 26, 14, 2); g.fill();
   } else if (sw === "wall") {
-    const cols = [["#b8433a", "#f3e3c0"], ["#2f4a6b", "#efe6cf"], ["#5d4027", "#7d5a3a"]][R.act - 1];
     g.fillStyle = "rgba(0,0,0,0.28)"; g.fillRect(12, 38, 26, 5);
-    g.fillStyle = cols[0]; g.fillRect(9, 18, 26, 22); g.fillStyle = cols[1]; g.fillRect(9, 13, 26, 6);
-    if (R.act === 1) { g.fillStyle = "#f3e3c0"; g.font = `900 15px ${css("--f-display")}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("A", 22, 30); }
+    if (R.act === 1) {
+      // The tower block seen face on: frame, wood panel, tower.
+      g.fillStyle = BLOCK.frame; g.fillRect(9, 15, 26, 25); g.fillStyle = BLOCK.wood; g.fillRect(12, 18, 20, 19);
+      g.save(); g.translate(22, 28); drawTower(g, 13, BLOCK.frame, BLOCK.wood); g.restore();
+    } else {
+      const cols = [["#2f4a6b", "#efe6cf"], ["#5d4027", "#7d5a3a"]][R.act - 2];
+      g.fillStyle = cols[0]; g.fillRect(9, 18, 26, 22); g.fillStyle = cols[1]; g.fillRect(9, 13, 26, 6);
+    }
     if (R.act === 2) { g.fillStyle = "#7a2a2a"; g.fillRect(9, 26, 26, 7); g.fillStyle = "rgba(240,194,94,0.6)"; for (const y of [22, 29, 36]) g.fillRect(13, y, 18, 1.4); }
     if (R.act === 3) { g.strokeStyle = "#3a2716"; g.lineWidth = 2; g.beginPath(); g.moveTo(11, 38); g.lineTo(33, 20); g.stroke(); }
   } else if (sw === "keg") drawKeg(g, 21, 40, 0.68, 0);
