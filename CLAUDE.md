@@ -8,4 +8,4 @@
 
 ## Before you push
 
-Run `npm test`, `npm run typecheck` and `npm run test:e2e`, plus `node sim/run4.js check 30` if you changed the rules. The README covers the code layout, saves and adding content; `docs/design.md` covers how the game works.
+Run `npm test`, `npm run typecheck` and `npm run test:e2e`, plus `node sim/run4.js check 30` if you changed the rules. `docs/development.md` covers the commands, code layout, saves and adding content; `docs/design.md` covers how the game works.
