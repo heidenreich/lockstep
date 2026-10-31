@@ -358,8 +358,15 @@ function draw(dt) {
     ctx.fillStyle = tt != null ? "#b7862a" : S.pitRim; rr(-0.45, -0.45, 0.9, 0.9, 0.12); ctx.fill();
     const hole = ctx.createLinearGradient(0, -0.4, 0, 0.4); hole.addColorStop(0, "#000"); hole.addColorStop(1, "#1d140d");
     ctx.fillStyle = hole; rr(-0.37, -0.37, 0.74, 0.74, 0.08); ctx.fill();
-    const fill = tt == null && F.kind !== "boss" ? (F.pitFill[x + "," + y] || 0) : 0;
-    for (let i = 0; i < fill; i++) { ctx.fillStyle = "#7a6248"; ctx.beginPath(); ctx.arc(-0.1 + i * 0.2, 0.1, 0.08, 0, Math.PI * 2); ctx.fill(); }
+    // A normal fight's pit carries one dot per place: brass while open, dirt once used, so what's left reads at a glance.
+    if (tt == null && F.kind !== "boss") {
+      const used = F.pitFill[x + "," + y] || 0, n = R.pitHold, gap = Math.min(0.22, 0.6 / n);
+      for (let i = 0; i < n; i++) {
+        ctx.beginPath(); ctx.arc((i - (n - 1) / 2) * gap, 0.1, 0.075, 0, Math.PI * 2);
+        if (i < used) { ctx.fillStyle = "#7a6248"; ctx.fill(); }
+        else { ctx.fillStyle = "#e0ac45"; ctx.fill(); ctx.strokeStyle = "#6b4a14"; ctx.lineWidth = 0.025; ctx.stroke(); }
+      }
+    }
     ctx.restore();
     if (tt != null) { const [cx, cy] = at(x, y); ctx.fillStyle = "#f0c25e"; ctx.font = `700 ${Math.round(tw * 0.34)}px ${HAND}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(tt, cx, cy); }
   }
@@ -445,7 +452,7 @@ function draw(dt) {
   if (youAt) drawYouBeside(ctx, youAt[0], youAt[1], youAt[2], youAt[3], now, F.turn < 3 || F.kind === "drill", F.p.x >= W - 2);
   // The preview's grease-pencil note, combo banners, particles and numbers sit above the light.
   if (pv && pv.ok) {
-    const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : "";
+    const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : pv.drops ? "into the pit" : "";
     if (label) {
       const [px, py] = chest(pv.p.x, pv.p.y);
       ctx.save(); ctx.translate(px, py - tw * 0.75); ctx.rotate(-0.06);

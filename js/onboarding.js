@@ -4,7 +4,7 @@
 // Training drill steps. Progress lives on the fight (so it survives a reload) and each step stays done once done.
 const DRILL_STEPS = [
   { id: "step", text: () => "You're the blue cadet on the brass tile. Take a step: the line copies you.", how: "Arrow keys or WASD, or tap a tile beside you." },
-  { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", how: "Each pit holds 2 per fight, then fills." },
+  { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", get how() { return `You can't fall in. Each pit holds ${R.pitHold} per fight (its brass dots), then fills.`; } },
   { id: "free", text: () => "Step right until a drone is pinned on the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
   { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
   { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: `Real fights turn into a frenzy at turn ${FRENZY}.` }
@@ -28,11 +28,11 @@ const NOTES = {
   free: ["Broken free", "Blocked 3 turns running, it now chases you instead of copying you. Stay 4 tiles away for 4 turns and it falls back into step."],
   frenzy: ["Frenzy", `Turn ${FRENZY}: every enemy breaks free, and every third turn they run two steps. Finish rooms before this.`],
   combo: ["Combo", "Two or more down from one move pays extra gold and brings every card a turn closer."],
-  pitfull: ["Pit full", "That pit has filled in. Each pit takes 2 per fight (3 for the Sapper)."],
   card: ["Cooldown", "A card you play goes on cooldown for a few turns. Step and wait are always free."]
 };
 // A note's [title, text]: from NOTES, or for an enemy (not drones) its name and rule.
 function noteText(k) {
+  if (k === "pitfull") return ["Pit full", `That pit has filled in and is floor now. Each pit takes ${R.pitHold} per fight this run; watch its brass dots.`];
   if (NOTES[k]) return NOTES[k];
   const d = FOES[k];
   return d && k !== "drone" ? [d.boss ? "The " + d.name : cap(d.name), d.rule] : null;
