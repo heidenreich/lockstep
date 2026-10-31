@@ -113,3 +113,12 @@ Review round the same day (three code reviews, a browser playtest, a design read
 - Fixed: taking a perk that completed a pair covered the "Synergy!" toast with the perk's own, and the pair was never announced again.
 - Open from the reviews: hard to read which row a figure is on (the playtest's biggest complaint); act-3 Warden causes 20–31% of deaths; Recruit trails (42% vs 51–58%); Spike lanes never kills; the act-3 boss perk offer is wasted; cadets differ only by hand; 4 events, one boss per act; no enemy twists the copy rule. Small bugs: last room's pit mark shows on the next board, "Take the orders" replaces a card without asking, the pre-boss wagon resets Rations' price, "Into the pits" offered with 2 enemies, Abandon run has no confirm, Briefing button on the title screen.
 
+
+## Trapdoor check, 2-ply (2026-10-31)
+
+Run on top of the card fixes (cooldowns reset each fight; Brace covers the end of the turn). `SEED=1 BOT=2ply CAD=0|3 node sim/run4.js cards 60` (the cards section now takes `BOT`, `CAD` and `ONLY`) and `SEED=1 node sim/run4.js bosses 40`.
+
+- Whole runs, Recruit, card in the starting hand and preferred in drafts (C0 / C3): Trapdoor 98 / 98%, Recall 97 / 88% (7 elite stalls at C3), Lunge 93 / 95%, Double Time 88 / 87%, Brace 78 / 82%, Quake 77 / 73%, Shove 80 / 65%, About Face 73 / 58%, Magnet 67 / 62%. No drafting: 27%. These rows start with three cards; the "random" row (83 / 80%) starts with two, so compare cards with each other, not with it. The top cards are at the ceiling, so whole-run win rate can't show a nerf.
+- Boss fights alone, 2-ply, the card added to the Recruit's hand: Trapdoor wins the Warden 98% in 24 turns with 7.7 health left; the next best is Lunge at 65%, with nothing at 43%, Quake 28%. Colossus and Mirror are 70–100% with any card. Trapdoor's edge is the Warden: a chaser walks straight into a pit it can't see, every time, for 3 each.
+- Tried (not kept): cooldown 7, open 3 turns, both: no change (95–100%). Closing after one catch: Warden still 95% (one drop per trapdoor, 4 trapdoors), Colossus 98 → 78%.
+- So it is a Warden problem as much as a Trapdoor one: hard without it, free with it. Options: bosses see trapdoors, or take less from them, together with an easier Warden; decide before changing numbers.

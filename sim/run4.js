@@ -1,6 +1,7 @@
 // Lockstep bot harness: plays whole runs with simple bots and prints balance numbers.
 // usage: node sim/run4.js <section> [N] [char]   sections: check | base | cards | bosses | econ | new
-//   SEED=n makes the bots' own choices repeatable (each run's game is seeded from it too); BOT=2ply and CAD=n for check.
+//   SEED=n makes the bots' own choices repeatable (each run's game is seeded from it too); BOT=2ply and CAD=n for check and cards;
+//   ONLY=a,b limits cards to those rows (card ids, plus "random" and "none" for the baselines).
 //   check exits 1 if a character stalls in more than 20% of its runs, so CI notices.
 if (process.env.SEED) { let s = +process.env.SEED; Math.random = () => { let t = (s = (s + 0x6D2B79F5) | 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const K = require("../rules.js");
@@ -116,10 +117,13 @@ if (SECTION === "base") {
   }
 }
 if (SECTION === "cards") {
-  console.log("== card impact, recruit C0, 1ply: card forced into the starting hand + preferred in drafts, vs random");
-  console.log(summary("random", many(ply1, N, {})));
-  console.log(summary("no drafting at all", many(ply1, N, { policy: { draft: "none" } })));
-  for (const id of Object.keys(K.CARDS)) console.log(summary("start+prefer " + id, many(ply1, N, { start: [id], policy: { draft: "random", prefer: id } })));
+  // BOT=2ply for the 2-ply bot; ONLY=a,b limits the rows to those cards ("random" and "none" name the two baselines).
+  const bot = process.env.BOT === "2ply" ? ply2 : ply1, cad = +process.env.CAD || 0, only = process.env.ONLY ? process.env.ONLY.split(",") : null, want = id => !only || only.includes(id);
+  console.log(`== card impact, recruit C${cad}, ${process.env.BOT === "2ply" ? "2ply" : "1ply"}: card forced into the starting hand + preferred in drafts, vs random`);
+  if (want("random")) console.log(summary("random", many(bot, N, { cad })));
+  if (want("none")) console.log(summary("no drafting at all", many(bot, N, { cad, policy: { draft: "none" } })));
+  for (const id of Object.keys(K.CARDS)) if (want(id)) console.log(summary("start+prefer " + id, many(bot, N, { cad, start: [id], policy: { draft: "random", prefer: id } })));
+  if (only) process.exit(0);
   console.log("== combos (start with both)");
   for (const [n, ids] of [["stomp+ only (upgraded stomp)", ["stomp"]], ["quake+magnet", ["quake", "magnet"]], ["shove+trapdoor", ["shove", "trapdoor"]], ["brace+recall", ["brace", "recall"]], ["lunge+shove", ["lunge", "shove"]]]) {
     const rs = []; for (let i = 0; i < N; i++) { const st = runOne(ply1, { start: ids.filter(x => x !== "stomp"), policy: { draft: "random", prefer: ids[0] } }); rs.push(st); } console.log(summary(n, rs));
