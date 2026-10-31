@@ -1,6 +1,6 @@
 // Lockstep bot harness: plays whole runs with simple bots and prints balance numbers.
 // usage: node sim/run4.js <section> [N] [char]   sections: check | base | cards | bosses | econ | new
-//   SEED=n makes the bots' own choices repeatable (each run's game is seeded from it too); BOT=2ply and CAD=n for check and cards;
+//   SEED=n makes the bots' own choices repeatable (each run's game is seeded from it too); BOT=1ply|2ply and CAD=0-5 for check and cards;
 //   ONLY=a,b limits cards to those rows (card ids, plus "random" and "none" for the baselines).
 //   check exits 1 if a character stalls in more than 20% of its runs, so CI notices.
 if (process.env.SEED) { let s = +process.env.SEED; Math.random = () => { let t = (s = (s + 0x6D2B79F5) | 0); t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -11,6 +11,8 @@ let game = null;  // the run being played; bots look ahead on game.fork()s
 const SECTIONS = ["check", "base", "cards", "bosses", "econ", "new"];
 const SECTION = process.argv[2] || "base", N = +process.argv[3] || 40;
 if (!SECTIONS.includes(SECTION)) { console.error(`Unknown section "${SECTION}". Sections: ${SECTIONS.join(", ")}`); process.exit(2); }
+if (process.env.BOT && !["1ply", "2ply"].includes(process.env.BOT)) { console.error(`Unknown BOT "${process.env.BOT}". Use 1ply or 2ply.`); process.exit(2); }
+if (process.env.CAD && !/^[0-5]$/.test(process.env.CAD)) { console.error(`CAD must be 0-5, not "${process.env.CAD}".`); process.exit(2); }
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const pct = (a, f) => (100 * a.filter(f).length / a.length).toFixed(0) + "%";
 const q = (arr, p) => { const s = [...arr].sort((a, b) => a - b); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
@@ -117,19 +119,21 @@ if (SECTION === "base") {
   }
 }
 if (SECTION === "cards") {
-  // BOT=2ply for the 2-ply bot; ONLY=a,b limits the rows to those cards ("random" and "none" name the two baselines).
   const bot = process.env.BOT === "2ply" ? ply2 : ply1, cad = +process.env.CAD || 0, only = process.env.ONLY ? process.env.ONLY.split(",") : null, want = id => !only || only.includes(id);
+  const unknown = (only || []).filter(id => !K.CARDS[id] && id !== "random" && id !== "none");
+  if (unknown.length) { console.error(`ONLY: unknown ${unknown.join(", ")}. Use card ids (${Object.keys(K.CARDS).join(", ")}), random or none.`); process.exit(2); }
   console.log(`== card impact, recruit C${cad}, ${process.env.BOT === "2ply" ? "2ply" : "1ply"}: card forced into the starting hand + preferred in drafts, vs random`);
   if (want("random")) console.log(summary("random", many(bot, N, { cad })));
   if (want("none")) console.log(summary("no drafting at all", many(bot, N, { cad, policy: { draft: "none" } })));
   for (const id of Object.keys(K.CARDS)) if (want(id)) console.log(summary("start+prefer " + id, many(bot, N, { cad, start: [id], policy: { draft: "random", prefer: id } })));
-  if (only) process.exit(0);
-  console.log("== combos (start with both)");
-  for (const [n, ids] of [["stomp+ only (upgraded stomp)", ["stomp"]], ["quake+magnet", ["quake", "magnet"]], ["shove+trapdoor", ["shove", "trapdoor"]], ["brace+recall", ["brace", "recall"]], ["lunge+shove", ["lunge", "shove"]]]) {
-    const rs = []; for (let i = 0; i < N; i++) { const st = runOne(ply1, { start: ids.filter(x => x !== "stomp"), policy: { draft: "random", prefer: ids[0] } }); rs.push(st); } console.log(summary(n, rs));
+  if (!only) {
+    console.log("== combos (start with both)");
+    for (const [n, ids] of [["stomp+ only (upgraded stomp)", ["stomp"]], ["quake+magnet", ["quake", "magnet"]], ["shove+trapdoor", ["shove", "trapdoor"]], ["brace+recall", ["brace", "recall"]], ["lunge+shove", ["lunge", "shove"]]]) {
+      const rs = []; for (let i = 0; i < N; i++) { const st = runOne(bot, { cad, start: ids.filter(x => x !== "stomp"), policy: { draft: "random", prefer: ids[0] } }); rs.push(st); } console.log(summary(n, rs));
+    }
+    console.log("== stomp+ at cooldown 1 (upgrade stomp at start)");
+    const rsU = []; for (let i = 0; i < N; i++) { const up = () => { if (game.run.hand[1] && game.run.hand[1].id === "stomp" && !game.run.hand[1].up) game.run.hand[1].up = true; return bot(); }; rsU.push(runOne(up, { cad })); } console.log(summary("recruit stomp+ from turn 1", rsU));
   }
-  console.log("== stomp+ at cooldown 1 (upgrade stomp at start)");
-  const rsU = []; for (let i = 0; i < N; i++) { const bot = () => { if (game.run.hand[1] && game.run.hand[1].id === "stomp" && !game.run.hand[1].up) game.run.hand[1].up = true; return ply1(); }; rsU.push(runOne(bot, {})); } console.log(summary("recruit stomp+ from turn 1", rsU));
 }
 if (SECTION === "bosses") {
   console.log("== boss fights in isolation (recruit C0, full hp 8, hand = sidestep/stomp + extra), 1ply vs 2ply");
@@ -144,7 +148,7 @@ if (SECTION === "bosses") {
     const F = game.run.fight; let t = 0; while (!F.over && t < 200) { apply(game, bot()); t++; }
     return { won: F.over === "win", turns: t, hp: game.run.hp, stall: !F.over, enr: t >= 30 };
   };
-  for (const [bn, bot] of [["1ply", ply1], ["2ply", ply2]]) for (const extra of [[], ["shove"], ["lunge"], ["quake"], ["trapdoor"], ["brace"]]) {
+  for (const [bn, bot] of [["1ply", ply1], ["2ply", ply2]]) for (const extra of [[], ...Object.keys(K.CARDS).filter(id => id !== "sidestep" && id !== "stomp").map(id => [id])]) {
     const row = [];
     for (let act = 1; act <= 3; act++) { const rs = []; for (let i = 0; i < N; i++) rs.push(fightBoss(act, bot, extra)); row.push(`${K.BOSSES[act - 1]}: win ${pct(rs, r => r.won)} turns ${mean(rs.map(r => r.turns)).toFixed(0)} hpLeft ${mean(rs.map(r => r.hp)).toFixed(1)} enrage ${pct(rs, r => r.enr)} stall ${rs.filter(r => r.stall).length}`); }
     console.log(`  ${bn} +${extra.join(",") || "nothing"}`.padEnd(22) + row.join(" | "));

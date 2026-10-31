@@ -323,7 +323,8 @@ function makeGame(run, opts = {}) {
   const ownProfile = opts.profile && typeof opts.profile === "object" ? opts.profile : mergeProfile({});
   const prof = typeof opts.profile === "function" ? opts.profile : () => ownProfile;
   const save = () => { if (!SIM) hooks.save(); };
-  let R = run || null, W = 9, H = 9, FX = [], SFX = [];
+  // FALLS: where pieces dropped into pits, kept only on sim forks so preview() can point at them (fx are off in sims).
+  let R = run || null, W = 9, H = 9, FX = [], SFX = [], FALLS = [];
   // Board size follows the current room.
   function setDims() { if (R && R.fight) { const rm = fightRoom(R.fight); W = rm.w; H = rm.h; } }
   const hasO = id => !!(R && R.orders && R.orders.includes(id));
@@ -603,6 +604,7 @@ function makeGame(run, opts = {}) {
   function fall(e, x, y) {
     const F = R.fight;
     fx("fall", x, y, { type: e.type, id: e.id }); sfx("fall");
+    if (SIM) FALLS.push({ x, y });
     if (hasO("sappers")) for (const c of R.hand) if (c.cd > 0) c.cd--;
     if (foe(e).boss) {
       e.hp -= 3;
@@ -879,8 +881,8 @@ function makeGame(run, opts = {}) {
 
   // Plays act(g) on a sim fork of this game and reports where everything ends up. The real run is never touched.
   function preview(act) {
-    const before = R.fight.pitKills, g = fork(), ok = act(g), F = g.run.fight;
-    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills, drops: F.pitKills - before };
+    const g = fork(), ok = act(g), F = g.run.fight;
+    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills, drops: g.falls() };
   }
 
   /* ---------- After the fight ---------- */
@@ -1056,7 +1058,7 @@ function makeGame(run, opts = {}) {
     get profile() { return prof(); },
     newRun, genMap, openNodes, enterNode, startFight, startDrill, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
     trapAt, isPit, enemyAt, alive, floorFree, hasO, syn, synergies, cardPool, unlock, hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, runTurn, chasersAct, endTurn, sightLine, riflesFire, stepPlayer, step, cardBlock,
-    play, preview, fork, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,
+    play, preview, fork, falls: () => FALLS, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,
     takeRewardOrder, claimUpgrade, cancelPending, chooseEvent, quit
   };
   return api;

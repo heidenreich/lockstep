@@ -9,7 +9,7 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 - One hand-made room per fight (12 rooms, 7×7 to 11×9: 3 per act plus a boss room each). Each fight turns its room at random: mirrored left-right and/or top-bottom, and square rooms also rotated (`F.orient`; belts turn with the room). Only turns that change the layout count, so symmetric rooms always play as drawn: Belt room has 8, Gatehouse 4, six rooms 2, and Drill square, Spike lanes, Colossus court, Powder store and Warden's yard 1. Each turn: Step (WASD/arrows), wait, or play a card.
 - **Lockstep:** when you Step, every locked drone and heavy tries to move the same way; contrarians move the opposite way. Leaders move first.
 - An enemy that moves into your tile hits you; a locked enemy that ends its move beside you strikes too.
-- Enemies that step into a **pit** die (+gold); you can't fall in (you stop at the edge). Each pit holds 2 per fight (Sapper 3, Deep pits +1), then fills. On the board a pit carries one dot per place, brass while open and dirt once used; the move preview labels a drop "into the pit".
+- Enemies that step into a **pit** die (+gold); you can't fall in (you stop at the edge). Each pit holds 2 per fight (Sapper 3, Deep pits +1), then fills. On the board a pit carries one dot per place, brass while open and dirt once used; the move preview writes "into the pit" on the pit a piece would drop into (bosses included), never on you.
 - Blocked 3 turns in a row (wall, edge, enemy) → the enemy **breaks free** and chases. A chaser 4+ tiles away for 4 turns falls back into step.
 - Waiting: every enemy chases one step and a new enemy arrives.
 - Arrivals: one every 8 turns while 2+ enemies remain, at most 2 per fight.
@@ -33,9 +33,9 @@ Step is always available. Cards are extra actions with **cooldowns** (no draw pi
 | Magnet | You stay; every locked enemy steps 1 toward you | 4 | CD 3 |
 | Recall | Every free enemy falls back into step (in a frenzy, for 4 turns). Room holds | 6 | CD 4 |
 | Trapdoor | Hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
-| Brace | You stay; no damage until your next turn. Room holds | 4 | CD 3 |
+| Brace | You stay; no damage until your next move (a wait or a card counts). Room holds | 4 | CD 3 |
 
-Cooldowns don't carry between fights: every fight starts with the whole hand ready. Brace lasts until your next action, so it also covers the end of the turn (rifle shots, belts, frenzy runs).
+Cooldowns don't carry between fights: every fight starts with the whole hand ready. Brace lasts until your next action, so it also covers the end of the turn (rifle shots, belt rides onto spikes).
 
 Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a full hand replaces a card.
 
@@ -57,7 +57,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 Bosses (a pit deals 3 and the boss climbs back out at an edge):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
 2. **Mirror**: locked contrarian, 9 HP; every 5 turns it flips direction for 5 turns (telegraphed). A pit it climbs out of is sealed.
-3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns. The Warden is meant as a draft check (decided 2026-10-31): Trapdoor is its answer (2-ply bot 98% with it, 28–65% with other cards), and it stays that way.
+3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns. The Warden is meant as a draft check (decided 2026-10-31): three cards answer it, Trapdoor (2-ply bot 98%), Recall (95%, slowly, mostly after enrage; unlocked by beating the Mirror) and Double Time (80%); with any other card it's 28–65%, 43% with none.
 
 ## Run
 
@@ -104,7 +104,7 @@ Saved in the player's browser (`localStorage`, `lockstep-profile`; the current r
 - `rules.js`: data tables and pure helpers as globals. Content lives in one table each: `CARDS` (each card's `check` and `play`), `FOES` (stats, flags, `rule` and `look` text, boss quirks as data), `ACTS` (rooms, boss, roster, elites), `ORDERS`, `GOALS`, `UNLOCKS` (each with `when`), `CADENCE` (effects summed by `cadenceFx`); `ENRAGE`, `FRENZY` and friends are named constants. The README lists what to touch to add each kind. a run lives in a game from `makeGame(run, { profile, hooks, sim })`. `game.fork()` is a sim copy for bot lookahead; `game.preview(g => g.step(dx, dy))` reports a move without touching the run. Randomness is seeded (`game.newRun(char, cad, seed)`), with RNG state in the run.
 - `index.html`: the page markup. `js/store.js` holds the one game (`useRun`, `startRun`), the profile `P` and saving (`savedRun`); `R`, `W` and `H` are read-only views of that game. The page decides no rules: every change to the run goes through a game function (rewards, perks, upgrades, events and quitting included: `takeRewardOrder`, `claimUpgrade`, `cancelPending`, `chooseEvent`, `quit`). Its own notes about a fight (drill coach progress, briefing state) live under `fight.ui`, which the rules never read. After each action, `observeFight()` (js/input.js) fixes what's new for the briefing, queues first-time notes and saves the profile once; drawing only reads. `styles.css`: every page style (theme tokens on `:root`, act moods, cards, slate, phone layout). The page script lives in `js/` as plain scripts sharing one global scope, loaded in order: `kit.js` (helpers, the page's UI state `ui`, the `SCREENS` registry), `art.js` (each act's look in `ACT_ART`, the tin soldiers and shared drawing), `store.js` (game and profile), `audio.js`, `screens.js` (`render()`, HTML helpers and the stage screens in `STAGES`), `onboarding.js`, `briefing.js` (the briefing before each fight), `board.js` (fight screen and canvas: pieces, marks), `mapboard.js` (the map painted as a toy board), `input.js` (handlers, the `ACTIONS` registry for `data-act` buttons, the frame loop and boot). Page-only state (armed card, hover, briefing open and lit line, queued notes, title picks) lives in `ui`, not in loose globals. `render()` draws `SCREENS[R.screen]` (fight, map) or the stage. A file may only run code at load that uses earlier files; later files' functions may be called once the page runs. `npm run typecheck` checks every script with TypeScript (`jsconfig.json`, globals declared in `types/globals.d.ts`); no build step, nothing ships but the scripts. Publish the page with `rules.js`, `styles.css` and every `js/` file.
 - Frame cost (2026-10-29, busy act 3 fight, 11 enemies, on the Mac): about 0.3 ms per frame to draw on desktop and at phone size (2× pixels), 0.1 ms per move preview, 0.6 ms to rebuild the fight panel. No optimisation needed; measure again before optimising.
-- `sim/run4.js check|base|cards|bosses|econ|new [N]`; `BOT=2ply`, `CAD=n`, `SEED=n` (repeatable). The bots live in `sim/bot.js`; `sim/trace4*.js` trace stalled fights with them. Rooms are known by text id (`roomById`); tests add their own with `addRoom`.
+- `sim/run4.js check|base|cards|bosses|econ|new [N]`; `SEED=n` (repeatable); `BOT=2ply` and `CAD=n` for `check` and `cards`; `ONLY=a,b` limits `cards` to those rows. `bosses` tries every card the Recruit doesn't start with. The bots live in `sim/bot.js`; `sim/trace4*.js` trace stalled fights with them. Rooms are known by text id (`roomById`); tests add their own with `addRoom`.
 - `e2e/smoke.e2e.js`: browser smoke tests (Playwright, `npm run test:e2e`), run in CI.
 
 ## Open questions only playtests answer
