@@ -237,7 +237,7 @@ function drawPlinth(g, S) {
   g.fillStyle = grd; rr(ox - pw / 2, B0[1] + pd * 0.22, pw, ph, 3); g.fill();
   g.fillStyle = "#4a3510"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(name, ox, B0[1] + pd * 0.22 + ph / 2 + 1);
 }
-// Walls are toys from the act's room: alphabet blocks, stacked books, toy-box crates.
+// Walls are toys from the act's room: framed tower blocks, stacked books, toy-box crates.
 function drawWall(g, x, y, act, fade) {
   const m = 0.07, sc = rowScale(y + 1), h = tw * 0.62 * sc;
   const a = proj(x + m, y + m), b = proj(x + 1 - m, y + m), c = proj(x + 1 - m, y + 1 - m), d = proj(x + m, y + 1 - m);
@@ -248,15 +248,20 @@ function drawWall(g, x, y, act, fade) {
   const up = p => [p[0], p[1] - h];
   const fw = c[0] - d[0];
   if (act === 1) {
-    const cols = ["#b8433a", "#2f6aa8", "#3f8a4f", "#d9a441"], col = cols[n % 4];
-    quad(d, c, up(c), up(d), col);
-    quad(up(a), up(b), up(c), up(d), "#f3e3c0");
-    const letter = "ABCDEFGHJKLMNOPRSTUVWXYZ"[(x * 7 + y * 13) % 24];
-    g.fillStyle = "#f3e3c0"; g.font = `900 ${Math.round(h * 0.7)}px ${css("--f-display")}`; g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillText(letter, (d[0] + c[0]) / 2, d[1] - h / 2 + 1);
-    g.save(); g.translate((a[0] + c[0]) / 2, (a[1] + c[1]) / 2 - h); g.scale(1, TILT);
-    g.fillStyle = col; g.font = `900 ${Math.round(tw * 0.42 * sc)}px ${css("--f-display")}`; g.fillText("ABCDEFGHJKLMNOPRSTUVWXYZ"[(x * 5 + y * 3 + 4) % 24], 0, 2); g.restore();
-  } else if (act === 2) {
+    // A framed wooden tower block, lower than a soldier so it reads as ground, not as a piece.
+    const hh = tw * 0.5 * sc, upp = p => [p[0], p[1] - hh];
+    const lerp = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+    const ctr = [(a[0] + c[0]) / 2, (a[1] + c[1]) / 2 - hh], inner = p => lerp(upp(p), ctr, 0.24);
+    quad(d, c, upp(c), upp(d), BLOCK.frame);
+    quad([d[0] + fw * 0.09, d[1] - hh * 0.13], [c[0] - fw * 0.09, c[1] - hh * 0.13], [c[0] - fw * 0.09, c[1] - hh * 0.87], [d[0] + fw * 0.09, d[1] - hh * 0.87], BLOCK.woodSide);
+    quad(upp(a), upp(b), upp(c), upp(d), BLOCK.frame);
+    quad(inner(a), inner(b), inner(c), inner(d), BLOCK.wood);
+    g.save(); g.translate(ctr[0], ctr[1]); g.scale(1, TILT); drawTower(g, tw * 0.36 * sc, BLOCK.frame, BLOCK.wood); g.restore();
+    g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 1.1; const ud = upp(d), uc = upp(c); g.beginPath(); g.moveTo(ud[0], ud[1]); g.lineTo(uc[0], uc[1]); g.stroke();
+    g.restore();
+    return;
+  }
+  if (act === 2) {
     const spines = [["#7a2a2a", "#2f4a6b", "#5a6b2f"], ["#2f4a6b", "#8a6420", "#6b2f4a"], ["#3b5a3a", "#7a2a2a", "#2f4a6b"]][n % 3];
     for (let i = 0; i < 3; i++) {
       const y0 = d[1] - h * i / 3, y1 = d[1] - h * (i + 1) / 3, inset = (i % 2 ? 0.03 : -0.01) * fw;
