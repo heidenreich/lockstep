@@ -83,8 +83,10 @@ test("Trapdoor opens a pit beside you for a few turns", () => {
 });
 
 test("Brace: no damage until your next move, rifle shots at the end of the turn included", () => {
-  const F = playCard("brace", 0, 0, F => { const d = put("drone", 5, 3); d.free = true; put("rifle", 8, 3); });
+  // A free drone beside you and a loaded rifle with a clear line down your column.
+  const F = playCard("brace", 0, 0, F => { const d = put("drone", 5, 3); d.free = true; put("rifle", 4, 0); });
   assert.equal(g().run.hp, 8, "the chaser's hit and the shot are both blocked");
+  assert.ok(F.log.some(l => /shoots you, but you're braced/.test(l.msg)), "the rifle fired at you");
   assert.equal(F.brace, true, "still braced until you act");
   g().step(0, 1);
   assert.equal(F.brace, false, "your next move drops it");

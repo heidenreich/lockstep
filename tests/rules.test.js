@@ -611,3 +611,25 @@ test("saved runs: a v2 save's page notes move under fight.ui", () => {
   assert.deepEqual(r.fight.ui, { coach: { step: true }, briefed: true, briefNew: ["contra"] });
   for (const k of ["coach", "briefed", "briefNew"]) assert.ok(!(k in r.fight));
 });
+
+test("the move preview says where a piece would drop: an enemy, and a boss that climbs back out", () => {
+  let F = fight([
+    "Do.....",
+    ".......",
+    "...@..."
+  ]);
+  assert.deepEqual(g.preview(g2 => g2.step(1, 0)).drops, [{ x: 1, y: 0 }]);
+  assert.deepEqual(g.preview(g2 => g2.step(0, 1)).drops, [], "a step with no drop");
+  assert.equal(F.enemies.length, 1, "the preview leaves the real fight alone");
+  F = fight([
+    ".........",
+    "....o....",
+    ".........",
+    "@........",
+    "........."
+  ], { kind: "boss" });
+  put("colossus", 3, 1);
+  const pv = g.preview(g2 => g2.step(1, 0));
+  assert.deepEqual(pv.drops, [{ x: 4, y: 1 }], "the Colossus steps in");
+  assert.equal(pv.dmg, 0);
+});

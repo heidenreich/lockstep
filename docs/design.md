@@ -9,7 +9,7 @@ Decisions (Todd, 2026-10-28): build layer = **move cards**; run = **branching 3-
 - One hand-made room per fight (12 rooms, 7×7 to 11×9: 3 per act plus a boss room each). Each fight turns its room at random: mirrored left-right and/or top-bottom, and square rooms also rotated (`F.orient`; belts turn with the room). Only turns that change the layout count, so symmetric rooms always play as drawn: Belt room has 8, Gatehouse 4, six rooms 2, and Drill square, Spike lanes, Colossus court, Powder store and Warden's yard 1. Each turn: Step (WASD/arrows), wait, or play a card.
 - **Lockstep:** when you Step, every locked drone and heavy tries to move the same way; contrarians move the opposite way. Leaders move first.
 - An enemy that moves into your tile hits you; a locked enemy that ends its move beside you strikes too.
-- Enemies that step into a **pit** die (+gold); you can't fall in (you stop at the edge). Each pit holds 2 per fight (Sapper 3, Deep pits +1), then fills. On the board a pit carries one dot per place, brass while open and dirt once used; the move preview labels a drop "into the pit".
+- Enemies that step into a **pit** die (+gold); you can't fall in (you stop at the edge). Each pit holds 2 per fight (Sapper 3, Deep pits +1), then fills. On the board a pit carries one dot per place, brass while open and dirt once used; the move preview writes "into the pit" on the pit a piece would drop into (bosses included), never on you.
 - Blocked 3 turns in a row (wall, edge, enemy) → the enemy **breaks free** and chases. A chaser 4+ tiles away for 4 turns falls back into step.
 - Waiting: every enemy chases one step and a new enemy arrives.
 - Arrivals: one every 8 turns while 2+ enemies remain, at most 2 per fight.
@@ -33,9 +33,9 @@ Step is always available. Cards are extra actions with **cooldowns** (no draw pi
 | Magnet | You stay; every locked enemy steps 1 toward you | 4 | CD 3 |
 | Recall | Every free enemy falls back into step (in a frenzy, for 4 turns). Room holds | 6 | CD 4 |
 | Trapdoor | Hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
-| Brace | You stay; no damage until your next turn. Room holds | 4 | CD 3 |
+| Brace | You stay; no damage until your next move (a wait or a card counts). Room holds | 4 | CD 3 |
 
-Cooldowns don't carry between fights: every fight starts with the whole hand ready. Brace lasts until your next action, so it also covers the end of the turn (rifle shots, belts, frenzy runs).
+Cooldowns don't carry between fights: every fight starts with the whole hand ready. Brace lasts until your next action, so it also covers the end of the turn (rifle shots, belt rides onto spikes).
 
 Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a full hand replaces a card.
 

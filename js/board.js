@@ -452,7 +452,16 @@ function draw(dt) {
   if (youAt) drawYouBeside(ctx, youAt[0], youAt[1], youAt[2], youAt[3], now, F.turn < 3 || F.kind === "drill", F.p.x >= W - 2);
   // The preview's grease-pencil note, combo banners, particles and numbers sit above the light.
   if (pv && pv.ok) {
-    const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : pv.drops ? "into the pit" : "";
+    // A pit drop is noted on the pit itself, not on you: you never fall in.
+    for (const d of pv.drops.slice(0, 1)) {
+      const [px, py] = at(d.x, d.y);
+      ctx.save(); ctx.translate(px, py - tw * 0.55); ctx.rotate(-0.06);
+      ctx.font = `700 ${Math.round(tw * 0.36)}px ${HAND}`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,250,240,0.85)"; ctx.strokeText("into the pit", 0, 0);
+      ctx.fillStyle = "#7a4e12"; ctx.fillText("into the pit", 0, 0);
+      ctx.restore();
+    }
+    const label = pv.dmg ? `−${pv.dmg}` : pv.chain >= 2 ? `${CHAIN[Math.min(pv.chain, 5)]}!` : pv.over === "win" ? "clears it" : "";
     if (label) {
       const [px, py] = chest(pv.p.x, pv.p.y);
       ctx.save(); ctx.translate(px, py - tw * 0.75); ctx.rotate(-0.06);
