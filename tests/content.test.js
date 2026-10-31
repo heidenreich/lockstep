@@ -82,10 +82,22 @@ test("Trapdoor opens a pit beside you for a few turns", () => {
   assert.ok(g().isPit(5, 3));
 });
 
-test("Brace: no damage this turn", () => {
-  const F = playCard("brace", 0, 0, F => { const d = put("drone", 5, 3); d.free = true; });
-  assert.equal(g().run.hp, 8);
-  assert.equal(F.brace, false, "it lasts the one turn");
+test("Brace: no damage until your next move, rifle shots at the end of the turn included", () => {
+  const F = playCard("brace", 0, 0, F => { const d = put("drone", 5, 3); d.free = true; put("rifle", 8, 3); });
+  assert.equal(g().run.hp, 8, "the chaser's hit and the shot are both blocked");
+  assert.equal(F.brace, true, "still braced until you act");
+  g().step(0, 1);
+  assert.equal(F.brace, false, "your next move drops it");
+});
+
+test("every fight starts with every card ready", () => {
+  const F = playCard("trapdoor", 1, 0);
+  assert.ok(g().run.hand[0].cd > 0);
+  for (const e of [...F.enemies]) g().kill(e, "test");
+  g().endTurn(null);
+  g().fightReward();
+  g().startFight("fight");
+  assert.equal(g().run.hand[0].cd, 0);
 });
 
 test("perks: bump harder, first hit blocked, slower breaks, deeper pits, bigger blasts, spike boots", () => {

@@ -35,6 +35,8 @@ Step is always available. Cards are extra actions with **cooldowns** (no draw pi
 | Trapdoor | Hidden pit on an adjacent tile for 4 turns; chasers walk into it | 6 | CD 4 |
 | Brace | You stay; no damage until your next turn. Room holds | 4 | CD 3 |
 
+Cooldowns don't carry between fights: every fight starts with the whole hand ready. Brace lasts until your next action, so it also covers the end of the turn (rifle shots, belts, frenzy runs).
+
 Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a full hand replaces a card.
 
 **Synergies** (`SYNERGIES`): holding a card and its paired perk turns on a bonus. The first time a pair comes together in a run it's announced; held pairs are marked on the card and the perk outside fights, and an offer says which of your pieces it would pair with.
