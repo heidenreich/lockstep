@@ -1,4 +1,4 @@
-// Lockstep page: the fight screen and the diorama canvas (settings, plinth, walls, tin soldiers, marks, draw loop, title strip).
+// Lockstep page: the fight screen and the diorama canvas (settings, plinth, walls, tin soldiers, marks, the draw loop by layer).
 
 /* ---------- Fight screen & canvas ---------- */
 let cell = 52, parts = [], floats = [], shake = 0, lastFrame = 0;
@@ -315,23 +315,55 @@ function chalkArrow(g, p0, p1, color, w, opts) {
 }
 const tileNoise = (x, y) => (((x * 73856093) ^ (y * 19349663)) >>> 0) % 7;
 
+// The fight frame, drawn back to front: the table and plinth, the painted ground, hazards and pits, the move
+// preview's chalk, your tile, the pieces (walls and kegs among them), then the light and what floats above it.
 function draw(dt) {
   const F = R && R.fight; if (!F) return;
   consumeFX();
+  const ms = performance.now(), now = ms / 1000, act = R.act, S = SETTING[act - 1];
+  easePieces(F, dt, ms);
+  ctx.save();
+  drawCamera(act, S, now, dt);
+  drawGround(S);
+  const R0 = fightRoom(F);
+  drawHazards(R0, now);
+  drawPits(F, R0, S);
+  drawBriefHi(ctx, F, now);
+  const pv = currentPreview();
+  drawPreviewMarks(F, S, pv);
+  drawRifleLanes(F, now);
+  const vp = ui.vis.p || F.p;
+  drawYourTile(vp, now);
+  const youAt = drawPieces(F, R0, act, now, vp);
+  drawFallers(dt);
+  ctx.restore();
+  drawLight(ctx, act, now);
+  if (youAt) drawYouBeside(ctx, youAt[0], youAt[1], youAt[2], youAt[3], now, F.turn < 3 || F.kind === "drill", F.p.x >= W - 2);
+  drawPreviewNotes(pv);
+  drawEffects(dt);
+}
+
+// Pieces glide to where the rules put them.
+function easePieces(F, dt, ms) {
   const k = reduced() ? 1 : 1 - Math.pow(0.0005, dt);
   const target = id => id === "p" ? F.p : F.enemies.find(e => e.id === +id);
-  const ms = performance.now(), now = ms / 1000, act = R.act, S = SETTING[act - 1];
   // Hit-stop freezes movement for a beat; the line ripples, leaders first.
   if (ms >= hitStop) for (const id of Object.keys(ui.vis)) {
     const t = target(id), v = ui.vis[id]; if (!t || (v.delay && ms < v.delay)) continue;
     v.x += (t.x - v.x) * k; v.y += (t.y - v.y) * k;
   }
-  ctx.save();
+}
+
+// The table and its light, camera shake and nudge, and the board's plinth (inside draw()'s ctx.save).
+function drawCamera(act, S, now, dt) {
   ctx.clearRect(0, 0, CW, CH);
   drawSetting(ctx, act, now);
   if (shake > 0.2) { ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake); shake *= Math.pow(0.002, dt); } else shake = 0;
   ctx.translate(nudge.x, nudge.y); nudge.x *= Math.pow(0.0005, dt); nudge.y *= Math.pow(0.0005, dt);
   drawPlinth(ctx, S);
+}
+
+function drawGround(S) {
   // The painted parade ground: two-tone squares, chalk grid, a chalk border.
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { tilePath(ctx, x, y); ctx.fillStyle = (x + y) % 2 ? S.g1 : S.g2; ctx.fill(); }
   ctx.strokeStyle = hexRgba(S.chalk, 0.32); ctx.lineWidth = 1.1; ctx.beginPath();
@@ -340,7 +372,9 @@ function draw(dt) {
   ctx.stroke();
   { const bi = 0.12, q = [proj(bi, bi), proj(W - bi, bi), proj(W - bi, H - bi), proj(bi, H - bi)];
     ctx.strokeStyle = hexRgba(S.chalk, 0.55); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); for (let i = 1; i < 4; i++) ctx.lineTo(q[i][0], q[i][1]); ctx.closePath(); ctx.stroke(); }
-  const R0 = fightRoom(F);
+}
+
+function drawHazards(R0, now) {
   // Hazards painted on the board: ice, spikes, conveyor belts.
   for (const [key, t] of Object.entries(R0.tiles)) {
     const [x, y] = key.split(",").map(Number);
@@ -365,6 +399,9 @@ function draw(dt) {
       ctx.restore();
     }
   }
+}
+
+function drawPits(F, R0, S) {
   // Pits are holes cut in the board; trapdoors have a brass rim and a countdown.
   const pits = [...R0.pits].map(k2 => k2.split(",").map(Number)).concat(F.traps.map(t => [t.x, t.y, t.t]));
   for (const [x, y, tt] of pits) {
@@ -391,9 +428,10 @@ function draw(dt) {
     ctx.restore();
     if (tt != null) { const [cx, cy] = at(x, y); ctx.fillStyle = "#f0c25e"; ctx.font = `700 ${Math.round(tw * 0.34)}px ${HAND}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(tt, cx, cy); }
   }
-  drawBriefHi(ctx, F, now);
+}
+
+function drawPreviewMarks(F, S, pv) {
   // Chalk arrows for the move under the cursor: the room's step, yours in brass, broken ones in red.
-  const pv = currentPreview();
   if (pv && pv.ok) {
     const after = new Map(pv.enemies.map(e => [e.id, e]));
     const aw = Math.max(2.2, tw * 0.055);
@@ -423,6 +461,9 @@ function draw(dt) {
     if (pv.p.x !== F.p.x || pv.p.y !== F.p.y) chalkArrow(ctx, at(F.p.x, F.p.y), at(pv.p.x, pv.p.y), "#f4c25a", aw * 1.35);
     if (pv.dmg) { ctx.save(); tileSpace(ctx, pv.p.x, pv.p.y); ctx.strokeStyle = "#e2483d"; ctx.lineWidth = 0.07; ctx.beginPath(); ctx.ellipse(0, 0, 0.44, 0.44, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
   }
+}
+
+function drawRifleLanes(F, now) {
   // A loaded rifleman's lines of fire: red dashes along its row and column, up to the first wall.
   for (const e of F.enemies) {
     if (!foe(e).rifle || e.load > 0) continue;
@@ -435,14 +476,20 @@ function draw(dt) {
     }
     ctx.restore();
   }
+}
+
+function drawYourTile(vp, now) {
   // Your tile: a brass square with a slow pulse, so you can find yourself at a glance.
-  const vp = ui.vis.p || F.p;
   { const pulse = reduced() ? 0.5 : 0.5 + Math.sin(now * 3) * 0.5;
     ctx.save(); tileSpace(ctx, vp.x, vp.y);
     ctx.fillStyle = `rgba(214,148,30,${0.42 + pulse * 0.16})`; rr(-0.46, -0.46, 0.92, 0.92, 0.1); ctx.fill();
     ctx.strokeStyle = "rgba(90,55,10,0.8)"; ctx.lineWidth = 0.09; rr(-0.46, -0.46, 0.92, 0.92, 0.1); ctx.stroke();
     ctx.strokeStyle = `rgba(255,222,140,${0.75 + pulse * 0.25})`; ctx.lineWidth = 0.04; rr(-0.4, -0.4, 0.8, 0.8, 0.08); ctx.stroke();
     ctx.restore(); }
+}
+
+// Returns where your cadet stands, for the "you" marker drawn above the light.
+function drawPieces(F, R0, act, now, vp) {
   // Pieces, back to front, so nearer rows stand in front of further ones.
   let youAt = null;
   const occupied = new Set(F.enemies.map(e => e.x + "," + e.y).concat([F.p.x + "," + F.p.y]));
@@ -469,6 +516,10 @@ function draw(dt) {
     if (it.p) youAt = [x, drawCadetTin(ctx, x, y, kk, F.pdir, F.brace), y, tw * sc]; else drawUnit(ctx, it.e, x, y, kk, now);
     ctx.restore();
   }
+  return youAt;
+}
+
+function drawFallers(dt) {
   // Enemies toppling into pits: slide to the hole, then tip over and drop out of sight.
   for (const fl of fallers) {
     fl.life -= dt;
@@ -481,9 +532,9 @@ function draw(dt) {
     ctx.restore();
   }
   fallers = fallers.filter(f => f.life > 0);
-  ctx.restore();
-  drawLight(ctx, act, now);
-  if (youAt) drawYouBeside(ctx, youAt[0], youAt[1], youAt[2], youAt[3], now, F.turn < 3 || F.kind === "drill", F.p.x >= W - 2);
+}
+
+function drawPreviewNotes(pv) {
   // The preview's grease-pencil note, combo banners, particles and numbers sit above the light.
   if (pv && pv.ok) {
     // A pit drop is noted on the pit itself, not on you: you never fall in.
@@ -505,6 +556,10 @@ function draw(dt) {
       ctx.restore();
     }
   }
+}
+
+// Particles, shot streaks, floating numbers and combo banners: what lives a moment above the board.
+function drawEffects(dt) {
   for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.9; p.vy *= 0.9; p.life -= dt; ctx.globalAlpha = Math.max(0, p.life * 1.6); ctx.fillStyle = p.color; ctx.fillRect(p.x - 2, p.y - 2, 4, 4); }
   parts = parts.filter(p => p.life > 0);
   for (const s of shots) {
@@ -538,61 +593,6 @@ function draw(dt) {
   }
   banners = banners.filter(b => b.life > 0);
 }
-// Title art: the Recruit steps back and forth and the line copies it; the contrarian mirrors, the heavy moves every
-// other beat, and the end drone marches into a pit, then fades back into its place as the loop restarts.
-const tcv = $("titleCv"), tctx = tcv.getContext("2d");
-const MARCH = [0, 1, 2, 1, 0, -1, -2, -1];
-// The heavy only takes the steps on even beats, so it drifts out of line and back: 1, 1, 0, 0, -1, -1, 0, 0.
-const MARCH_SLOW = [0, 1, 1, 0, 0, -1, -1, 0];
-const TITLE_PIT = [10, 0];
-function drawTitle(t) {
-  const w = tcv.clientWidth; if (!w) return;
-  const cols = 16, rows = 3, s = w / cols, top = s * 0.7, h = top + s * rows * 0.7 + s * 0.2, dpr = window.devicePixelRatio || 1;
-  if (tcv.width !== Math.round(w * dpr)) { tcv.width = Math.round(w * dpr); tcv.height = Math.round(h * dpr); tcv.style.height = h + "px"; }
-  tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  tctx.clearRect(0, 0, w, h);
-  const S = SETTING[0], rowH = s * 0.7;
-  tctx.fillStyle = S.rim; tctx.fillRect(0, top - 4, w, rowH * rows + 8);
-  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) { tctx.fillStyle = (x + y) % 2 ? S.g1 : S.g2; tctx.fillRect(x * s, top + y * rowH, s, rowH); }
-  tctx.strokeStyle = "rgba(255,255,255,0.32)"; tctx.lineWidth = 1;
-  for (let x = 1; x < cols; x++) { tctx.beginPath(); tctx.moveTo(x * s + 0.5, top); tctx.lineTo(x * s + 0.5, top + rowH * rows); tctx.stroke(); }
-  for (let y = 1; y < rows; y++) { tctx.beginPath(); tctx.moveTo(0, top + y * rowH + 0.5); tctx.lineTo(w, top + y * rowH + 0.5); tctx.stroke(); }
-  const beat = t / 0.8, i = Math.floor(beat), raw = beat - i, f = reduced() ? 0 : Math.min(1, raw * 3);
-  const o0 = MARCH[i % 8], o1 = MARCH[(i + 1) % 8], e = f * f * (3 - 2 * f), off = o0 + (o1 - o0) * e, dir = [Math.sign(o1 - o0) || 1, 0];
-  const hop = reduced() ? 0 : Math.sin(f * Math.PI) * s * 0.1, k = s / 104 * 0.95;
-  const slow = MARCH_SLOW[i % 8] + (MARCH_SLOW[(i + 1) % 8] - MARCH_SLOW[i % 8]) * e, b8 = i % 8;
-  // The pit: a hole in the top row that the end drone reaches on the beat the cadet is furthest right.
-  { const [px, py] = TITLE_PIT, x0 = px * s, y0 = top + py * rowH;
-    tctx.fillStyle = S.pitRim; tctx.fillRect(x0 + s * 0.08, y0 + rowH * 0.1, s * 0.84, rowH * 0.8);
-    tctx.fillStyle = "#0b0805"; tctx.fillRect(x0 + s * 0.16, y0 + rowH * 0.2, s * 0.68, rowH * 0.6); }
-  // Your tile under the cadet, as in fights.
-  { const cx = (3 + off) * s, cy = top + rowH; tctx.fillStyle = "rgba(214,148,30,0.55)"; tctx.fillRect(cx + 2, cy + 2, s - 4, rowH - 4);
-    tctx.strokeStyle = "rgba(90,55,10,0.8)"; tctx.lineWidth = 2; tctx.strokeRect(cx + 2, cy + 2, s - 4, rowH - 4); }
-  /** @type {[number, number, string, number, string?][]} x, y, type, beat offset, role */
-  const list = [[4, 0, "drone", off], [6, 0, "drone", off], [8, 0, "drone", off, "faller"], [3, 1, "cadet", off], [13, 1, "contra", -off], [6, 2, "heavy", slow], [10, 2, "drone", off]];
-  let youTop = null;
-  for (const [x, y, type, o, role] of list) {
-    let kk = k, dy = 0, alpha = 1;
-    if (role === "faller") {
-      // Beat 1 carries it onto the pit and it drops; it stays down until it climbs back in on the last beat.
-      if (b8 === 1 && f > 0.5) { const d = (f - 0.5) / 0.5; kk = k * (1 - d * 0.7); dy = d * rowH * 0.35; alpha = 1 - d; }
-      else if (b8 >= 2 && b8 <= 6) continue;
-      else if (b8 === 7) alpha = f;
-    }
-    const look = TIN[type], mirror = (type === "contra" ? -dir[0] : dir[0]) < 0;
-    const bob = type === "heavy" && Math.abs(MARCH_SLOW[(i + 1) % 8] - MARCH_SLOW[i % 8]) === 0 ? 0 : hop;
-    tctx.save(); tctx.globalAlpha = alpha;
-    const tp = tin(tctx, (x + o + 0.5) * s, top + (y + 0.62) * rowH - bob + dy, kk, look, { mirror, ring: type === "cadet" ? "#e0ac45" : null });
-    tctx.restore();
-    if (type === "cadet") youTop = [(x + o + 0.5) * s, tp];
-    if (type === "heavy" && !bob && !reduced()) { tctx.fillStyle = "#fffaf0"; tctx.font = `700 ${Math.round(s * 0.28)}px ${HAND}`; tctx.textAlign = "center"; tctx.fillText("zz", (x + o + 0.85) * s, tp + s * 0.1); }
-  }
-  if (youTop) drawYouMarker(tctx, youTop[0], youTop[1], k, t, false);
-  const vg = tctx.createLinearGradient(0, 0, w, 0);
-  vg.addColorStop(0, hexRgba(C.bg, 0.9)); vg.addColorStop(0.12, hexRgba(C.bg, 0)); vg.addColorStop(0.88, hexRgba(C.bg, 0)); vg.addColorStop(1, hexRgba(C.bg, 0.9));
-  tctx.fillStyle = vg; tctx.fillRect(0, 0, w, h);
-}
-
 /* ---------- Preview cache ---------- */
 let pvVal = null;
 function currentPreview() {
