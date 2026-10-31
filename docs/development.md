@@ -32,6 +32,7 @@ CI runs all four on every PR and push to `main`. Its bot check is shorter (`SEED
 - **Before you push:** `npm test`, `npm run typecheck`, `npm run test:e2e`, and `node sim/run4.js check 30` if you touched the rules. Keep [design.md](design.md) in step with what you changed.
 - **Saved runs:** players' runs are saved in their browser. Their shape is written down in `types/game.d.ts`, and `npm run typecheck` flags any field the code uses that isn't there. If you change the shape of the run (fields on the run, fight, enemies, hand), update `game.d.ts`, bump `RUN_V` in `rules.js` and add the step to `migrateRun`, with a test that loads an old save. Renaming or removing a card, perk, enemy or room id makes old saves unplayable: `migrateRun` then refuses them and the page clears them, so prefer keeping ids.
 - **Rules vs page:** anything that decides what happens in the game belongs in `rules.js` (with a test); `js/` only draws and passes input on.
+- **Numbers in text:** never type a rule's number into text the player reads (How to play, notes, the drill, the briefing). Read it from the rules: a constant (`RELOCK`, `RUN_EVERY`, ...) or, where a perk or the Cadence changes it, the game's function (`breakAt()`, `bumpDamage()`, `frenzyAt()`). How to play marks its numbers with `data-rule` and fills them when it opens.
 
 ### Adding content
 

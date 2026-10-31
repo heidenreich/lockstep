@@ -105,10 +105,10 @@
   <ol class="rules">
     <li><b>The room copies your every move.</b> Step, and every enemy still in step moves the same way. Contrarians move the opposite way.</li>
     <li><b>Steer them into trouble.</b> An enemy that steps into a pit is gone; you stop at the edge. A pit's brass dots count how many more it takes before it fills. Walls, the edge and other pieces stop them.</li>
-    <li><b>Don't get stepped on.</b> An enemy that moves into you, or lands beside you while in step, hits you. Bump an enemy to hit it for 1.</li>
-    <li><b>Blocked 3 turns running, an enemy breaks free</b> and chases you (red tally marks beside its head count the turns). Get 4 tiles away for 4 turns and it falls back into step.</li>
+    <li><b>Don't get stepped on.</b> An enemy that moves into you, or lands beside you while in step, hits you. Bump an enemy to hit it for <span data-rule="bumpDamage">1</span>.</li>
+    <li><b>Blocked <span data-rule="breakAt">3</span> turns running, an enemy breaks free</b> and chases you (red tally marks beside its head count the turns). Get <span data-rule="relock">4</span> tiles away for <span data-rule="relock">4</span> turns and it falls back into step.</li>
     <li><b>Cards break the rule</b>: move without the room, move the room without you, and more. Each one goes on cooldown after use; Step is always free.</li>
-    <li><b>Finish fast.</b> At turn 30 a frenzy frees every enemy. Waiting is a move too, but every enemy chases and a new one arrives.</li>
+    <li><b>Finish fast.</b> At turn <span data-rule="frenzyAt">30</span> a frenzy frees every enemy. Waiting is a move too, but every enemy chases and a new one arrives.</li>
   </ol>
   <div class="eyebrow">The line</div>
   <div class="legend2" id="helpLegend"></div>

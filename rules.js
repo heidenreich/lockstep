@@ -334,6 +334,11 @@ function makeGame(run, opts = {}) {
   // Board size follows the current room.
   function setDims() { if (R && R.fight) { const rm = fightRoom(R.fight); W = rm.w; H = rm.h; } }
   const hasO = id => !!(R && R.orders && R.orders.includes(id));
+  // Numbers a perk or the Cadence changes. The rules use these, and the page's text reads them, so the two can't disagree.
+  const breakAt = () => BREAK + (hasO("steady") ? 1 : 0);              // blocked turns in a row before an enemy breaks free
+  const bumpDamage = () => hasO("bayonet") ? 2 : 1;                    // a bump into an enemy
+  // The turn a fight's frenzy starts: this fight's, or a normal fight's at this Cadence (the drill never has one).
+  const frenzyAt = () => R && R.fight && R.fight.kind !== "drill" ? R.fight.frenzyAt : FRENZY + cadenceFx(R ? R.cad : 0).frenzy;
   const syn = id => hasO(SYNERGIES[id].order) && R.hand.some(c => c.id === SYNERGIES[id].card);
   const synergies = () => R ? Object.keys(SYNERGIES).filter(syn) : [];
   // Announces each synergy the first time it comes together in a run.
@@ -665,7 +670,7 @@ function makeGame(run, opts = {}) {
           if (inB(tx, ty) && roomWall(tx, ty)) bumpWall(tx, ty);
           if (SIM) BLOCKS.push({ id: e.id, dx: vx, dy: vy });
           if (!marching(e) && ++e.blocked >= 1) goalFail("line", `A ${foe(e).name} is blocked.`);
-          if (!marching(e) && e.blocked >= BREAK + (hasO("steady") ? 1 : 0)) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
+          if (!marching(e) && e.blocked >= breakAt()) { e.free = true; e.chased = 0; log(`A ${foe(e).name} breaks step and comes for you.`); goalFail("line", "The line breaks."); }
           break;
         }
         e.x = tx; e.y = ty; e.blocked = 0; e.dir = [vx, vy];
@@ -838,7 +843,7 @@ function makeGame(run, opts = {}) {
   function stepPlayer(dx, dy, dmg) {
     const F = R.fight, tx = F.p.x + dx, ty = F.p.y + dy;
     const e = inB(tx, ty) && enemyAt(tx, ty);
-    if (e) { damage(e, dmg || (hasO("bayonet") ? 2 : 1), "You hit"); return true; }
+    if (e) { damage(e, dmg || bumpDamage(), "You hit"); return true; }
     if (inB(tx, ty) && kegAt(tx, ty)) { explode(tx, ty); return true; }
     if (inB(tx, ty) && !isWall(tx, ty) && !isPit(tx, ty)) { F.p.x = tx; F.p.y = ty; sfx("step"); arrive(F.p, dx, dy); return true; }
     if (inB(tx, ty) && roomWall(tx, ty)) bumpWall(tx, ty);
@@ -1071,6 +1076,7 @@ function makeGame(run, opts = {}) {
   const api = {
     get run() { return R; }, get W() { return W; }, get H() { return H; }, get sim() { return SIM; },
     get profile() { return prof(); },
+    breakAt, bumpDamage, frenzyAt,
     newRun, genMap, openNodes, enterNode, startFight, startDrill, setGoal, spawn, setDims, inB, kegAt, isWall, hazard, beltAt, roomPit,
     trapAt, isPit, enemyAt, alive, floorFree, hasO, syn, synergies, cardPool, unlock, hurtPlayer, hurtSelf, damage, kill, explode, arrive, fall, roomShift, pathField, chaseStep, runTurn, chasersAct, endTurn, sightLine, riflesFire, stepPlayer, step, cardBlock,
     play, preview, fork, falls: () => FALLS, blocks: () => BLOCKS, drainFx, drainSfx, fightReward, takeCard, takeOrder, buyOrder, orderOffer, upgradeCard, upgradeRandom, gainRandomCard, leaveNode, shopPrice, shopStock, makeShop, restock, restHealAmount, restHeal, restUpgrade, buyHeal, buyHp, buyCard, buyUpgrade, endRun, rng, rand, pickOne, shuffle,

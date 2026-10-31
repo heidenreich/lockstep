@@ -660,3 +660,24 @@ test("the drill's step 3 is true: stepping right pins one drone against the towe
   assert.ok(at(6, 0) && at(6, 0).blocked > 0, "the top drone is stopped by the edge");
   assert.ok(!K.fightRoom(F).walls.has(F.p.x + 1 + "," + F.p.y), "the cadet's own row is clear");
 });
+
+test("breakAt, bumpDamage and frenzyAt follow the perks and the Cadence, and the rules use them", () => {
+  newRun("recruit", 0, 1);
+  assert.deepEqual([g.breakAt(), g.bumpDamage(), g.frenzyAt()], [K.BREAK, 1, K.FRENZY]);
+  g.run.orders = ["steady", "bayonet"];
+  assert.deepEqual([g.breakAt(), g.bumpDamage()], [K.BREAK + 1, 2]);
+  newRun("recruit", 2, 1);
+  assert.equal(g.frenzyAt(), K.FRENZY + K.cadenceFx(2).frenzy, "Cadence 2 brings the frenzy sooner");
+  g.startFight("fight");
+  assert.equal(g.frenzyAt(), g.run.fight.frenzyAt, "in a fight it's that fight's turn");
+  // Steady drum: an enemy blocked three times in a row is still in step; the fourth frees it.
+  const F = fight([
+    ".D#....",
+    ".......",
+    "...@..."
+  ], { orders: ["steady"] });
+  for (let i = 0; i < K.BREAK; i++) g.step(1, 0);
+  assert.equal(F.enemies[0].free, false);
+  g.step(1, 0);
+  assert.equal(F.enemies[0].free, true);
+});
