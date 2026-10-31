@@ -213,7 +213,7 @@ const CARDS = {
   trapdoor: { name: "Trapdoor", cd: 6, cdUp: 4, dir: true, text: "Open a hidden pit beside you for 4 turns. Chasers don't see it coming. Room holds.",
     check: (k, F, tx, ty) => k.floorFree(tx, ty) ? "" : "The trapdoor needs an empty tile beside you.",
     play: (k, F, c, dx, dy) => { F.traps.push({ x: F.p.x + dx, y: F.p.y + dy, t: 5 }); k.fx("trap", F.p.x + dx, F.p.y + dy); } },
-  brace: { name: "Brace", cd: 4, cdUp: 3, dir: false, text: "You stay and take no damage this turn. Room holds.",
+  brace: { name: "Brace", cd: 4, cdUp: 3, dir: false, text: "You stay and take no damage until your next move. Room holds.",
     play: (k, F) => { F.brace = true; k.fx("block", F.p.x, F.p.y); } }
 };
 const START_POOL = ["sidestep", "stomp", "doubletime", "aboutface", "lunge", "shove", "trapdoor"];
@@ -441,6 +441,7 @@ function makeGame(run, opts = {}) {
       p: { x: rm.w >> 1, y: rm.h >> 1 }, log: [], over: null, gold: 0, lastHurt: 0, actKills: 0, bestChain: 0,
       iron: hasO("iron"), goal: null, pitKills: 0
     };
+    for (const c of R.hand) c.cd = 0;
     setDims();
     settlePlayer();
     R.screen = "fight";
@@ -714,7 +715,6 @@ function makeGame(run, opts = {}) {
   function endTurn(played) {
     const F = R.fight;
     F.turn++; R.stats.turns++;
-    F.brace = false;
     for (const c of R.hand) if (c !== played && c.cd > 0) c.cd--;
     F.traps = F.traps.filter(t => --t.t > 0);
     // Conveyor belts carry whatever stands on them, front of the belt first.
@@ -831,7 +831,7 @@ function makeGame(run, opts = {}) {
   function step(dx, dy) {
     if (!R || !R.fight || R.fight.over) return false;
     const F = R.fight;
-    F.lastHurt = 0; F.actKills = 0;
+    F.lastHurt = 0; F.actKills = 0; F.brace = false;
     if (dx || dy) F.pdir = [dx, dy];
     if (!dx && !dy) {
       chasersAct(true);
@@ -862,7 +862,8 @@ function makeGame(run, opts = {}) {
     dx = dx || 0; dy = dy || 0;
     if (cardBlock(slot, dx, dy)) return false;
     const F = R.fight, c = R.hand[slot], def = CARDS[c.id];
-    F.lastHurt = 0; F.actKills = 0;
+    // A brace lasts until your next action, so it covers everything at the end of the turn it was played.
+    F.lastHurt = 0; F.actKills = 0; F.brace = false;
     if (dx || dy) F.pdir = [dx, dy];
     sfx("card");
     log(`${def.name}${c.up ? "+" : ""}.`);
