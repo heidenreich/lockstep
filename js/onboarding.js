@@ -5,7 +5,7 @@
 const DRILL_STEPS = [
   { id: "step", text: () => "You're the blue cadet on the brass tile. Take a step: the line copies you.", how: "Arrow keys or WASD, or tap a tile beside you." },
   { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", get how() { return `You can't fall in. Each pit holds ${R.pitHold} per fight (its brass dots), then fills.`; } },
-  { id: "free", text: () => "Step right until a drone is pinned on the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
+  { id: "free", text: () => "Step right until a drone is pinned against the tower block or the edge. At 3 red marks it breaks free and chases you.", how: "A free enemy tilts inside a red scribble." },
   { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
   { id: "clear", text: () => "Now clear the room. Bump an enemy to hit it for 1.", how: `Real fights turn into a frenzy at turn ${FRENZY}.` }
 ];

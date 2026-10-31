@@ -649,3 +649,14 @@ test("the move preview says which enemies a step would block, and which way they
   assert.equal(pv.enemies[0].free, true, "the third block in a row breaks it free, which the preview shows in red");
   assert.equal(d.blocked, 2, "the preview leaves the real fight alone");
 });
+
+test("the drill's step 3 is true: stepping right pins one drone against the tower block and one against the edge", () => {
+  const g2 = K.makeGame(null, { sim: true }); g2.newRun("recruit", 0, 1); g2.startDrill();
+  const F = g2.run.fight;
+  for (let i = 0; i < 2; i++) g2.step(1, 0);  // two steps: each drone reaches its stop, then is blocked once
+  const at = (x, y) => F.enemies.find(e => e.x === x && e.y === y);
+  assert.ok(K.fightRoom(F).walls.has("6,5"), "the tower block sits in the bottom drone's row");
+  assert.ok(at(5, 5) && at(5, 5).blocked > 0, "the bottom drone is stopped by the block");
+  assert.ok(at(6, 0) && at(6, 0).blocked > 0, "the top drone is stopped by the edge");
+  assert.ok(!K.fightRoom(F).walls.has(F.p.x + 1 + "," + F.p.y), "the cadet's own row is clear");
+});
