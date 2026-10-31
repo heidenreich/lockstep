@@ -878,8 +878,8 @@ function makeGame(run, opts = {}) {
 
   // Plays act(g) on a sim fork of this game and reports where everything ends up. The real run is never touched.
   function preview(act) {
-    const g = fork(), ok = act(g), F = g.run.fight;
-    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills };
+    const before = R.fight.pitKills, g = fork(), ok = act(g), F = g.run.fight;
+    return { ok, dmg: F.lastHurt, hp: g.run.hp, p: { ...F.p }, enemies: F.enemies.map(e => ({ id: e.id, x: e.x, y: e.y, free: e.free })), over: F.over, chain: F.actKills, drops: F.pitKills - before };
   }
 
   /* ---------- After the fight ---------- */
