@@ -633,3 +633,19 @@ test("the move preview says where a piece would drop: an enemy, and a boss that 
   assert.deepEqual(pv.drops, [{ x: 4, y: 1 }], "the Colossus steps in");
   assert.equal(pv.dmg, 0);
 });
+
+test("the move preview says which enemies a step would block, and which way they tried to go", () => {
+  const F = fight([
+    ".D#....",
+    ".......",
+    "...@..."
+  ]);
+  const d = F.enemies[0];
+  assert.deepEqual(g.preview(g2 => g2.step(1, 0)).blocks, [{ id: d.id, dx: 1, dy: 0 }], "a wall in the way");
+  assert.deepEqual(g.preview(g2 => g2.step(0, -1)).blocks, [{ id: d.id, dx: 0, dy: -1 }], "the edge counts too");
+  assert.deepEqual(g.preview(g2 => g2.step(-1, 0)).blocks, [], "a free step blocks nothing");
+  d.blocked = 2;
+  const pv = g.preview(g2 => g2.step(1, 0));
+  assert.equal(pv.enemies[0].free, true, "the third block in a row breaks it free, which the preview shows in red");
+  assert.equal(d.blocked, 2, "the preview leaves the real fight alone");
+});
