@@ -144,4 +144,4 @@ The six small bugs listed under the variety pass, fixed on top of the refactor:
 - Abandon run asks first.
 - The Briefing button only shows on the fight screen.
 - Also: the reward screen said "Room cleared" after a boss too (it read the fight, which is gone by then). The reward now carries its own title.
-
+- Map table toys now match the act's walls (tower blocks, two-book stacks, crates, each with the tower mark) instead of A/B/C alphabet blocks and four-colour book stacks, so nothing on the table reads as a key or label.
