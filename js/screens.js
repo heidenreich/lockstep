@@ -33,7 +33,7 @@ const ICONS = {
 const cardIcon = id => `<svg viewBox="0 0 40 40" aria-hidden="true">${ICONS[id] ? ICONS[id]() : ""}</svg>`;
 function cardHTML(c, i, opts) {
   const o = opts || {}, d = CARDS[c.id];
-  const cls = ["card", o.cls || "", c.cd > 0 && o.inFight ? "cooling" : "", o.armed ? "ui.armed" : ""].join(" ");
+  const cls = ["card", o.cls || "", c.cd > 0 && o.inFight ? "cooling" : "", o.armed ? "armed" : ""].join(" ");
   const cd = o.inFight ? (c.cd > 0 ? `${c.cd} turn${c.cd === 1 ? "" : "s"}` : "ready") : `cd ${cardCd(c)}`;
   const key = o.inFight ? `<span class="k">${i + 1}</span>` : "";
   // Upgrade pickers show what drilling the card changes; a disabled pick says why.
@@ -159,8 +159,8 @@ const handPick = (attr, opts) => R.hand.map((c, i) => cardHTML(c, i, Object.assi
 const soldHTML = `<div class="card pick offer sold"><span class="nm">Sold</span></div>`;
 function supplies(sh) {
   const full = R.hp >= R.maxhp ? "Full health" : "";
-  return itemHTML({ attrs: 'data-act="buyHeal"', ico: "heal", name: "Field dressing", text: "Heal 3.", price: `${sh.healPrice} gold`, why: full || needGold(sh.healPrice) })
-    + itemHTML({ attrs: 'data-act="buyHp"', ico: "hp", name: "Rations", text: "+1 maximum health, and heal 1. Each one costs 25 more.", price: `${sh.hpPrice} gold`, why: needGold(sh.hpPrice) });
+  return itemHTML({ attrs: 'data-act="buyHeal"', ico: "heal", name: "Field dressing", text: `Heal ${DRESSING_HEAL}.`, price: `${sh.healPrice} gold`, why: full || needGold(sh.healPrice) })
+    + itemHTML({ attrs: 'data-act="buyHp"', ico: "hp", name: "Rations", text: `+1 maximum health, and heal 1. Each one costs ${RATIONS_STEP} more.`, price: `${sh.hpPrice} gold`, why: needGold(sh.hpPrice) });
 }
 function renderStage() {
   show("sStage");

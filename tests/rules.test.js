@@ -638,6 +638,20 @@ test("a reward screen names what it is", () => {
   assert.equal(g.run.reward.title, "Room cleared");
 });
 
+test("beating the last act's boss wins the run; any earlier boss leads to the next act", () => {
+  newRun("recruit", 0, 5);
+  const toBoss = () => { const k = Object.keys(g.run.map.nodes).find(k => g.run.map.nodes[k].t === "boss"); g.run.pos = k; };
+  for (let act = 1; act < K.ACTS.length; act++) {
+    assert.equal(g.run.act, act);
+    toBoss(); g.leaveNode();
+    assert.equal(g.run.screen, "map");
+  }
+  assert.equal(g.run.act, K.ACTS.length);
+  toBoss(); g.leaveNode();
+  assert.equal(g.run.screen, "end");
+  assert.equal(g.run.end.won, true);
+});
+
 test("quitting mid-fight ends the run as a fall", () => {
   fight(["D....", "..@..", "....."]);
   g.quit();
