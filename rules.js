@@ -264,7 +264,7 @@ const EVENTS = [
 ];
 
 /* ---------- Profile (unlocks only) ---------- */
-const BLANK_PROFILE = { v: 1, runs: 0, wins: 0, deaths: 0, bestAct: 0, beat: {}, chars: { recruit: true }, cards: {}, cad: { recruit: 0 }, drilled: false, seen: {} };
+const BLANK_PROFILE = { v: 1, runs: 0, wins: 0, deaths: 0, bestAct: 0, beat: {}, chars: { recruit: true }, cards: {}, cad: { recruit: 0 }, drilled: false, seen: {}, hats: {}, hat: "shako" };
 const newSeed = () => (Math.random() * 4294967296) >>> 0;
 // Unlocks (meta progression). when(e) says which run event earns it: { beat: boss } after a boss fight, { act: n } on
 // reaching an act, { won: true } on winning a run, { deaths: n } after a fall.
@@ -274,11 +274,18 @@ const UNLOCKS = [
   { what: "Quake (card)", how: "Beat the Colossus", kind: "card", id: "quake", label: "Quake", when: e => e.beat === "colossus" },
   { what: "Magnet (card)", how: "Reach act 2", kind: "card", id: "magnet", label: "Magnet", when: e => e.act === 2 },
   { what: "Recall (card)", how: "Beat the Mirror", kind: "card", id: "recall", label: "Recall", when: e => e.beat === "mirror" },
-  { what: "Brace (card)", how: "Fall three times", kind: "card", id: "brace", label: "Brace", when: e => e.deaths >= 3 }
+  { what: "Brace (card)", how: "Fall three times", kind: "card", id: "brace", label: "Brace", when: e => e.deaths >= 3 },
+  { what: "Acorn cap (hat)", how: "Beat the Colossus", kind: "hat", id: "acorn", label: "the acorn cap", when: e => e.beat === "colossus" },
+  { what: "Paper boat (hat)", how: "Beat the Mirror", kind: "hat", id: "paperboat", label: "the paper boat hat", when: e => e.beat === "mirror" },
+  { what: "Thimble (hat)", how: "Win a run", kind: "hat", id: "thimble", label: "the thimble", when: e => e.won },
+  { what: "Bottle cap (hat)", how: "Win a run at Cadence 3 or higher", kind: "hat", id: "bottlecap", label: "the bottle cap", when: e => e.won && e.cad >= 3 }
 ];
-for (const u of UNLOCKS) u.has = p => !!(u.kind === "char" ? p.chars : p.cards)[u.id];
+// Hats your cadet can wear (the profile's hat): the shako, then the ones UNLOCKS hands out. Drawn in js/art.js.
+const HATS = ["shako", ...UNLOCKS.filter(u => u.kind === "hat").map(u => u.id)];
+const unlockBag = (p, kind) => kind === "char" ? p.chars : kind === "hat" ? p.hats : p.cards;
+for (const u of UNLOCKS) u.has = p => !!unlockBag(p, u.kind)[u.id];
 const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)), d, {
-  chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen)
+  chars: Object.assign({ recruit: true }, d.chars), cards: Object.assign({}, d.cards), cad: Object.assign({ recruit: 0 }, d.cad), beat: Object.assign({}, d.beat), seen: Object.assign({}, d.seen), hats: Object.assign({}, d.hats)
 });
 
 /* ---------- Saved runs ---------- */
@@ -366,7 +373,7 @@ function makeGame(run, opts = {}) {
     return hits.length > 0;
   }
   function unlock(kind, id, label) {
-    const P = prof(), bag = kind === "char" ? P.chars : P.cards;
+    const P = prof(), bag = unlockBag(P, kind);
     if (bag[id]) return;
     bag[id] = true;
     if (kind === "char" && P.cad[id] == null) P.cad[id] = 0;
@@ -1070,7 +1077,7 @@ function makeGame(run, opts = {}) {
     if (won) {
       prof().wins++;
       prof().beat[BOSSES[BOSSES.length - 1]] = true;
-      earn({ won: true });
+      earn({ won: true, cad: R.cad });
       prof().cad[R.char] = Math.max(prof().cad[R.char] || 0, Math.min(5, R.cad + 1));
     } else {
       prof().deaths++;
@@ -1101,7 +1108,7 @@ const nodeModule = typeof module === "object" && module.exports ? module : null;
 if (nodeModule) {
   nodeModule.exports = {
     makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
-    roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS,
+    roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS, HATS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };
 }

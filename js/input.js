@@ -83,6 +83,7 @@ $("pad").addEventListener("mouseleave", () => { ui.hover = null; });
 $("hand").addEventListener("click", ev => { const b = ev.target.closest("button[data-slot]"); if (b) { arm(+b.dataset.slot); b.blur(); } });
 
 $("chars").addEventListener("click", ev => { const b = ev.target.closest("[data-char]"); if (b && !b.disabled) { ui.pickChar = b.dataset.char; renderTitle(); } });
+$("hats").addEventListener("click", ev => { const b = ev.target.closest("[data-hat]"); if (b && !b.disabled) { P.hat = b.dataset.hat; saveProfile(); renderTitle(); } });
 $("cads").addEventListener("click", ev => { const b = ev.target.closest("[data-cad]"); if (b && !b.disabled) { ui.pickCad = +b.dataset.cad; renderTitle(); } });
 $("startBtn").addEventListener("click", () => { startRun(ui.pickChar, ui.pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
 $("resumeBtn").addEventListener("click", resumeRun);

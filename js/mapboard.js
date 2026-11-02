@@ -85,7 +85,7 @@ function drawMap(t) {
   // Your cadet stands at the back of your space (or on the starting square), with the board's brass "you".
   const here = R.pos ? m.nodes[R.pos] : null, hx = here ? mapX(here.c) : MAP_START.x, hy = here ? mapY(here.r) - 7 : MAP_START.y - 5;
   const bob = reduced() ? 0 : Math.abs(Math.sin(t * 2.4)) * 2.5;
-  const top = tin(g, hx, hy - bob, 0.42, TIN.cadet, { ring: "#e0ac45", drum: R.char === "drummer", spade: R.char === "sapper" });
+  const top = tin(g, hx, hy - bob, 0.42, youLook(), { ring: "#e0ac45", drum: R.char === "drummer", spade: R.char === "sapper" });
   drawYouBeside(g, hx, top, hy, 52, t, true, hx > 300);
 }
 // A small painted name tag under a space.

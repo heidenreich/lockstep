@@ -86,6 +86,7 @@ h3 { font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-sp
 .cad button { background: var(--panel2); border: 1px solid var(--chalk); border-radius: 8px; padding: 6px 12px; font-family: var(--f-mono); font-size: 13px; }
 .cad button.on { border-color: var(--brass); color: var(--brass); }
 .cad button:disabled { opacity: .35; cursor: default; }
+.hatcv { width: 60px; height: 75px; }
 .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; align-items: start; }
 .unlocks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
 .unlocks li { display: flex; gap: 8px; align-items: baseline; }

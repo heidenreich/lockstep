@@ -48,6 +48,7 @@ Each kind of content lives in one table in `rules.js`; the page reads its text f
 | A perk | `ORDERS` (name, text), then its effect where it applies (`hasO("id")`) | a case in `tests/content.test.js` |
 | A bonus | `GOALS`, then its check in `endTurn` | |
 | An unlock | `UNLOCKS`: what it unlocks and `when(e)` it's earned | |
+| A hat | `UNLOCKS` with `kind: "hat"` (it joins `HATS`) | its drawing in `tin()` (`js/art.js`): toy-room, shako-sized, no enemy colour |
 | A Cadence level | `CADENCE`: text and effect fields (see `cadenceFx`) | |
 
 ## Hosting

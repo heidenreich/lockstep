@@ -158,7 +158,7 @@ function tin(g, x, y, k, look, o) {
     E_(x - 2.6 * k, L - 58.5 * k, 1.1 * k, 1.1 * k, "#1b1b1b"); E_(x + 2.6 * k, L - 58.5 * k, 1.1 * k, 1.1 * k, "#1b1b1b");
     E_(x - 4.3 * k, L - 55.5 * k, 1.8 * k, 1.8 * k, "rgba(226,128,111,0.6)"); E_(x + 4.3 * k, L - 55.5 * k, 1.8 * k, 1.8 * k, "rgba(226,128,111,0.6)");
   }
-  // Hats: shako (the line and you), bearskin (heavies), bicorne worn sideways (contrarians), Jäger hat with a feather
+  // Hats: shako (the line and you, unless you wear a toy hat from HATS), bearskin (heavies), bicorne worn sideways (contrarians), Jäger hat with a feather
   // (riflemen), busby with a hanging bag (hussars), crested helmet (anchors), spiked helmet (the Warden).
   const P_ = (pts, fill) => { g.fillStyle = fill; g.beginPath(); pts.forEach(([px, py], i) => i ? g.lineTo(x + px * k, L - py * k) : g.moveTo(x + px * k, L - py * k)); g.closePath(); g.fill(); };
   const hat = look.hat || (look.bear ? "bear" : "shako");
@@ -195,6 +195,34 @@ function tin(g, x, y, k, look, o) {
     if (!back) E_(x, L - 69 * k, 3.4 * k, 3.4 * k, "#e0ac45");
     E_(x + 8 * k, L - 72 * k, 2.4 * k, 4.5 * k, look.plume);
     R_(x - 9.5 * k, L - 63.5 * k, 19 * k, 2 * k, 1 * k, "#0e0e10");
+  } else if (hat === "thimble") {
+    // A silver sewing thimble worn as a helmet: dimpled dome, rolled rim.
+    R_(x - 7.5 * k, L - 79 * k, 15 * k, 16 * k, 7 * k, "#c9ced6");
+    R_(x - 7.5 * k, L - 72 * k, 15 * k, 9 * k, 0, "#c9ced6");
+    for (let r = 0; r < 3; r++) for (let c = -1; c <= 1; c++) E_(x + (c * 4 + (r % 2) * 2 - 1) * k, L - (75 - r * 4) * k, 0.9 * k, 0.9 * k, "#8a919b");
+    E_(x - 3.5 * k, L - 76 * k, 1.6 * k, 3 * k, "rgba(255,255,255,0.7)");
+    E_(x, L - 63.5 * k, 8.8 * k, 2.2 * k, "#9aa1ab");
+  } else if (hat === "paperboat") {
+    // A hat folded from newspaper: a wide cream triangle, one fold in shade, a few lines of print, a turned-up band.
+    P_([[-13, 66], [13, 66], [0, 82]], "#efe6cf");
+    P_([[0, 82], [13, 66], [6, 66]], "#d9ceb2");
+    g.strokeStyle = "rgba(60,55,45,0.5)"; g.lineWidth = 0.7 * k;
+    for (const [x0, x1, py] of [[-3, 1, 77], [-6, 0, 73.5], [-8, 2, 70]]) { g.beginPath(); g.moveTo(x + x0 * k, L - py * k); g.lineTo(x + x1 * k, L - py * k); g.stroke(); }
+    R_(x - 13.5 * k, L - 67 * k, 27 * k, 4.5 * k, 0.8 * k, "#e2d8bc");
+    g.fillStyle = "rgba(60,55,45,0.4)"; g.fillRect(x - 10 * k, L - 65.3 * k, 7 * k, 0.8 * k); g.fillRect(x + 2 * k, L - 65.3 * k, 8 * k, 0.8 * k);
+  } else if (hat === "bottlecap") {
+    // A brass bottle cap, crimped skirt down, worn like a pillbox.
+    R_(x - 8.5 * k, L - 73 * k, 17 * k, 8 * k, 1 * k, "#c9962f");
+    for (let i = 0; i < 7; i++) P_([[-8.5 + i * 17 / 7, 65], [-8.5 + (i + 0.5) * 17 / 7, 62.6], [-8.5 + (i + 1) * 17 / 7, 65]], "#c9962f");
+    g.strokeStyle = "#8a6420"; g.lineWidth = 0.9 * k;
+    for (let i = 1; i < 7; i++) { g.beginPath(); g.moveTo(x + (-8.5 + i * 17 / 7) * k, L - 72 * k); g.lineTo(x + (-8.5 + i * 17 / 7) * k, L - 65.5 * k); g.stroke(); }
+    E_(x, L - 73 * k, 8.5 * k, 2.6 * k, "#f0c25e"); E_(x, L - 73 * k, 5.5 * k, 1.5 * k, "#e0ac45");
+  } else if (hat === "acorn") {
+    // An acorn cup: a scaly brown dome with its little stalk.
+    E_(x, L - 67 * k, 9.5 * k, 8 * k, "#7a5530");
+    R_(x - 9.5 * k, L - 67 * k, 19 * k, 4 * k, 0, "#7a5530");
+    for (let r = 0; r < 3; r++) for (let c = -2; c <= 2; c++) if (Math.abs(c) + r < 4) E_(x + (c * 3.4 + (r % 2) * 1.7) * k, L - (65.5 + r * 3.4) * k, 1.5 * k, 1 * k, "#5e3f22");
+    g.strokeStyle = "#5e3f22"; g.lineWidth = 2 * k; g.lineCap = "round"; g.beginPath(); g.moveTo(x, L - 74 * k); g.quadraticCurveTo(x + 1 * k, L - 80 * k, x + 4 * k, L - 82 * k); g.stroke();
   } else {
     R_(x - 7.5 * k, L - 80 * k, 15 * k, 17 * k, 1.5 * k, "#18181b");
     E_(x, L - 80 * k, 7.5 * k, 2.5 * k, "#2c2c33");
@@ -204,6 +232,9 @@ function tin(g, x, y, k, look, o) {
   g.restore();
   return L - 90 * k;
 }
+
+// Your cadet as the profile dresses it: the hat picked on the title screen, if it's been earned.
+const youLook = () => P.hat && P.hat !== "shako" && P.hats[P.hat] ? Object.assign({}, TIN.cadet, { hat: P.hat }) : TIN.cadet;
 
 /* ---------- Markers and props ---------- */
 // A brass chevron bobbing over your cadet; early in a fight (and all through the drill) it carries a "you" tag.
