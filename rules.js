@@ -7,6 +7,10 @@ const BREAK = 3, RELOCK = 4, FRENZY = 30, ARRIVE_EVERY = 8, MAX_ARRIVALS = 2;
 const RUN_EVERY = 3, RECALL_HOLD = 4;
 // A boss fight that reaches turn ENRAGE: the boss's line breaks free and help arrives every ENRAGE_EVERY turns.
 const ENRAGE = 30, ENRAGE_EVERY = 3;
+// A boss that falls into a pit takes BOSS_PIT_DMG and climbs out; the Mirror flips the line for FLIP_TURNS turns after every FLIP_EVERY.
+const BOSS_PIT_DMG = 3, FLIP_EVERY = 5, FLIP_TURNS = 5;
+// Shop supplies: Field dressing heals DRESSING_HEAL; Rations cost RATIONS_PRICE, plus RATIONS_STEP for each bought this run.
+const DRESSING_HEAL = 3, RATIONS_PRICE = 45, RATIONS_STEP = 25;
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 // Rooms are drawn as text: # wall, o pit, ~ ice, ^ spikes, K powder keg, > < v A conveyor belts.
 const BELT = { ">": [1, 0], "<": [-1, 0], "v": [0, 1], "A": [0, -1] };
@@ -43,8 +47,6 @@ const ROOM_BY_ID = new Map(ROOMS.map(r => [r.id, r]));
 const roomById = id => ROOM_BY_ID.get(id);
 // Tests and tools can add rooms of their own.
 const addRoom = rm => { ROOM_BY_ID.set(rm.id, rm); return rm; };
-// ACT_ROOMS and BOSS_ROOMS are filled in from ACTS (below).
-let ACT_ROOMS, BOSS_ROOMS;
 // Each fight turns its room: mirrored either way, and square rooms rotated too. Only turns that change the layout count.
 // F.orient bits: 1 flips x, 2 flips y, 4 swaps x and y (square rooms only). 0 is the room as drawn.
 const ORIENTS = new Map();
@@ -93,7 +95,7 @@ const FOES = {
   colossus: { name: "Colossus", hp: 8, dmg: 2, boss: true, slow: true, adds: "drone", addEvery: 6, addN: 1,
     rule: "A giant heavy that hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns." },
   mirror: { name: "Mirror", hp: 9, dmg: 1, boss: true, contra: true, seals: true, flips: true, adds: "contra", addEvery: 7, addN: 1,
-    rule: "A giant contrarian. Every 5 turns it flips direction: for 5 turns everyone moves the opposite way. It seals any pit it climbs out of." },
+    rule: `A giant contrarian. Every ${FLIP_EVERY} turns it flips direction: for ${FLIP_TURNS} turns everyone moves the opposite way. It seals any pit it climbs out of.` },
   warden: { name: "Warden", hp: 12, dmg: 2, boss: true, slow: true, chaser: true, march: true, adds: "drone", addEvery: 7, addN: 2,
     rule: "Hits for 2. It chases you every other turn and copies your step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns." }
 };
@@ -108,7 +110,6 @@ const ACTS = [
     roster: ["drone", "drone", "contra", "contra", "heavy", "heavy", "heavy", "rifle", "rifle"], elites: [["runner", "anchor"], ["runner", "anchor"]] }
 ];
 const BOSSES = ACTS.map(a => a.boss);
-ACT_ROOMS = ACTS.map(a => a.rooms); BOSS_ROOMS = ACTS.map(a => a.bossRoom);
 // Riflemen stand their ground and fire along their row and column once loaded; the first thing in the way takes the shot.
 const RELOAD = 2;
 // Every non-boss room comes with a bonus order (Into the Breach style).
@@ -458,7 +459,7 @@ function makeGame(run, opts = {}) {
     const rm = fightRoom({ room: roomId, orient });
     R.fight = {
       kind, room: roomId, orient: orient || 0, turn: 0, arrivals: 0, pitFill: {}, traps: [], kegs: [...rm.kegs], frenzy: false,
-      frenzyAt: FRENZY + cadenceFx(R.cad).frenzy, flip: 0, flipIn: 5, brace: false, enemies: [], nextId: 1,
+      frenzyAt: FRENZY + cadenceFx(R.cad).frenzy, flip: 0, flipIn: FLIP_EVERY, brace: false, enemies: [], nextId: 1,
       p: { x: rm.w >> 1, y: rm.h >> 1 }, log: [], over: null, gold: 0, lastHurt: 0, actKills: 0, bestChain: 0,
       iron: hasO("iron"), goal: null, pitKills: 0
     };
@@ -632,8 +633,8 @@ function makeGame(run, opts = {}) {
     if (SIM) FALLS.push({ x, y });
     if (hasO("sappers")) for (const c of R.hand) if (c.cd > 0) c.cd--;
     if (foe(e).boss) {
-      e.hp -= 3;
-      log(`The ${foe(e).name} plunges into a pit. −3`);
+      e.hp -= BOSS_PIT_DMG;
+      log(`The ${foe(e).name} plunges into a pit. −${BOSS_PIT_DMG}`);
       if (e.hp <= 0) { kill(e, `The ${foe(e).name} doesn't climb out.`); return; }
       if (foe(e).seals && roomPit(x, y)) { (F.sealed = F.sealed || []).push(x + "," + y); log(`The ${foe(e).name} shatters the pit on its way out.`); }
       const c = edgeTile(3); if (c) { e.x = c.x; e.y = c.y; } e.blocked = 0;
@@ -774,7 +775,7 @@ function makeGame(run, opts = {}) {
     const boss = F.enemies.find(e => foe(e).boss);
     if (boss && foe(boss).flips) {
       if (F.flip > 0) { if (--F.flip === 0) log("The Mirror settles. Everyone moves the usual way again."); }
-      else if (--F.flipIn <= 0) { F.flip = 5; F.flipIn = 5; log("The Mirror flips direction: for 5 turns, everyone moves the opposite way."); }
+      else if (--F.flipIn <= 0) { F.flip = FLIP_TURNS; F.flipIn = FLIP_EVERY; log(`The Mirror flips direction: for ${FLIP_TURNS} turns, everyone moves the opposite way.`); }
     }
     if (F.kind === "boss" && boss) {
       // After turn 30 the boss enrages and calls help every 3 turns, so a boss fight can't be stalled.
@@ -1006,7 +1007,7 @@ function makeGame(run, opts = {}) {
   function leaveNode() {
     // After the boss: next act or victory.
     if (R.map.nodes[R.pos] && R.map.nodes[R.pos].t === "boss") {
-      if (R.act >= 3) return endRun(true);
+      if (R.act >= ACTS.length) return endRun(true);
       R.act++; R.map = genMap(R.act); R.pos = null; R.walked = [];
       if (earn({ act: R.act })) save();
     }
@@ -1023,7 +1024,7 @@ function makeGame(run, opts = {}) {
     };
   }
   function makeShop() {
-    return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(45 + 25 * (R.rations || 0)), restockPrice: shopPrice(15), pending: null });
+    return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(RATIONS_PRICE + RATIONS_STEP * (R.rations || 0)), restockPrice: shopPrice(15), pending: null });
   }
   // Restock: new cards and a new perk, for a price that rises each time in this shop.
   function restock() {
@@ -1047,13 +1048,13 @@ function makeGame(run, opts = {}) {
   function buyHeal() {
     const sh = R.shop;
     if (R.gold < sh.healPrice || R.hp >= R.maxhp) return false;
-    R.gold -= sh.healPrice; R.hp = Math.min(R.maxhp, R.hp + 3);
+    R.gold -= sh.healPrice; R.hp = Math.min(R.maxhp, R.hp + DRESSING_HEAL);
     return true;
   }
   function buyHp() {
     const sh = R.shop;
     if (R.gold < sh.hpPrice) return false;
-    R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; R.rations = (R.rations || 0) + 1; sh.hpPrice = shopPrice(45 + 25 * R.rations);
+    R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; R.rations = (R.rations || 0) + 1; sh.hpPrice = shopPrice(RATIONS_PRICE + RATIONS_STEP * R.rations);
     return true;
   }
   // Buys shop card idx. With a full hand it needs a slot to replace: without one it marks the card pending and returns false.
@@ -1107,7 +1108,7 @@ function makeGame(run, opts = {}) {
 const nodeModule = typeof module === "object" && module.exports ? module : null;
 if (nodeModule) {
   nodeModule.exports = {
-    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, DIRS, BELT, ROOMS, roomById, addRoom, ACT_ROOMS, BOSS_ROOMS, RUN_V, migrateRun,
+    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, BOSS_PIT_DMG, FLIP_EVERY, FLIP_TURNS, DRESSING_HEAL, RATIONS_PRICE, RATIONS_STEP, DIRS, BELT, ROOMS, roomById, addRoom, RUN_V, migrateRun,
     roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS, HATS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };

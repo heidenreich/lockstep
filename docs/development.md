@@ -44,7 +44,7 @@ Each kind of content lives in one table in `rules.js`; the page reads its text f
 | An enemy | `FOES`: stats, flags, `rule` (briefing and first-time note), `look` (How to play) | its tin soldier in `TIN` (`js/art.js`); add it to an act's `roster` or `elites` |
 | A boss | `FOES` with `boss`, `adds`, `addEvery`, `addN` and any twist flags; an act's `boss` and `bossRoom` in `ACTS` | its tin soldier in `TIN` (`js/art.js`); unlocks it earns in `UNLOCKS` |
 | A room | `ROOMS`: `room(id, name, rows)`, then list its id in an act's `rooms` | nothing else: walls, pits and hazards are drawn from the text |
-| An act | `ACTS`: name, rooms, boss, roster, elites | its look: one entry in `ACT_ART` (`js/art.js`): board colours, map table, wall name and page theme |
+| An act | `ACTS`: name, rooms, boss, roster, elites | its look: an entry in `ACT_ART` (`js/art.js`: board colours, map table, wall name and page theme), plus the act's branches in the drawing code, which picks some looks by act number: walls and setting in `js/board.js`, table and toys in `js/mapboard.js`, the briefing in `js/briefing.js` and `body[data-act]` in `styles.css`. Without them a new act borrows act 3's look in some places |
 | A perk | `ORDERS` (name, text), then its effect where it applies (`hasO("id")`) | a case in `tests/content.test.js` |
 | A bonus | `GOALS`, then its check in `endTurn` | |
 | An unlock | `UNLOCKS`: what it unlocks and `when(e)` it's earned | |

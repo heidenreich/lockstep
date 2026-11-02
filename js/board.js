@@ -120,7 +120,7 @@ function burst(x, y, color, n, inward) {
   }
 }
 
-function rr(x, y, w, h, r) { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function rr(x, y, w, h, r) { rrect(ctx, x, y, w, h, r); }
 
 // Marks above a piece: health as a brass bar, blocked turns as red tally strokes beside the head, sleeping heavies.
 function tinMarks(g, e, x, top, k) {

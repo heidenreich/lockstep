@@ -149,3 +149,14 @@ The six small bugs listed under the variety pass, fixed on top of the refactor:
 ## Wild hats (2026-11-02)
 
 Your cadet can wear a toy hat instead of the shako: acorn cap, paper boat, thimble, bottle cap, each earned like an unlock and picked on the title screen with a preview. Looks only. Every military hat already says which enemy a piece is, so the toy ones can't be mistaken for one; they keep to the shako's size because height helps read rows. The run-won event now carries the Cadence (`earn({ won, cad })`) for the bottle cap.
+
+## Code review quick fixes (2026-11-02)
+
+Two read-only reviews (architecture, code structure) found the code sound; the small fixes from them:
+
+- An armed card never highlighted: the card got the class `ui.armed` instead of `armed`, so its styles never applied.
+- The run ended after act 3 by a typed 3; it now ends after the last entry in `ACTS`, with a test.
+- Rule numbers typed into code and text are named and read from the rules: `BOSS_PIT_DMG`, `FLIP_EVERY`/`FLIP_TURNS` (the Mirror's text and logs), `DRESSING_HEAL`, `RATIONS_PRICE`/`RATIONS_STEP` (shop text).
+- Removed the unused `ACT_ROOMS`/`BOSS_ROOMS`; the board's rounded-rect helper reuses `rrect`; kit.js's load order lists `title`; development.md now says where a new act's look lives.
+- Left for when content needs them: act looks as data, boss and bonus turn hooks like cards have, hats as a table, splitting `endTurn`, saving the run from the rules instead of on render.
+

@@ -1,6 +1,6 @@
 // Lockstep page: small helpers every page script uses, the page's shared UI state, and the screen registry.
 // The page's classic scripts share one global scope and load in this order (index.html): rules.js, then kit, art,
-// store, audio, screens, onboarding, briefing, board, mapboard, input. Code that runs at load may only use earlier
+// store, audio, screens, onboarding, briefing, board, title, mapboard, input. Code that runs at load may only use earlier
 // files; later files' functions may be called once the page is running (from handlers, render and the frame loop).
 
 /* ---------- Helpers ---------- */
