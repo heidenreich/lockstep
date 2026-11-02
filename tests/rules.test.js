@@ -593,6 +593,51 @@ test("an event's choice is played, then the run moves on to the map", () => {
   assert.equal(g.chooseEvent(0), false, "not on an event any more");
 });
 
+test("Take the orders with a full hand asks which card to replace", () => {
+  newRun("recruit", 0, 5);
+  const i = K.EVENTS.findIndex(e => e.title === "An abandoned kit");
+  while (g.run.hand.length < g.run.slots) g.run.hand.push({ id: "lunge", cd: 0, up: false });
+  const hand = JSON.stringify(g.run.hand);
+  g.run.screen = "event"; g.run.event = i;
+  assert.equal(g.chooseEvent(1), true);  // Take the orders
+  assert.equal(g.run.screen, "reward");
+  assert.equal(JSON.stringify(g.run.hand), hand, "nothing replaced yet");
+  const id = g.run.reward.pending;
+  assert.ok(K.CARDS[id]);
+  assert.equal(g.run.reward.title, "New orders");
+  g.takeCard(id, 0);
+  assert.equal(g.run.hand[0].id, id);
+  g.leaveNode();
+  assert.equal(g.run.screen, "map");
+});
+
+test("Rations get dearer across the whole run, not per shop", () => {
+  newRun("recruit", 0, 5);
+  g.run.gold = 500;
+  g.run.shop = g.makeShop();
+  assert.equal(g.run.shop.hpPrice, 45);
+  assert.equal(g.buyHp(), true);
+  assert.equal(g.run.shop.hpPrice, 70);
+  g.run.shop = g.makeShop();
+  assert.equal(g.run.shop.hpPrice, 70, "the next shop remembers");
+  assert.equal(g.buyHp(), true);
+  assert.equal(g.run.shop.hpPrice, 95);
+});
+
+test("Into the pits is only offered with enough enemies to do it", () => {
+  for (let seed = 1; seed <= 60; seed++) {
+    newRun("recruit", 0, seed); g.startFight("fight");
+    const F = g.run.fight;
+    if (F.goal.id === "pits") assert.ok(F.enemies.length >= K.GOALS.pits.need, `seed ${seed}`);
+  }
+});
+
+test("a reward screen names what it is", () => {
+  newRun("recruit", 0, 5); g.startFight("fight");
+  g.run.fight.over = "win"; g.fightReward();
+  assert.equal(g.run.reward.title, "Room cleared");
+});
+
 test("quitting mid-fight ends the run as a fall", () => {
   fight(["D....", "..@..", "....."]);
   g.quit();

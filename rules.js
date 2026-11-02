@@ -254,7 +254,7 @@ const EVENTS = [
            { label: "Decline", text: "Nothing happens.", go: () => {} }] },
   { title: "An abandoned kit", text: "Someone left their pack by the barracks door.",
     opts: [{ label: "Take the coin", text: "Gain 35 gold.", go: g => { g.run.gold += 35; } },
-           { label: "Take the orders", text: "Gain a random card.", go: g => g.gainRandomCard() }] },
+           { label: "Take the orders", text: "Gain a random card.", go: g => g.gainRandomCard(true) }] },
   { title: "The field medic", text: "A medic waves you over to the tent.",
     opts: [{ label: "Get patched up", text: "Heal 4.", go: g => { g.run.hp = Math.min(g.run.maxhp, g.run.hp + 4); } },
            { label: "Get conditioned", text: "+1 maximum health.", go: g => { g.run.maxhp += 1; g.run.hp += 1; } }] },
@@ -477,6 +477,7 @@ function makeGame(run, opts = {}) {
       spawn("contra");
       for (let i = 1; i < n; i++) spawn(pickOne(A.roster));
       log(`${rm.name}. ${F.enemies.length} enemies.`);
+      if (F.goal.id === "pits" && F.enemies.length < GOALS.pits.need) setGoal(pickOne(Object.keys(GOALS).filter(id => id !== "pits")));
     }
     R.stats.fights++;
   }
@@ -915,7 +916,7 @@ function makeGame(run, opts = {}) {
     const offer = shuffle(cardPool().filter(id => !owned.has(id))).slice(0, 3);
     const orders = kind === "boss" ? orderOffer(3) : [];
     const goal = F.goal ? { id: F.goal.id, ok: !!F.goal.paid } : null;
-    R.reward = { gold, cards: offer, upgrade: kind === "elite" || kind === "boss", pending: null, took: false, orders, tookOrder: false, goal };
+    R.reward = { title: kind === "boss" ? "Boss down" : "Room cleared", gold, cards: offer, upgrade: kind === "elite" || kind === "boss", pending: null, took: false, orders, tookOrder: false, goal };
     if (hasO("medic")) R.hp = Math.min(R.maxhp, R.hp + 1);
     if (kind === "boss") {
       const b = BOSSES[R.act - 1];
@@ -971,7 +972,8 @@ function makeGame(run, opts = {}) {
   function chooseEvent(i) {
     const opt = R.screen === "event" && EVENTS[R.event] && EVENTS[R.event].opts[i];
     if (!opt) return false;
-    opt.go(api); leaveNode();
+    opt.go(api);
+    if (R.screen === "event") leaveNode();  // a choice can open a screen of its own (New orders)
     return true;
   }
   // Abandon the run: it ends as a fall.
@@ -981,10 +983,17 @@ function makeGame(run, opts = {}) {
     endRun(false);
   }
   function upgradeRandom() { const c = shuffle(R.hand.filter(c => !c.up))[0]; if (c) c.up = true; }
-  function gainRandomCard() {
+  // ask: with a full hand, open a reward screen that asks which card to replace instead of replacing one at random.
+  function gainRandomCard(ask) {
     const owned = new Set(R.hand.map(c => c.id)), id = pickOne(cardPool().filter(i => !owned.has(i)));
     if (!id) return;
-    if (R.hand.length < R.slots) R.hand.push({ id, cd: 0, up: false }); else R.hand[rand(R.hand.length)] = { id, cd: 0, up: false };
+    if (R.hand.length < R.slots) R.hand.push({ id, cd: 0, up: false });
+    else if (ask) {
+      R.reward = { title: "New orders", gold: 0, cards: [id], upgrade: false, pending: id, took: false, orders: [], tookOrder: false, goal: null };
+      R.event = null; R.screen = "reward";
+      return;
+    }
+    else R.hand[rand(R.hand.length)] = { id, cd: 0, up: false };
     noteSynergies();
   }
   function leaveNode() {
@@ -1007,7 +1016,7 @@ function makeGame(run, opts = {}) {
     };
   }
   function makeShop() {
-    return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(45), restockPrice: shopPrice(15), pending: null });
+    return Object.assign(shopStock(), { upPrice: shopPrice(40), healPrice: shopPrice(25), hpPrice: shopPrice(45 + 25 * (R.rations || 0)), restockPrice: shopPrice(15), pending: null });
   }
   // Restock: new cards and a new perk, for a price that rises each time in this shop.
   function restock() {
@@ -1037,7 +1046,7 @@ function makeGame(run, opts = {}) {
   function buyHp() {
     const sh = R.shop;
     if (R.gold < sh.hpPrice) return false;
-    R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; sh.hpPrice += 25;
+    R.gold -= sh.hpPrice; R.maxhp += 1; R.hp += 1; R.rations = (R.rations || 0) + 1; sh.hpPrice = shopPrice(45 + 25 * R.rations);
     return true;
   }
   // Buys shop card idx. With a full hand it needs a slot to replace: without one it marks the card pending and returns false.

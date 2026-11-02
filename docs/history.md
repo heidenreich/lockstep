@@ -132,3 +132,16 @@ The Trapdoor check had Recall stalling at C3. `SEED=1..4 BOT=2ply CAD=3 ONLY=rec
 - Tried: Recall once per fight in a frenzy: 6 stalls, win rate 66% (was 92%): the chain was most of Recall's strength, so this was too harsh.
 - Changed: played in a frenzy, Recall's cooldown doubles (`frenzyCd: 2`; 8 upgraded, 12 base). Same runs: 1 stall in 240 (a Colossus fight after enrage, Recall every 10 turns), win rate 87%.
 - `check 30` at C0, seeds 1–4, old vs new: Recruit 42% vs 36% (seed 1 dropped to 17%; seeds 2–4 average 42% both ways), Drummer 59% vs 58%, Sapper 51% both; 3 stalls either way. No change beyond noise.
+
+## Playtest bug fixes (2026-11-02)
+
+The six small bugs listed under the variety pass, fixed on top of the refactor:
+
+- Leaving a fight clears its leftover effects (pit marks, fallers, floats, banners), so they no longer play on the next board.
+- "Take the orders" with a full hand opens a New orders screen to pick the card to replace (or cancel, or skip) instead of replacing one at random.
+- Rations' price counts every Rations bought this run (`run.rations`), so a new shop or the pre-boss wagon no longer resets it to 45.
+- Into the pits is swapped for another bonus when a room starts with fewer than 3 enemies.
+- Abandon run asks first.
+- The Briefing button only shows on the fight screen.
+- Also: the reward screen said "Room cleared" after a boss too (it read the fight, which is gone by then). The reward now carries its own title.
+

@@ -82,6 +82,7 @@ interface Shop {
 }
 
 interface Reward {
+  title?: string;      // screen heading: "Room cleared", "Boss down", "New orders"
   gold: number;
   cards: string[];
   upgrade: boolean;
@@ -129,4 +130,5 @@ interface Run {
   end: RunEnd | null;
   stats: RunStats;
   synSeen?: string[];  // synergies already announced
+  rations?: number;    // Rations bought this run (each raises the price)
 }

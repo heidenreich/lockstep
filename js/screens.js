@@ -107,6 +107,8 @@ function applyTheme() {
 function render() {
   applyTheme();
   renderBar();
+  // The briefing button and the fight's leftover effects belong to the fight screen only.
+  if (!R || R.screen !== "fight") { $("briefBtn").hidden = true; clearFX(); }
   if (!R) { renderTitle(); return; }
   saveRun();
   (SCREENS[R.screen] || renderStage)();
@@ -163,7 +165,7 @@ const STAGES = {
     const gl = rw.goal ? `<p>${rw.goal.ok ? "Bonus carried out" : "Bonus missed"}: <b>${esc(GOALS[rw.goal.id].name)}</b>${rw.goal.ok ? ` (+${GOALS[rw.goal.id].gold} gold, included)` : ""}.</p>` : "";
     const ord = rw.orders && rw.orders.length && !rw.tookOrder ? box("Take a perk (lasts the run)", rw.orders.map(id => orderOfferHTML(id, `data-order="${id}"`)).join("")) : "";
     const cards = rw.took ? "" : box("Take a card, or skip", rw.cards.map(id => offerHTML(id, `data-take="${id}"`)).join("") || '<p class="note">No new cards to offer.</p>');
-    s.innerHTML = sceneHead("slatehead", R.fight && R.fight.kind === "boss" ? "Boss down" : "Room cleared", `+${rw.gold} gold`, gl) + ord + cards + pend + ups
+    s.innerHTML = sceneHead("slatehead", rw.title || "Room cleared", rw.gold || !rw.cards.length ? `+${rw.gold} gold` : esc(CARDS[rw.cards[0]].name), gl) + ord + cards + pend + ups
       + `<div class="row"><button class="btn" data-act="leave">${rw.took || !rw.cards.length ? "Continue" : "Skip and continue"}</button></div>`;
   },
   rest(s) {
