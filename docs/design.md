@@ -87,6 +87,7 @@ Saved in the player's browser (`localStorage`, `lockstep-profile`; the current r
 
 - **Characters:** Recruit (Sidestep, Stomp; 8 HP). Drummer, beat the Colossus (Double Time, About Face; 7 HP; 4 slots). Sapper, win a run (Quake, Shove; 9 HP; pits hold 3).
 - **Cards:** start pool Sidestep, Stomp, Double Time, About Face, Lunge, Shove, Trapdoor. Quake (beat the Colossus), Magnet (reach act 2), Recall (beat the Mirror), Brace (die three times).
+- **Hats** (looks only, picked on the title screen, saved in the profile as `hat`/`hats`): the shako by default; acorn cap (beat the Colossus), paper boat (beat the Mirror), thimble (win a run), bottle cap (win at Cadence 3+). Toy-room things a child would put on a tin soldier, never a military hat (every enemy type has one), never an enemy colour, and about the shako's size so rows still read. Shown on the board, the map and the title strip.
 - **Cadence 1–5** (win at N to unlock N+1): C1 +1 enemy per fight; C2 frenzy 6 turns sooner; C3 elites +1 HP, rest heals 2; C4 bosses +4 HP; C5 start with 2 less HP.
 
 ## Presentation

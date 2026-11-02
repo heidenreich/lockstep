@@ -41,7 +41,7 @@ function drawTitle(t) {
       else if (b8 >= 2 && b8 <= 6) continue;
       else if (b8 === 7) alpha = f;
     }
-    const look = TIN[type], mirror = (type === "contra" ? -dir[0] : dir[0]) < 0;
+    const look = type === "cadet" ? youLook() : TIN[type], mirror = (type === "contra" ? -dir[0] : dir[0]) < 0;
     const bob = type === "heavy" && Math.abs(MARCH_SLOW[(i + 1) % 8] - MARCH_SLOW[i % 8]) === 0 ? 0 : hop;
     tctx.save(); tctx.globalAlpha = alpha;
     const tp = tin(tctx, (x + o + 0.5) * s, top + (y + 0.62) * rowH - bob + dy, kk, look, { mirror, ring: type === "cadet" ? "#e0ac45" : null });

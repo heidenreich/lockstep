@@ -145,3 +145,7 @@ The six small bugs listed under the variety pass, fixed on top of the refactor:
 - The Briefing button only shows on the fight screen.
 - Also: the reward screen said "Room cleared" after a boss too (it read the fight, which is gone by then). The reward now carries its own title.
 - Map table toys now match the act's walls (tower blocks, two-book stacks, crates, each with the tower mark) instead of A/B/C alphabet blocks and four-colour book stacks, so nothing on the table reads as a key or label.
+
+## Wild hats (2026-11-02)
+
+Your cadet can wear a toy hat instead of the shako: acorn cap, paper boat, thimble, bottle cap, each earned like an unlock and picked on the title screen with a preview. Looks only. Every military hat already says which enemy a piece is, so the toy ones can't be mistaken for one; they keep to the shako's size because height helps read rows. The run-won event now carries the Cadence (`earn({ won, cad })`) for the bottle cap.

@@ -167,7 +167,7 @@ function drawUnit(g, e, x, y, k, t) {
   tinMarks(g, e, x, top, k);
 }
 function drawCadetTin(g, x, y, k, dir, braced) {
-  return tin(g, x, y, k, TIN.cadet, { ring: braced ? C.good : "#e0ac45", mirror: dir && dir[0] < 0, drum: R.char === "drummer", spade: R.char === "sapper" });
+  return tin(g, x, y, k, youLook(), { ring: braced ? C.good : "#e0ac45", mirror: dir && dir[0] < 0, drum: R.char === "drummer", spade: R.char === "sapper" });
 }
 
 function drawSetting(g, act, t) {

@@ -126,6 +126,7 @@ function renderTitle() {
   ui.pickCad = Math.min(ui.pickCad, maxCad);
   $("cads").innerHTML = CADENCE.map((_, i) => `<button data-cad="${i}" class="${i === ui.pickCad ? "on" : ""}"${i > maxCad ? " disabled" : ""}>${i === 0 ? "Off" : "C" + i}</button>`).join("");
   $("cadNote").textContent = ui.pickCad ? CADENCE.slice(1, ui.pickCad + 1).map(c => c.text.slice(4)).join(" ") : (maxCad ? "Win runs to climb the ladder." : "Win a run to unlock Cadence 1.");
+  renderHats();
   $("resumeBtn").hidden = !savedRun();
   $("newHere").hidden = !!P.drilled;
   $("saveNote").textContent = "Unlocks are saved in this browser.";
@@ -135,6 +136,17 @@ function renderTitle() {
     `<span>Bosses beaten <b>${BOSSES.filter(b => P.beat[b]).map(b => FOES[b].name).join(", ") || "none yet"}</b></span>`
   ].join("");
   $("unlocks").innerHTML = UNLOCKS.map(u => `<li class="${u.has(P) ? "" : "no"}"><span class="tick">${u.has(P) ? "✓" : "·"}</span><span><b>${esc(u.what)}</b> <span class="muted">${esc(u.how)}</span></span></li>`).join("");
+}
+
+// The hat picker: the shako and every hat UNLOCKS hands out (locked ones say how to earn them), with your cadet wearing it.
+const hatName = id => id === "shako" ? "Shako" : UNLOCKS.find(u => u.id === id).what.replace(" (hat)", "");
+function renderHats() {
+  const has = id => id === "shako" || !!P.hats[id], next = UNLOCKS.find(u => u.kind === "hat" && !P.hats[u.id]);
+  $("hats").innerHTML = HATS.map(id => `<button data-hat="${id}" class="${youLook().hat === id || (id === "shako" && !youLook().hat) ? "on" : ""}"${has(id) ? "" : " disabled"}>${esc(hatName(id))}</button>`).join("");
+  $("hatNote").textContent = next ? `Next hat: ${hatName(next.id)}, ${next.how.toLowerCase()}.` : "Every hat is yours.";
+  const g = $("hatCv").getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 120, 150); g.scale(2, 2);
+  tin(g, 28, 68, 0.62, youLook(), { ring: "#e0ac45" });
 }
 
 /* ---------- Map screen ---------- */

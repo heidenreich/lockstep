@@ -208,9 +208,24 @@ test("acts, bosses and the Cadence ladder are consistent", () => {
 });
 
 test("unlocks: each is earned by its run event", () => {
-  const cases = [["drummer", { beat: "colossus" }], ["quake", { beat: "colossus" }], ["recall", { beat: "mirror" }], ["magnet", { act: 2 }], ["sapper", { won: true }], ["brace", { deaths: 3 }]];
+  const cases = [["drummer", { beat: "colossus" }], ["quake", { beat: "colossus" }], ["recall", { beat: "mirror" }], ["magnet", { act: 2 }], ["sapper", { won: true }], ["brace", { deaths: 3 }],
+    ["acorn", { beat: "colossus" }], ["paperboat", { beat: "mirror" }], ["thimble", { won: true, cad: 0 }], ["bottlecap", { won: true, cad: 3 }]];
   for (const u of K.UNLOCKS) assert.ok(cases.some(([id, e]) => id === u.id && u.when(e)), u.what);
   for (const u of K.UNLOCKS) assert.ok(!u.when({ deaths: 2 }) && !u.when({ act: 3 }), u.what);
+});
+
+test("hats: won into the profile, the bottle cap only from Cadence 3, and a profile keeps them", () => {
+  const P = K.mergeProfile({}), game = K.makeGame(null, { sim: true, profile: P });
+  assert.equal(P.hat, "shako");
+  assert.deepEqual(K.HATS, ["shako", "acorn", "paperboat", "thimble", "bottlecap"]);
+  game.newRun("recruit", 2, 1); game.endRun(true);
+  assert.equal(P.hats.thimble, true);
+  assert.ok(!P.hats.bottlecap, "a win at Cadence 2 doesn't earn the bottle cap");
+  game.newRun("recruit", 3, 1); game.endRun(true);
+  assert.equal(P.hats.bottlecap, true);
+  const back = K.mergeProfile(JSON.parse(JSON.stringify(Object.assign(P, { hat: "thimble" }))));
+  assert.equal(back.hat, "thimble");
+  assert.equal(back.hats.thimble, true);
 });
 
 test("the Mirror flips direction every 5 turns, for 5 turns: the line steps the opposite way", () => {
