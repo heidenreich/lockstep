@@ -160,3 +160,7 @@ Two read-only reviews (architecture, code structure) found the code sound; the s
 - Removed the unused `ACT_ROOMS`/`BOSS_ROOMS`; the board's rounded-rect helper reuses `rrect`; kit.js's load order lists `title`; development.md now says where a new act's look lives.
 - Left for when content needs them: act looks as data, boss and bonus turn hooks like cards have, hats as a table, splitting `endTurn`, saving the run from the rules instead of on render.
 
+
+## Row readability (2026-11-02)
+
+A soldier stood about 1.8 rows tall with its feet at the tile centre, so a column of pieces read as one stack and the piece in front sat on the square behind it (a drone looked like it was on your brass tile). Three changes in `js/board.js`: every enemy's tile gets a rounded square in its coat colour, like your brass one; pieces stand toward the front of their tile (`FOOT`), so a base sits inside its own square; rows are deeper (`TILT` 0.7 → 0.85), which makes the board about 13% taller. No rule changes.

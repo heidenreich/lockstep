@@ -57,12 +57,14 @@ function syncVis() {
   for (const e of F.enemies) if (!ui.vis[e.id]) ui.vis[e.id] = { x: e.x, y: e.y };
 }
 // The board is a toy diorama: a tabletop seen from the front, back rows a little smaller and higher.
-const PERSP = 0.74, TILT = 0.7, PIECE = 1.4;
+const PERSP = 0.74, TILT = 0.85, PIECE = 1.4;
 let tw = 60, ox = 0, oy = 0, CW = 600, CH = 500;
 const rowScale = gy => PERSP + (1 - PERSP) * gy / H;
 const rowY = gy => oy + tw * TILT * (PERSP * gy + (1 - PERSP) * gy * gy / (2 * H));
 const proj = (gx, gy) => [ox + (gx - W / 2) * tw * rowScale(gy), rowY(gy)];
 const at = (x, y) => proj(x + 0.5, y + 0.5);
+// Where a piece's feet go: toward the front of its tile, so its body rises out of its own square.
+const FOOT = 0.22, stand = (x, y) => at(x, y + FOOT);
 function unproj(sx, sy) {
   const a = (1 - PERSP) / (2 * H), b = PERSP, c = -(sy - oy) / (tw * TILT);
   const gy = (-b + Math.sqrt(Math.max(0, b * b - 4 * a * c))) / (2 * a);
@@ -87,7 +89,7 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 // Chest height of a soldier standing on tile (x, y): where hits and numbers appear.
-const chest = (x, y) => { const [cx, cy] = at(x, y); return [cx, cy - tw * 0.6 * rowScale(y + 0.5)]; };
+const chest = (x, y) => { const [cx, cy] = stand(x, y); return [cx, cy - tw * 0.6 * rowScale(y + 0.5)]; };
 function clearFX() { if (game) game.drainFx(); parts = []; floats = []; fallers = []; banners = []; shots = []; shake = 0; }
 function consumeFX() {
   for (const f of game ? game.drainFx() : []) {
@@ -334,7 +336,7 @@ function draw(dt) {
   drawPreviewMarks(F, S, pv);
   drawRifleLanes(F, now);
   const vp = ui.vis.p || F.p;
-  drawYourTile(vp, now);
+  drawTileSquares(F, vp, now);
   const youAt = drawPieces(F, R0, act, now, vp);
   drawFallers(dt);
   ctx.restore();
@@ -479,7 +481,16 @@ function drawRifleLanes(F, now) {
   }
 }
 
-function drawYourTile(vp, now) {
+function drawTileSquares(F, vp, now) {
+  // Every enemy's tile gets a square in its coat colour: soldiers stand taller than a row, so a column of them
+  // overlaps, and the squares are what show which row each one is on.
+  for (const e of F.enemies) {
+    const v = ui.vis[e.id] || e, coat = (TIN[e.type] || TIN.drone).coat;
+    ctx.save(); tileSpace(ctx, v.x, v.y);
+    ctx.fillStyle = hexRgba(coat, 0.22); rr(-0.44, -0.44, 0.88, 0.88, 0.1); ctx.fill();
+    ctx.strokeStyle = hexRgba(coat, 0.7); ctx.lineWidth = 0.06; rr(-0.44, -0.44, 0.88, 0.88, 0.1); ctx.stroke();
+    ctx.restore();
+  }
   // Your tile: a brass square with a slow pulse, so you can find yourself at a glance.
   { const pulse = reduced() ? 0.5 : 0.5 + Math.sin(now * 3) * 0.5;
     ctx.save(); tileSpace(ctx, vp.x, vp.y);
@@ -504,9 +515,9 @@ function drawPieces(F, R0, act, now, vp) {
   for (const it of items) {
     if (it.wall) { drawWall(ctx, it.x, it.y, act, occupied.has(it.x + "," + (it.y - 1))); continue; }
     const sc = rowScale(it.y + 0.5), kk = tw / 104 * sc * PIECE;
-    if (it.flag) { const [x, y] = at(it.x, it.y + 0.01); drawFlag(ctx, x, y, kk, now, F.goal.ok); continue; }
-    if (it.keg) { const [x, y] = at(it.x, it.y); drawKeg(ctx, x, y, kk, now); continue; }
-    let [x, y] = at(it.v.x, it.v.y);
+    if (it.flag) { const [x, y] = stand(it.x, it.y + 0.01); drawFlag(ctx, x, y, kk, now, F.goal.ok); continue; }
+    if (it.keg) { const [x, y] = stand(it.x, it.y); drawKeg(ctx, x, y, kk, now); continue; }
+    let [x, y] = stand(it.v.x, it.v.y);
     const tgt = it.p ? F.p : it.e, md = Math.hypot(tgt.x - it.v.x, tgt.y - it.v.y);
     ctx.save();
     // A little hop and squash as each piece marches.
@@ -526,7 +537,7 @@ function drawFallers(dt) {
     fl.life -= dt;
     const t = 1 - Math.max(0, fl.life) / 0.6, slide = Math.min(1, t * 3), sink = Math.max(0, (t - 0.3) / 0.7);
     const gx = fl.fx + (fl.tx - fl.fx) * slide, gy = fl.fy + (fl.ty - fl.fy) * slide;
-    const [x, y] = at(gx, gy), kk = tw / 104 * rowScale(gy + 0.5) * PIECE;
+    const [x, y] = stand(gx, gy), kk = tw / 104 * rowScale(gy + 0.5) * PIECE;
     ctx.save(); ctx.globalAlpha = 1 - sink * 0.7;
     ctx.beginPath(); ctx.rect(0, 0, CW, y + 2 * kk); ctx.clip();
     tin(ctx, x, y + sink * tw * 0.9, kk * (1 - sink * 0.3), TIN[fl.type] || TIN.drone, { tilt: sink * 1.2 });
