@@ -116,27 +116,26 @@ function drawMapTable(g, act, cw, ch, dpr) {
 }
 // Toys from each act's room, standing on the table to either side of the board (board units, outside 0..420).
 function drawMapProps(g, act, t) {
-  const block = (x, y, s, col, letter) => {
-    g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(x + 4, y + s * 0.2, s, s);
-    g.fillStyle = col; g.fillRect(x, y, s, s); g.fillStyle = "#f3e3c0"; g.fillRect(x, y - s * 0.28, s, s * 0.28);
-    g.font = `900 ${Math.round(s * 0.7)}px ${css("--f-display")}`; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(letter, x + s / 2, y + s / 2 + 1);
+  // The same toys as the act's walls (drawWall in board.js), seen from above: a top face carrying the tower mark over a
+  // front face s * 0.4 tall.
+  const toy = (x, y, s, front, top) => {
+    const h = s * 0.4;
+    g.fillStyle = "rgba(0,0,0,0.3)"; g.fillRect(x + 5, y + 5, s, s + h);
+    front(x, y + s, s, h); top(x, y, s);
   };
-  const books = (x, y) => {
-    for (const [i, col] of ["#7a2a2a", "#2f4a6b", "#5a6b2f", "#8a6420"].entries()) {
-      const w = 62 - i * 6, h = 13, yy = y - i * h;
-      g.fillStyle = "rgba(0,0,0,0.25)"; g.fillRect(x + 4, yy + 3, w, h);
-      g.fillStyle = col; g.fillRect(x + (i % 2) * 4, yy, w, h); g.fillStyle = "#efe6cf"; g.fillRect(x + (i % 2) * 4 + w - 4, yy + 2, 3, h - 4);
-      g.fillStyle = "rgba(240,194,94,0.6)"; g.fillRect(x + (i % 2) * 4 + 8, yy + h * 0.4, w * 0.5, 1.5);
-    }
-  };
-  const crate = (x, y, s) => {
-    g.fillStyle = "rgba(0,0,0,0.35)"; g.fillRect(x + 5, y + 5, s, s);
-    g.fillStyle = "#5d4027"; g.fillRect(x, y, s, s); g.strokeStyle = "#3a2716"; g.lineWidth = 3;
-    g.strokeRect(x + 2, y + 2, s - 4, s - 4); g.beginPath(); g.moveTo(x + 4, y + s - 4); g.lineTo(x + s - 4, y + 4); g.stroke();
-  };
+  const mark = (x, y, s, fill, hole) => { g.save(); g.translate(x + s / 2, y + s / 2); drawTower(g, s * 0.5, fill, hole); g.restore(); };
+  const block = (x, y, s) => toy(x, y, s,
+    (fx, fy, w, h) => { g.fillStyle = BLOCK.frame; g.fillRect(fx, fy, w, h); g.fillStyle = BLOCK.woodSide; g.fillRect(fx + w * 0.09, fy + h * 0.15, w * 0.82, h * 0.7); },
+    (tx, ty, w) => { g.fillStyle = BLOCK.frame; g.fillRect(tx, ty, w, w); g.fillStyle = BLOCK.wood; g.fillRect(tx + w * 0.12, ty + w * 0.12, w * 0.76, w * 0.76); mark(tx, ty, w, BLOCK.frame, BLOCK.wood); });
+  const books = (x, y, s) => toy(x, y, s,
+    (fx, fy, w, h) => { for (let k = 0; k < 2; k++) { const ins = k ? 0 : w * 0.04, yy = fy + h * k / 2; g.fillStyle = BOOKS.cloth[1 - k]; g.fillRect(fx + ins, yy, w - ins * 2, h / 2); g.fillStyle = BOOKS.pages; g.fillRect(fx + ins + w * 0.08, yy + h * 0.11, w * 0.84 - ins * 2, h * 0.28); } },
+    (tx, ty, w) => { g.fillStyle = BOOKS.cloth[1]; g.fillRect(tx, ty, w, w); g.fillStyle = BOOKS.cover; g.fillRect(tx + w * 0.06, ty + w * 0.06, w * 0.88, w * 0.88); mark(tx, ty, w, BOOKS.stamp, BOOKS.cover); });
+  const crate = (x, y, s) => toy(x, y, s,
+    (fx, fy, w, h) => { g.fillStyle = CRATE.side; g.fillRect(fx, fy, w, h); g.fillStyle = CRATE.gap; g.fillRect(fx, fy + h / 2, w, 1.5); g.strokeStyle = CRATE.brace; g.lineWidth = 3; g.beginPath(); g.moveTo(fx + 3, fy + h - 3); g.lineTo(fx + w - 3, fy + 3); g.stroke(); },
+    (tx, ty, w) => { g.fillStyle = CRATE.lid; g.fillRect(tx, ty, w, w); g.fillStyle = CRATE.gap; for (let k = 1; k < 3; k++) g.fillRect(tx, ty + w * k / 3, w, 1.2); mark(tx, ty, w, CRATE.stencil, CRATE.lid); });
   g.save();
-  if (act === 1) { block(-70, 540, 40, "#b8433a", "A"); block(-58, 500, 30, "#2f6aa8", "B"); block(440, 90, 38, "#3f8a4f", "C"); }
-  else if (act === 2) { books(442, 360); books(-82, 600); }
+  if (act === 1) { block(-70, 540, 40); block(-58, 492, 30); block(440, 90, 38); }
+  else if (act === 2) { books(446, 330, 50); books(-80, 570, 50); }
   else {
     crate(-78, 520, 56); crate(446, 70, 50);
     // A candle on the table, its flame flickering.
