@@ -88,6 +88,7 @@ function resize() {
 }
 // Chest height of a soldier standing on tile (x, y): where hits and numbers appear.
 const chest = (x, y) => { const [cx, cy] = at(x, y); return [cx, cy - tw * 0.6 * rowScale(y + 0.5)]; };
+function clearFX() { if (game) game.drainFx(); parts = []; floats = []; fallers = []; banners = []; shots = []; shake = 0; }
 function consumeFX() {
   for (const f of game ? game.drainFx() : []) {
     const [cx, cy] = chest(f.x, f.y), [bx, by] = at(f.x, f.y);

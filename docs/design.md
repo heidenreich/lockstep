@@ -64,8 +64,8 @@ Bosses (a pit deals 3 and the boss climbs back out at an edge):
 - 3 acts, each a 6-row branching map plus a boss; row 6 is always Rest. Each act has its own rooms, roster and light.
 - Nodes: **Fight**, **Elite** (from row 3), **Rest** (heal 3, upgrade a card, or March on), **Shop**, **Event**, **Boss**.
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
-- Shop: cards 30–45, upgrade 40, Field dressing (heal 3) 25, Rations (+1 max HP) 45 rising 25 each, one perk 75–90, Restock 15 rising 10 each. The campfire before each boss has a supply wagon (Rations, Field dressing).
-- **Bonuses** (`GOALS`): every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Into the pits (3 pit drops) 20, Clean march (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
+- Shop: cards 30–45, upgrade 40, Field dressing (heal 3) 25, Rations (+1 max HP) 45 rising 25 with each one bought this run (the next shop and the wagon remember), one perk 75–90, Restock 15 rising 10 each. The campfire before each boss has a supply wagon (Rations, Field dressing).
+- **Bonuses** (`GOALS`): every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Into the pits (3 pit drops; only offered when the room starts with 3 or more enemies) 20, Clean march (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
 - **Perks** (run-long passives, `ORDERS` in code): bosses offer 1 of 3, shops sell one. Sappers' pride, Fixed bayonets, Iron ranks, Steady drum, Deep pits, Short fuses, Hobnail boots, Field surgeon, Crossfire, Rally, Quartermaster's friend, Reserve slot (texts in `ORDERS`).
 - Winning a fight on the turn you'd fall leaves you on 1.
 

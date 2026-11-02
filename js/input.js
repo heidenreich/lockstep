@@ -86,7 +86,7 @@ $("chars").addEventListener("click", ev => { const b = ev.target.closest("[data-
 $("cads").addEventListener("click", ev => { const b = ev.target.closest("[data-cad]"); if (b && !b.disabled) { ui.pickCad = +b.dataset.cad; renderTitle(); } });
 $("startBtn").addEventListener("click", () => { startRun(ui.pickChar, ui.pickCad); tone(330, 0.08, "triangle", 0.04); render(); });
 $("resumeBtn").addEventListener("click", resumeRun);
-$("quitBtn").addEventListener("click", () => { if (!R) return; game.quit(); render(); });
+$("quitBtn").addEventListener("click", () => { if (!R || !confirm("Abandon this run? It counts as a loss.")) return; game.quit(); render(); });
 $("drillBtn").addEventListener("click", () => { startRun(ui.pickChar, ui.pickCad, true); tone(330, 0.08, "triangle", 0.04); render(); });
 $("helpBtn").addEventListener("click", openHelp);
 $("briefBtn").addEventListener("click", () => { ui.briefOpen = true; if (R && R.fight && prepareBrief(R.fight)) saveProfile(); render(); });
