@@ -24,6 +24,7 @@ interface Enemy extends Pos {
   load?: number;       // riflemen: turns until loaded
   loose?: boolean;     // an anchor or rifleman whose line is gone, now in step
   heldUntil?: number;  // recalled in a frenzy: held in step until this turn
+  angryUntil?: number; // a boss that climbed out of a pit: chasing you until this turn (v5)
 }
 
 interface Goal {

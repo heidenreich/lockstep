@@ -9,6 +9,9 @@ const RUN_EVERY = 3, RECALL_HOLD = 4;
 const ENRAGE = 30, ENRAGE_EVERY = 3;
 // A boss that falls into a pit takes BOSS_PIT_DMG and climbs out; the Mirror flips the line for FLIP_TURNS turns after every FLIP_EVERY.
 const BOSS_PIT_DMG = 3, FLIP_EVERY = 5, FLIP_TURNS = 5;
+// A boss that climbs out of a pit is angry: it chases you, moving every turn, for ANGRY_TURNS turns, then falls back
+// into step. Repeating one pit drop is no longer enough; you survive the chase, then set up the next.
+const ANGRY_TURNS = 3;
 // Shop supplies: Field dressing heals DRESSING_HEAL; Rations cost RATIONS_PRICE, plus RATIONS_STEP for each bought this run.
 const DRESSING_HEAL = 3, RATIONS_PRICE = 45, RATIONS_STEP = 25;
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
@@ -93,9 +96,9 @@ const FOES = {
   anchor: { name: "anchor", hp: 3, dmg: 1, elite: true, fixed: true, rule: "Elite. Never moves and strikes anything beside it. Once every other enemy is gone it starts copying your steps.", look: "Elite in a crested helmet on a stone block. Never moves; strikes beside it." },
   rifle: { name: "rifleman", hp: 1, dmg: 1, rifle: true, fixed: true, rule: "Holds its ground. Reloads for 2 turns, then fires along its row and column; walls stop the shot, anything else in the way takes it. Gives up once every other enemy is gone.", look: "Feathered hat, kneeling. Rifle up: reloading. Level: fires its row and column." },
   colossus: { name: "Colossus", hp: 8, dmg: 2, boss: true, slow: true, adds: "drone", addEvery: 6, addN: 1,
-    rule: "A giant heavy that hits for 2. A pit deals it 3 and it climbs back out. A drone joins every 6 turns." },
+    rule: `A giant heavy that hits for 2. A pit deals it ${BOSS_PIT_DMG} and it climbs back out angry: it chases you, every turn, for ${ANGRY_TURNS} turns. A drone joins every 6 turns.` },
   mirror: { name: "Mirror", hp: 9, dmg: 1, boss: true, contra: true, seals: true, flips: true, adds: "contra", addEvery: 7, addN: 1,
-    rule: `A giant contrarian. Every ${FLIP_EVERY} turns it flips direction: for ${FLIP_TURNS} turns everyone moves the opposite way. It seals any pit it climbs out of.` },
+    rule: `A giant contrarian. Every ${FLIP_EVERY} turns it flips direction: for ${FLIP_TURNS} turns everyone moves the opposite way. A pit deals it ${BOSS_PIT_DMG}, seals, and it climbs out angry: it chases you for ${ANGRY_TURNS} turns.` },
   warden: { name: "Warden", hp: 12, dmg: 2, boss: true, slow: true, chaser: true, march: true, adds: "drone", addEvery: 7, addN: 2,
     rule: "Hits for 2. It chases you every other turn and copies your step on the turns between (the slate says which): step it into a pit then. Two drones join every 7 turns." }
 };
@@ -211,7 +214,7 @@ const CARDS = {
     // In a frenzy the recall only holds for a few turns (see endTurn), and frenzyCd doubles its cooldown, so the frenzy
     // gets turns back between recalls: chaining Recall used to hold the line in step for good and stall the fight.
     play: (k, F) => {
-      for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
+      for (const e of F.enemies) if (e.free && !foe(e).chaser) { e.free = false; e.blocked = 0; e.chased = 0; delete e.angryUntil; if (F.frenzy) e.heldUntil = F.turn + 1 + RECALL_HOLD; }
       k.log(F.frenzy ? `The line snaps back into step, for ${RECALL_HOLD} turns.` : "The line snaps back into step.");
     } },
   trapdoor: { name: "Trapdoor", cd: 6, cdUp: 4, dir: true, text: "Open a hidden pit beside you for 4 turns. Chasers don't see it coming. Room holds.",
@@ -293,7 +296,7 @@ const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)
 // A saved run carries its shape's version. Bump RUN_V whenever the run's shape changes, and teach migrateRun the step.
 //   v1: fights stored their room as a position in ROOMS (in the order below); v2 stores the room's id.
 //   v3: the page's own per-fight notes (coach, briefed, briefNew) live under fight.ui; rules never read it.
-const RUN_V = 4;
+const RUN_V = 5;
 const V1_ROOMS = ["drill-square", "ice-yard", "spike-lanes", "colossus-court", "powder-store", "belt-room", "mess-hall", "hall-of-mirrors", "gatehouse", "battlements", "the-keep", "wardens-yard", "training-ground"];
 // Brings a saved run up to date, or returns null if it can't be played any more (unknown version, or it names a card,
 // perk, enemy, room or character this version of the game doesn't have).
@@ -307,6 +310,8 @@ function migrateRun(r) {
   }
   // v4: the reward names itself. A boss reward is the one that offers perks.
   if (r.v === 3) { if (r.reward && !r.reward.title) r.reward.title = (r.reward.orders || []).length ? "Boss down" : "Room cleared"; r.v = 4; }
+  // v5: a boss that climbed out of a pit may carry angryUntil. Older saves have no angry bosses, so nothing to change.
+  if (r.v === 4) r.v = 5;
   if (r.v !== RUN_V) return null;
   // Runs saved before the seeded RNG have no RNG state; give them one.
   if (r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
@@ -642,6 +647,8 @@ function makeGame(run, opts = {}) {
       if (foe(e).seals && roomPit(x, y)) { (F.sealed = F.sealed || []).push(x + "," + y); log(`The ${foe(e).name} shatters the pit on its way out.`); }
       const c = edgeTile(3); if (c) { e.x = c.x; e.y = c.y; } e.blocked = 0;
       fx("spawn", e.x, e.y);
+      // A boss that copies your steps climbs out angry and chases you for a while (the Warden chases anyway).
+      if (!foe(e).chaser) { e.free = true; e.chased = 0; e.angryUntil = F.turn + ANGRY_TURNS; log(`It climbs out angry and comes for you.`); }
       return;
     }
     if (roomPit(x, y)) F.pitFill[x + "," + y] = (F.pitFill[x + "," + y] || 0) + 1;
@@ -656,7 +663,7 @@ function makeGame(run, opts = {}) {
   /* ---------- Enemy movement ---------- */
   // Heavies and slow bosses act every other time they're asked to; in a frenzy, heavies stop resting.
   function resting(e) {
-    if (!foe(e).slow || (R.fight.frenzy && !foe(e).boss)) return false;
+    if (!foe(e).slow || (R.fight.frenzy && !foe(e).boss) || e.angryUntil != null) return false;
     const s = e.skip; e.skip = !e.skip; return s;
   }
 
@@ -772,6 +779,10 @@ function makeGame(run, opts = {}) {
       if (hasO("rally") && R.hp < R.maxhp) R.hp++;
       log(`${CHAIN[Math.min(n, 5)]}!${bonus ? ` +${bonus} gold, and` : ""} every card is a turn closer.`);
       fx("combo", F.p.x, F.p.y, { n, gold: bonus }); sfx("combo");
+    }
+    for (const e of F.enemies) if (e.angryUntil != null && F.turn >= e.angryUntil) {
+      delete e.angryUntil; e.free = false; e.blocked = 0; e.chased = 0;
+      log(`The ${foe(e).name} calms down and falls back into step.`);
     }
     for (const e of F.enemies) if (e.heldUntil != null && F.turn >= e.heldUntil) {
       delete e.heldUntil;
@@ -1113,7 +1124,7 @@ function makeGame(run, opts = {}) {
 const nodeModule = typeof module === "object" && module.exports ? module : null;
 if (nodeModule) {
   nodeModule.exports = {
-    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ENRAGE, ENRAGE_EVERY, BOSS_PIT_DMG, FLIP_EVERY, FLIP_TURNS, DRESSING_HEAL, RATIONS_PRICE, RATIONS_STEP, DIRS, BELT, ROOMS, roomById, addRoom, RUN_V, migrateRun,
+    makeGame, BREAK, RELOCK, FRENZY, ARRIVE_EVERY, MAX_ARRIVALS, RELOAD, RUN_EVERY, RECALL_HOLD, ANGRY_TURNS, ENRAGE, ENRAGE_EVERY, BOSS_PIT_DMG, FLIP_EVERY, FLIP_TURNS, DRESSING_HEAL, RATIONS_PRICE, RATIONS_STEP, DIRS, BELT, ROOMS, roomById, addRoom, RUN_V, migrateRun,
     roomOrients, turnRoom, fightRoom, SYNERGIES, CHAIN, FOES, BOSSES, GOALS, ORDERS, CARDS, START_POOL, CHARS, CADENCE, cadenceFx, ACTS, NODE, EVENTS, BLANK_PROFILE, UNLOCKS, HATS,
     room, newSeed, mergeProfile, dist, foe, fixed, isLocked
   };

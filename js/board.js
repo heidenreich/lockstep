@@ -17,6 +17,8 @@ function renderFight() {
   const boss = F.enemies.find(e => foe(e).boss);
   const lines = [`<span>${esc(fightRoom(F).name)} · turn <b>${F.turn}</b></span>`];
   if (boss) lines.push(`<span>${esc(foe(boss).name)} <b>${boss.hp}/${boss.max}</b> · ${F.turn >= ENRAGE ? '<b style="color:var(--danger)">enraged</b>' : `enrages in <b>${ENRAGE - F.turn}</b>`}</span>`);
+  // Out of a pit, a boss chases you for a few turns; say how long.
+  if (boss && boss.angryUntil != null) lines.push(`<span class="warn">Angry: it chases you for <b>${count(boss.angryUntil - F.turn, "turn")}</b></span>`);
   if (boss && foe(boss).march) lines.push(`<span>${boss.skip ? "This turn it <b>marches in step</b>" : "This turn it <b>chases</b>"}</span>`);
   else {
     // In a frenzy the line runs (two steps) every RUN_EVERY turns; warn when.
