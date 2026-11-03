@@ -228,7 +228,6 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .armtx { display: none; }
 .newhere { margin: 0; font-size: 14px; color: var(--ink); border-left: 3px solid var(--brass); padding: 4px 10px; }
 .newhere b { color: var(--brass); }
-.feedback a { color: var(--brass); font-weight: 600; }
 
 /* Phones: the fight fits one screen. Bigger board edge to edge, compact cards in a row, pad beside the slate. */
 @media (max-width: 860px) {

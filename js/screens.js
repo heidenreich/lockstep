@@ -214,6 +214,6 @@ const STAGES = {
     const nx = next ? `<p>Next unlock: <b>${esc(next.what)}</b> · ${esc(next.how)}</p>` : `<p>Everything is unlocked.</p>`;
     s.innerHTML = sceneHead("slatehead", e.won ? "Victory" : "Run over", e.won ? "The citadel falls" : `Fell in act ${e.act}`, unl + nx)
       + `<div class="panel status"><span>Cadet <b>${esc(CHARS[e.char].name)}</b>${e.cad ? ` · Cadence <b>C${e.cad}</b>` : ""}</span><span>Rooms fought <b>${e.stats.fights}</b> · turns <b>${e.stats.turns}</b></span><span>Enemies beaten <b>${e.stats.kills}</b>, <b>${e.stats.pitKills}</b> of them into pits</span><span>Gold collected <b>${e.gold}</b></span></div>
-      <div class="row"><button class="btn" data-act="title">Back to the barracks</button><a class="btn ghost" href="${FEEDBACK_URL}" target="_blank" rel="noopener">Tell us how it went</a></div>`;
+      <div class="row"><button class="btn" data-act="title">Back to the barracks</button><a class="btn ghost" href="${FEEDBACK_URL}" target="_blank" rel="noopener">Tell us how it went ↗</a></div>`;
   }
 };
