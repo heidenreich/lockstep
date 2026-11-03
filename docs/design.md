@@ -54,7 +54,7 @@ Hand: 3 slots (Drummer 4). After a fight, draft 1 of 3 cards or take gold; a ful
 - Elites: **Runner** moves 2 per shift. **Anchor** never moves, 3 HP, strikes adjacent; once the rest of its line is gone it falls into step.
 - Riflemen yield when the rest of their line is gone.
 
-Bosses (a pit deals 3 and the boss climbs back out at an edge):
+Bosses (a pit deals 3 and the boss climbs back out at an edge, angry: the Colossus and the Mirror then chase you, moving every turn, for 3 turns (`ANGRY_TURNS`) before falling back into step, so each drop has to be set up again after surviving the chase; the slate counts it down, and Recall calms an angry boss. The Warden already chases, so a pit doesn't change it):
 1. **Colossus**: locked heavy, 8 HP, hits 2; a drone arrives every 6 turns.
 2. **Mirror**: locked contrarian, 9 HP; every 5 turns it flips direction for 5 turns (telegraphed). A pit it climbs out of is sealed.
 3. **Warden**: 12 HP, hits 2; chases every other turn and marches in step on the turns between. Two drones arrive every 7 turns. The Warden is meant as a draft check (decided 2026-10-31): three cards answer it, Trapdoor (2-ply bot 98%), Recall (95%, slowly, mostly after enrage; unlocked by beating the Mirror) and Double Time (80%); with any other card it's 28–65%, 43% with none.
@@ -83,7 +83,7 @@ One word per idea, in everything the player reads: **Briefing** (the card before
 
 ## Meta (unlocks only)
 
-Saved in the player's browser (`localStorage`, `lockstep-profile`; the current run is saved as `lockstep-run`). A saved run carries its shape's version (`RUN_V`); `migrateRun` brings older saves up to date (v1 stored fights' rooms by list position, v2 by room id, v3 moved the page's per-fight notes under `fight.ui`, v4 added the reward's `title`, filled in for older saves from whether the reward offers perks) and refuses saves it can't play (unknown version, or a card, perk, enemy, room or character this version doesn't have), which the page then clears instead of offering Continue. The game is hosted on GitHub Pages; it no longer runs as a claude.ai Artifact, so there are no account saves or play counter.
+Saved in the player's browser (`localStorage`, `lockstep-profile`; the current run is saved as `lockstep-run`). A saved run carries its shape's version (`RUN_V`); `migrateRun` brings older saves up to date (v1 stored fights' rooms by list position, v2 by room id, v3 moved the page's per-fight notes under `fight.ui`, v4 added the reward's `title`, filled in for older saves from whether the reward offers perks, v5 lets a boss carry `angryUntil`, nothing to fill in) and refuses saves it can't play (unknown version, or a card, perk, enemy, room or character this version doesn't have), which the page then clears instead of offering Continue. The game is hosted on GitHub Pages; it no longer runs as a claude.ai Artifact, so there are no account saves or play counter.
 
 - **Characters:** Recruit (Sidestep, Stomp; 8 HP). Drummer, beat the Colossus (Double Time, About Face; 7 HP; 4 slots). Sapper, win a run (Quake, Shove; 9 HP; pits hold 3).
 - **Cards:** start pool Sidestep, Stomp, Double Time, About Face, Lunge, Shove, Trapdoor. Quake (beat the Colossus), Magnet (reach act 2), Recall (beat the Mirror), Brace (die three times).

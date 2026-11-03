@@ -774,3 +774,48 @@ test("the drill pays no gold, and its pit drops and combos don't say they do", (
   assert.equal(F2.gold, 1);
   assert.match(F2.log[0].msg, /\+1 gold/);
 });
+
+test("a boss that climbs out of a pit is angry: it chases you, every turn, for ANGRY_TURNS turns, then falls back into step", () => {
+  const F = fight([
+    ".........",
+    ".........",
+    "....o....",
+    ".........",
+    "....@....",
+    "........."
+  ], { kind: "boss" });
+  const c = put("colossus", 4, 1);
+  g.fall(c, 4, 2);
+  assert.equal(c.hp, K.FOES.colossus.hp - K.BOSS_PIT_DMG);
+  assert.equal(c.free, true, "it comes out chasing");
+  // It moves every turn while angry (the Colossus normally rests every other turn).
+  const start = K.dist(c, F.p);
+  g.step(0, 0);
+  assert.ok(K.dist(c, F.p) < start, "it closed in on the first turn");
+  for (let i = 1; i < K.ANGRY_TURNS && c.angryUntil != null; i++) g.step(0, 0);
+  assert.equal(c.free, false, "after ANGRY_TURNS turns it falls back into step");
+  assert.equal(c.angryUntil, undefined);
+});
+
+test("the Warden already chases, so a pit doesn't make it angry; Recall calms an angry boss", () => {
+  fight([".........", "....o....", ".........", "....@...."], { kind: "boss" });
+  const w = put("warden", 4, 0);
+  g.fall(w, 4, 1);
+  assert.equal(w.angryUntil, undefined);
+  const F = fight([".........", "....o....", ".........", "....@...."], { kind: "boss" });
+  const m = put("mirror", 4, 0);
+  g.fall(m, 4, 1);
+  assert.equal(m.free, true);
+  g.run.hand = [{ id: "recall", cd: 0, up: false }];
+  assert.ok(g.play(0, 0, 0));
+  assert.equal(m.free, false);
+  assert.equal(m.angryUntil, undefined);
+});
+
+test("saved runs: a v4 save loads as v5 unchanged", () => {
+  newRun("recruit", 0, 3); g.startFight("fight");
+  const v4 = JSON.parse(JSON.stringify(g.run)); v4.v = 4;
+  const r = K.migrateRun(v4);
+  assert.equal(r.v, K.RUN_V);
+  assert.ok(K.makeGame(r, { sim: true }).step(0, 0));
+});
