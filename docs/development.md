@@ -53,4 +53,4 @@ Each kind of content lives in one table in `rules.js`; the page reads its text f
 
 ## Hosting
 
-GitHub Pages serves `main` at https://heidenreich.github.io/lockstep/ (`.github/workflows/pages.yml` publishes only the files the page loads: `index.html`, `rules.js`, `styles.css`, `js/`). Saves stay in the player's browser.
+GitHub Pages serves `main` at https://heidenreich.github.io/lockstep/ (`.github/workflows/pages.yml` publishes only the files the page loads: `index.html`, `rules.js`, `styles.css`, `manifest.webmanifest`, `js/`, `img/`). The icons and the link-preview image in `img/` are drawn from the game's tin soldiers by `node design/make-icons.js`; run it again if the cadet's look changes. Saves stay in the player's browser.

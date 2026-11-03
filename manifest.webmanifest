@@ -1,0 +1,13 @@
+{
+  "name": "Lockstep",
+  "short_name": "Lockstep",
+  "description": "The room copies your every move. A tactical roguelite.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0d121b",
+  "theme_color": "#0d121b",
+  "icons": [
+    { "src": "img/icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
