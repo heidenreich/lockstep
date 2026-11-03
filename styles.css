@@ -66,6 +66,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 34px; letter-sp
 h3 { font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
 .muted { color: var(--muted); }
 .btn { background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 9px; padding: 10px 18px; font-weight: 600; font-size: 15px; }
+a.btn { display: inline-block; text-decoration: none; }
 .btn:hover { filter: brightness(1.08); }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--chalk); }
 .btn:disabled { opacity: .45; cursor: default; filter: none; }
