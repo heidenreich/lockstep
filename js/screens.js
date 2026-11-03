@@ -72,7 +72,7 @@ const orderOfferHTML = (id, attrs, price, why) => itemHTML({ cls: "order", attrs
 function goalLine(F) {
   const g = F.goal; if (!g) return "";
   const G = GOALS[g.id];
-  const state = !g.ok ? "lost" : g.id === "unhurt" ? "unhurt" : g.id === "pits" ? `${Math.min(F.pitKills, G.need)}/${G.need}` : g.id === "quick" ? `${Math.max(0, G.by - F.turn)} turns left` : g.id === "colours" ? (g.took ? "taken" : "flag flying") : "holding";
+  const state = !g.ok ? "lost" : g.id === "unhurt" ? "unhurt" : g.id === "pits" ? `${Math.min(F.pitKills, G.need)}/${G.need}` : g.id === "quick" ? `${count(Math.max(0, G.by - F.turn), "turn")} left` : g.id === "colours" ? (g.took ? "taken" : "flag flying") : "holding";
   return `<span${g.ok ? "" : ' class="warn"'}>Bonus · <b>${esc(G.name)}</b> (+${G.gold}): ${state}</span>`;
 }
 const GLYPHS = {

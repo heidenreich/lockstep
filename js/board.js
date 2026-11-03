@@ -21,14 +21,15 @@ function renderFight() {
   else {
     // In a frenzy the line runs (two steps) every RUN_EVERY turns; warn when.
     const runIn = F.frenzy && F.frenzySince != null ? (RUN_EVERY - 1 - (F.turn - F.frenzySince) % RUN_EVERY) : null;
-    const tail = F.kind === "drill" ? "" : !F.frenzy ? ` · frenzy in <b>${Math.max(0, F.frenzyAt - F.turn)}</b>` : runIn == null ? "" : runIn === 0 ? ` · <span class="warn">they run this turn</span>` : ` · they run in <b>${runIn}</b>`;
+    // A boss fight's turn 30 is its enrage, counted on the boss's own line, so no second countdown here.
+    const tail = F.kind === "drill" ? "" : !F.frenzy ? (F.kind === "boss" ? "" : ` · frenzy in <b>${Math.max(0, F.frenzyAt - F.turn)}</b>`) : runIn == null ? "" : runIn === 0 ? ` · <span class="warn">they run this turn</span>` : ` · they run in <b>${runIn}</b>`;
     lines.push(`<span>Enemies <b>${F.enemies.length}</b>${tail}</span>`);
   }
   const loose = F.enemies.filter(e => e.free && !foe(e).chaser).length;
   if (loose) lines.push(`<span class="warn"><b>${loose}</b> broken free</span>`);
   if (F.goal) lines.push(goalLine(F));
   if ((R.orders || []).length) lines.push(`<span class="ords">Perks: ${R.orders.map(id => `<b title="${esc(ORDERS[id].text)}">${esc(ORDERS[id].name)}</b>`).join(", ")}</span>`);
-  if (boss && foe(boss).flips) lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Direction flipped: <b>${F.flip}</b> turns left` : `Direction flips in <b>${F.flipIn}</b>`}</span>`);
+  if (boss && foe(boss).flips) lines.push(`<span${F.flip ? ' class="warn"' : ""}>${F.flip ? `Direction flipped: <b>${count(F.flip, "turn")}</b> left` : `Direction flips in <b>${F.flipIn}</b>`}</span>`);
   $("fstatus").innerHTML = lines.join("");
   $("log").innerHTML = F.log.map(l => `<li>${esc(l.msg)}</li>`).join("");
   const ban = $("banner");
@@ -105,7 +106,7 @@ function consumeFX() {
       hitStop = performance.now() + 60;
     }
     if (f.kind === "boom") { burst(cx, cy, "#ff9a3c", 26); burst(cx, cy, "#ffd27a", 14); shake = reduced() ? 0 : 9; hitStop = performance.now() + 90; }
-    if (f.kind === "combo") { banners.push({ n: f.n, life: 1.6 }); shake = reduced() ? 0 : Math.max(shake, 5); hitStop = performance.now() + 110; }
+    if (f.kind === "combo") { banners.push({ n: f.n, gold: f.gold, life: 1.6 }); shake = reduced() ? 0 : Math.max(shake, 5); hitStop = performance.now() + 110; }
     if (f.kind === "block") floats.push({ x: cx, y: cy - 10, text: "braced", color: C.good, life: 1 });
     if (f.kind === "quake") shake = reduced() ? 0 : 4;
     if (f.kind === "bump" && !reduced()) wobbles.set(f.x + "," + f.y, performance.now());
@@ -600,7 +601,7 @@ function drawEffects(dt) {
     ctx.lineWidth = size * 0.16; ctx.strokeStyle = "rgba(255,250,240,0.92)"; ctx.strokeText(text, 0, 0);
     ctx.fillStyle = "#a3261f"; ctx.fillText(text, 0, 0);
     ctx.font = `700 ${Math.round(size * 0.42)}px ${HAND}`;
-    const sub = `+${b.n * (b.n - 1)} gold · every card −1`;
+    const sub = `${b.gold ? `+${b.gold} gold · ` : ""}every card −1`;
     ctx.lineWidth = 5; ctx.strokeText(sub, 0, size * 0.7); ctx.fillStyle = "#4a2a12"; ctx.fillText(sub, 0, size * 0.7);
     ctx.restore();
   }

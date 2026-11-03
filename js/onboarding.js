@@ -6,7 +6,7 @@ const DRILL_STEPS = [
   { id: "step", text: () => "You're the blue cadet on the brass tile. Take a step: the line copies you.", how: "Arrow keys or WASD, or tap a tile beside you." },
   { id: "pit", text: () => "Step left twice: the drone above you marches into the pit.", get how() { return `You can't fall in. Each pit holds ${R.pitHold} per fight (its brass dots), then fills.`; } },
   { id: "free", text: () => `Step right until a drone is pinned against the tower block or the edge. At ${game.breakAt()} red marks it breaks free and chases you.`, how: "A free enemy tilts inside a red scribble." },
-  { id: "card", text: () => `Press 1 (or tap ${CARDS[R.hand[0].id].name}), then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
+  { id: "card", text: () => `${touchOnly() ? "Tap" : "Press 1 (or click)"} ${CARDS[R.hand[0].id].name}, then a direction. ${cardText(R.hand[0])}`, how: "Cards go on cooldown. Step is always free." },
   { id: "clear", text: () => `Now clear the room. Bump an enemy to hit it for ${game.bumpDamage()}.`, get how() { return `Real fights turn into a frenzy at turn ${game.frenzyAt()}.`; } }
 ];
 function coachTrack(F) {
@@ -52,6 +52,7 @@ function renderCoach() {
   const box = $("coach"), F = R.fight;
   if (F.over) { box.hidden = true; ui.notes = []; return; }
   if (F.kind === "drill") {
+    box.classList.remove("tip");
     const c = coachTrack(F), i = DRILL_STEPS.findIndex(st => !c[st.id]), st = DRILL_STEPS[i];
     box.hidden = !st;
     if (st) box.innerHTML = `<div class="row"><span class="eyebrow">Training drill · ${i + 1} of ${DRILL_STEPS.length}</span><span class="steps">${DRILL_STEPS.map((_, j) => `<i class="${j <= i ? "on" : ""}"></i>`).join("")}</span></div>
@@ -60,6 +61,7 @@ function renderCoach() {
   }
   const k = ui.notes[0];
   box.hidden = !k;
+  box.classList.toggle("tip", !!k);
   if (k) box.innerHTML = `<div class="row"><span class="eyebrow">New · ${esc(noteText(k)[0])}</span>${ui.notes.length > 1 ? `<span class="note hint">${ui.notes.length - 1} more</span>` : ""}</div>
     <p>${esc(noteText(k)[1])}</p><div class="row"><button class="btn ghost" data-act="helpOpen">How to play</button><button class="btn" data-act="noteOk">Got it</button></div>`;
 }

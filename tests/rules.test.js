@@ -757,3 +757,20 @@ test("breakAt, bumpDamage and frenzyAt follow the perks and the Cadence, and the
   g.step(1, 0);
   assert.equal(F.enemies[0].free, true);
 });
+
+test("the drill pays no gold, and its pit drops and combos don't say they do", () => {
+  newRun("recruit", 0, 1); g.startDrill();
+  const F = g.run.fight, d = F.enemies[0];
+  g.fall(d, d.x, d.y);
+  assert.equal(F.gold, 0);
+  assert.doesNotMatch(F.log[0].msg, /gold/);
+  F.actKills = 2; g.endTurn(null);
+  assert.equal(F.gold, 0, "a drill combo pays nothing");
+  assert.ok(F.log.some(l => /every card is a turn closer/.test(l.msg) && !/gold/.test(l.msg)));
+  // A real fight still pays for both.
+  newRun("recruit", 0, 1); g.startFight("fight");
+  const F2 = g.run.fight, e = F2.enemies[0];
+  g.fall(e, e.x, e.y);
+  assert.equal(F2.gold, 1);
+  assert.match(F2.log[0].msg, /\+1 gold/);
+});
