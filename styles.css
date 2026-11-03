@@ -66,6 +66,7 @@ h2 { font-family: var(--f-display); font-weight: 800; font-size: 34px; letter-sp
 h3 { font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
 .muted { color: var(--muted); }
 .btn { background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 9px; padding: 10px 18px; font-weight: 600; font-size: 15px; }
+a.btn { display: inline-block; text-decoration: none; }
 .btn:hover { filter: brightness(1.08); }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--chalk); }
 .btn:disabled { opacity: .45; cursor: default; filter: none; }
@@ -227,6 +228,7 @@ kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--chalk
 .armtx { display: none; }
 .newhere { margin: 0; font-size: 14px; color: var(--ink); border-left: 3px solid var(--brass); padding: 4px 10px; }
 .newhere b { color: var(--brass); }
+.feedback a { color: var(--brass); font-weight: 600; }
 
 /* Phones: the fight fits one screen. Bigger board edge to edge, compact cards in a row, pad beside the slate. */
 @media (max-width: 860px) {
