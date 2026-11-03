@@ -65,7 +65,7 @@ Bosses (a pit deals 3 and the boss climbs back out at an edge):
 - Nodes: **Fight**, **Elite** (from row 3), **Rest** (heal 3, upgrade a card, or March on), **Shop**, **Event**, **Boss**.
 - Gold: fights ~15–25, elites ~40, +1 per pit kill.
 - Shop: cards 30–45, upgrade 40, Field dressing (heal 3) 25, Rations (+1 max HP) 45 rising 25 with each one bought this run (the next shop and the wagon remember), one perk 75–90, Restock 15 rising 10 each. The campfire before each boss has a supply wagon (Rations, Field dressing).
-- **Bonuses** (`GOALS`): every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Into the pits (3 pit drops; only offered when the room starts with 3 or more enemies) 20, Clean march (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
+- **Bonuses** (`GOALS`): every non-boss room has one, shown on the slate: Take the colours (reach a far flag first, before the room is clear) 20, Into the pits (3 pit drops; only offered when the room starts with 3 or more enemies that can be steered into a pit, so riflemen and anchors don't count) 20, Clean march (no enemy ever blocked) 15, Parade order (no damage by turn 14) 20, Quick march (clear by turn 10) 15.
 - **Perks** (run-long passives, `ORDERS` in code): bosses offer 1 of 3, shops sell one. Sappers' pride, Fixed bayonets, Iron ranks, Steady drum, Deep pits, Short fuses, Hobnail boots, Field surgeon, Crossfire, Rally, Quartermaster's friend, Reserve slot (texts in `ORDERS`).
 - Winning a fight on the turn you'd fall leaves you on 1.
 
@@ -83,7 +83,7 @@ One word per idea, in everything the player reads: **Briefing** (the card before
 
 ## Meta (unlocks only)
 
-Saved in the player's browser (`localStorage`, `lockstep-profile`; the current run is saved as `lockstep-run`). A saved run carries its shape's version (`RUN_V`); `migrateRun` brings older saves up to date (v1 stored fights' rooms by list position, v2 by room id, v3 moved the page's per-fight notes under `fight.ui`) and refuses saves it can't play (unknown version, or a card, perk, enemy, room or character this version doesn't have), which the page then clears instead of offering Continue. The game is hosted on GitHub Pages; it no longer runs as a claude.ai Artifact, so there are no account saves or play counter.
+Saved in the player's browser (`localStorage`, `lockstep-profile`; the current run is saved as `lockstep-run`). A saved run carries its shape's version (`RUN_V`); `migrateRun` brings older saves up to date (v1 stored fights' rooms by list position, v2 by room id, v3 moved the page's per-fight notes under `fight.ui`, v4 added the reward's `title`, filled in for older saves from whether the reward offers perks) and refuses saves it can't play (unknown version, or a card, perk, enemy, room or character this version doesn't have), which the page then clears instead of offering Continue. The game is hosted on GitHub Pages; it no longer runs as a claude.ai Artifact, so there are no account saves or play counter.
 
 - **Characters:** Recruit (Sidestep, Stomp; 8 HP). Drummer, beat the Colossus (Double Time, About Face; 7 HP; 4 slots). Sapper, win a run (Quake, Shove; 9 HP; pits hold 3).
 - **Cards:** start pool Sidestep, Stomp, Double Time, About Face, Lunge, Shove, Trapdoor. Quake (beat the Colossus), Magnet (reach act 2), Recall (beat the Mirror), Brace (die three times).

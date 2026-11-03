@@ -293,7 +293,7 @@ const mergeProfile = d => Object.assign(JSON.parse(JSON.stringify(BLANK_PROFILE)
 // A saved run carries its shape's version. Bump RUN_V whenever the run's shape changes, and teach migrateRun the step.
 //   v1: fights stored their room as a position in ROOMS (in the order below); v2 stores the room's id.
 //   v3: the page's own per-fight notes (coach, briefed, briefNew) live under fight.ui; rules never read it.
-const RUN_V = 3;
+const RUN_V = 4;
 const V1_ROOMS = ["drill-square", "ice-yard", "spike-lanes", "colossus-court", "powder-store", "belt-room", "mess-hall", "hall-of-mirrors", "gatehouse", "battlements", "the-keep", "wardens-yard", "training-ground"];
 // Brings a saved run up to date, or returns null if it can't be played any more (unknown version, or it names a card,
 // perk, enemy, room or character this version of the game doesn't have).
@@ -305,6 +305,8 @@ function migrateRun(r) {
     if (F) { F.ui = F.ui || {}; for (const k of ["coach", "briefed", "briefNew"]) if (k in F) { F.ui[k] = F[k]; delete F[k]; } }
     r.v = 3;
   }
+  // v4: the reward names itself. A boss reward is the one that offers perks.
+  if (r.v === 3) { if (r.reward && !r.reward.title) r.reward.title = (r.reward.orders || []).length ? "Boss down" : "Room cleared"; r.v = 4; }
   if (r.v !== RUN_V) return null;
   // Runs saved before the seeded RNG have no RNG state; give them one.
   if (r.rng == null) { r.seed = newSeed(); r.rng = r.seed | 0; }
@@ -485,7 +487,8 @@ function makeGame(run, opts = {}) {
       spawn("contra");
       for (let i = 1; i < n; i++) spawn(pickOne(A.roster));
       log(`${rm.name}. ${F.enemies.length} enemies.`);
-      if (F.goal.id === "pits" && F.enemies.length < GOALS.pits.need) setGoal(pickOne(Object.keys(GOALS).filter(id => id !== "pits")));
+      // Riflemen and anchors hold their ground (and can't be shoved), so only the rest can be steered into a pit.
+      if (F.goal.id === "pits" && F.enemies.filter(e => !fixed(e)).length < GOALS.pits.need) setGoal(pickOne(Object.keys(GOALS).filter(id => id !== "pits")));
     }
     R.stats.fights++;
   }

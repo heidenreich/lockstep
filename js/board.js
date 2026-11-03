@@ -109,7 +109,7 @@ function consumeFX() {
     if (f.kind === "block") floats.push({ x: cx, y: cy - 10, text: "braced", color: C.good, life: 1 });
     if (f.kind === "quake") shake = reduced() ? 0 : 4;
     if (f.kind === "bump" && !reduced()) wobbles.set(f.x + "," + f.y, performance.now());
-    if (f.kind === "spawn") burst(bx, by, "#fffaf0", 8);
+    if (f.kind === "spawn") { const [sx, sy] = stand(f.x, f.y); burst(sx, sy, "#fffaf0", 8); }
     if (f.kind === "trap") burst(bx, by, C.brass, 10, true);
     if (f.kind === "shot") { const b = chest(f.tx, f.ty); shots.push({ a: [cx, cy], b, life: 0.35 }); burst(cx, cy, "#ffd27a", 8); burst(b[0], b[1], "#fffaf0", 8); shake = reduced() ? 0 : Math.max(shake, 3); }
   }
@@ -444,8 +444,9 @@ function drawPreviewMarks(F, S, pv) {
     for (const e of F.enemies) {
       const k = blockedBy.get(e.id), a = after.get(e.id);
       if (!k || !a || a.x !== e.x || a.y !== e.y) continue;
-      // From the edge of the piece's base to the edge of its square, where the bar sits against whatever stops it.
-      const [x0, y0] = at(e.x + k.dx * 0.3, e.y + k.dy * 0.3), [x1, y1] = at(e.x + k.dx * 0.52, e.y + k.dy * 0.52);
+      // From the edge of the piece's base (it stands toward the front of its square, FOOT), a short stub toward what
+      // stops it, ending in a bar.
+      const [x0, y0] = stand(e.x + k.dx * 0.3, e.y + k.dy * 0.3), [x1, y1] = stand(e.x + k.dx * 0.52, e.y + k.dy * 0.52);
       const len = Math.hypot(x1 - x0, y1 - y0) || 1, nx = -(y1 - y0) / len, ny = (x1 - x0) / len, bar = tw * 0.22 * rowScale(e.y + 0.5);
       ctx.save(); ctx.strokeStyle = a.free && !e.free ? "#e2483d" : hexRgba(S.chalk, 0.95); ctx.lineWidth = aw * 1.2; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.moveTo(x1 + nx * bar, y1 + ny * bar); ctx.lineTo(x1 - nx * bar, y1 - ny * bar); ctx.stroke();
@@ -459,9 +460,9 @@ function drawPreviewMarks(F, S, pv) {
         continue;
       }
       if (a.x === e.x && a.y === e.y) continue;
-      chalkArrow(ctx, at(e.x, e.y), at(a.x, a.y), a.free ? "#e2483d" : hexRgba(S.chalk, 0.92), aw, { wobble: a.free });
+      chalkArrow(ctx, stand(e.x, e.y), stand(a.x, a.y), a.free ? "#e2483d" : hexRgba(S.chalk, 0.92), aw, { wobble: a.free });
     }
-    if (pv.p.x !== F.p.x || pv.p.y !== F.p.y) chalkArrow(ctx, at(F.p.x, F.p.y), at(pv.p.x, pv.p.y), "#f4c25a", aw * 1.35);
+    if (pv.p.x !== F.p.x || pv.p.y !== F.p.y) chalkArrow(ctx, stand(F.p.x, F.p.y), stand(pv.p.x, pv.p.y), "#f4c25a", aw * 1.35);
     if (pv.dmg) { ctx.save(); tileSpace(ctx, pv.p.x, pv.p.y); ctx.strokeStyle = "#e2483d"; ctx.lineWidth = 0.07; ctx.beginPath(); ctx.ellipse(0, 0, 0.44, 0.44, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); }
   }
 }

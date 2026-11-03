@@ -526,6 +526,18 @@ test("saved runs: a v1 save moves its fight's room from a list position to the r
   assert.ok(back.step(0, 0));
 });
 
+test("saved runs: a v3 save on a reward screen gets the reward's title (a boss reward is the one with perks)", () => {
+  newRun("recruit", 0, 3); g.startFight("fight");
+  const v3 = JSON.parse(JSON.stringify(g.run));
+  v3.v = 3; v3.fight = null; v3.screen = "reward";
+  v3.reward = { gold: 60, cards: ["lunge"], upgrade: true, pending: null, took: false, orders: ["boots", "fuse", "iron"], tookOrder: false, goal: null };
+  assert.equal(K.migrateRun(JSON.parse(JSON.stringify(v3))).reward.title, "Boss down");
+  v3.reward.orders = []; v3.reward.upgrade = false;
+  const r = K.migrateRun(v3);
+  assert.equal(r.reward.title, "Room cleared");
+  assert.equal(r.v, K.RUN_V);
+});
+
 test("saved runs the game can't play any more are refused, not loaded", () => {
   newRun("recruit", 0, 3);
   const good = () => JSON.parse(JSON.stringify(g.run));
@@ -624,12 +636,17 @@ test("Rations get dearer across the whole run, not per shop", () => {
   assert.equal(g.run.shop.hpPrice, 95);
 });
 
-test("Into the pits is only offered with enough enemies to do it", () => {
-  for (let seed = 1; seed <= 60; seed++) {
-    newRun("recruit", 0, seed); g.startFight("fight");
+test("Into the pits is only offered with enough enemies that can be steered into a pit", () => {
+  // Every act and elite fights too: acts 2 and 3 bring riflemen, elites anchors, and neither can be put in a pit.
+  let offered = 0;
+  for (const act of [1, 2, 3]) for (const kind of ["fight", "elite"]) for (let seed = 1; seed <= 40; seed++) {
+    newRun("recruit", 0, seed); g.run.act = act; g.startFight(kind);
     const F = g.run.fight;
-    if (F.goal.id === "pits") assert.ok(F.enemies.length >= K.GOALS.pits.need, `seed ${seed}`);
+    if (F.goal.id !== "pits") continue;
+    offered++;
+    assert.ok(F.enemies.filter(e => !K.fixed(e)).length >= K.GOALS.pits.need, `act ${act} ${kind} seed ${seed}`);
   }
+  assert.ok(offered > 0, "the bonus still turns up");
 });
 
 test("a reward screen names what it is", () => {
