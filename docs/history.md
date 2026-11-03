@@ -164,3 +164,12 @@ Two read-only reviews (architecture, code structure) found the code sound; the s
 ## Row readability (2026-11-02)
 
 A soldier stood about 1.8 rows tall with its feet at the tile centre, so a column of pieces read as one stack and the piece in front sat on the square behind it (a drone looked like it was on your brass tile). Three changes in `js/board.js`: every enemy's tile gets a rounded square in its coat colour, like your brass one; pieces stand toward the front of their tile (`FOOT`), so a base sits inside its own square; rows are deeper (`TILT` 0.7 → 0.85), which makes the board about 13% taller. No rule changes.
+
+## Angry bosses (2026-11-03)
+
+Two agent playtests (first-time players, desktop and phone) found the bosses too easy: the Colossus fell on turn 9 with no damage taken, because after a pit drop it was straight back in step and the same move dropped it again.
+
+- Changed: a boss that copies your steps (the Colossus, the Mirror) climbs out of a pit angry: it chases you, moving every turn, for 3 turns (`ANGRY_TURNS`), then falls back into step. Recall calms it. The Warden already chases, so it's unchanged.
+- Boss fights alone, 2-ply, 40 per card over 10 hands (`SEED=1 node sim/run4.js bosses 40`), before → after: Colossus 87% → 72% won, 30 → 41 turns, 6.3 → 4.6 health left; Mirror 97% → 93%, 37 → 48 turns; Warden 58% → 54% (it can't change, so that's the noise).
+- The boss report showed Mirror stalls 3 → 10. A Mirror-only trace, 1,200 fights each way over seeds 1–3, found 13 before and 13 after: noise. The Mirror stalls about 1% of the time either way, at 2–3 health with two of its four pits sealed and the bot unable to line up the last drop.
+- `check 30`, seeds 1–3, before → after: Recruit 37% → 35%, Drummer 58% → 50%, Sapper 57% → 36%; stalls 0 → 2. About 10 points harder overall.
