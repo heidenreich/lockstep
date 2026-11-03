@@ -13,6 +13,10 @@ function readColors() {
   C.wallTop = css("--wall-top"); C.wallSide = css("--wall-side");
 }
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+// "1 turn", "3 turns".
+const count = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+// A touch screen with no mouse: the page talks about tapping, not keys.
+const touchOnly = () => matchMedia("(hover: none) and (pointer: coarse)").matches;
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 let toastT;

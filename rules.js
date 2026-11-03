@@ -647,8 +647,10 @@ function makeGame(run, opts = {}) {
     if (roomPit(x, y)) F.pitFill[x + "," + y] = (F.pitFill[x + "," + y] || 0) + 1;
     F.enemies.splice(F.enemies.indexOf(e), 1);
     R.stats.kills++; R.stats.pitKills++; F.actKills++; F.pitKills++;
-    F.gold += 1;
-    log(`A ${foe(e).name} falls into a pit. +1 gold`);
+    // The drill has no reward, so its drops pay nothing and say nothing about gold.
+    const paid = F.kind === "drill" ? 0 : 1;
+    F.gold += paid;
+    log(`A ${foe(e).name} falls into a pit.${paid ? ` +${paid} gold` : ""}`);
   }
 
   /* ---------- Enemy movement ---------- */
@@ -764,12 +766,12 @@ function makeGame(run, opts = {}) {
     riflesFire();
     // Combo: two or more enemies down from one action pays out and speeds up every card.
     if (F.actKills >= 2) {
-      const n = F.actKills, bonus = n * (n - 1);
+      const n = F.actKills, bonus = F.kind === "drill" ? 0 : n * (n - 1);
       F.gold += bonus; F.bestChain = Math.max(F.bestChain || 0, n);
       for (const c of R.hand) if (c.cd > 0) c.cd--;
       if (hasO("rally") && R.hp < R.maxhp) R.hp++;
-      log(`${CHAIN[Math.min(n, 5)]}! +${bonus} gold, and every card is a turn closer.`);
-      fx("combo", F.p.x, F.p.y, { n }); sfx("combo");
+      log(`${CHAIN[Math.min(n, 5)]}!${bonus ? ` +${bonus} gold, and` : ""} every card is a turn closer.`);
+      fx("combo", F.p.x, F.p.y, { n, gold: bonus }); sfx("combo");
     }
     for (const e of F.enemies) if (e.heldUntil != null && F.turn >= e.heldUntil) {
       delete e.heldUntil;

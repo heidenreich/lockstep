@@ -115,3 +115,24 @@ test("How to play shows this run's numbers: perks and Cadence change them", asyn
   await page.evaluate(() => { R.orders.push("steady", "bayonet"); R.cad = 2; openHelp(); });
   assert.deepEqual(await nums(), { bumpDamage: "2", breakAt: "4", relock: "4", frenzyAt: "24" });
 });
+
+test("on a phone a first-time note floats over the board, so the pad doesn't move, and the drill says tap", async t => {
+  const page = await open(t, { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await page.tap("#startBtn");
+  // Drill step 4 (play a card) talks about tapping, not keys.
+  assert.equal(await page.evaluate(() => touchOnly()), true);
+  await page.evaluate(() => { const c = fightUi(R.fight).coach = { step: true, pit: true, free: true }; render(); });
+  assert.match(await page.textContent("#coach"), /Tap Sidestep, then a direction/);
+  await page.tap('[data-act="skipDrill"]');
+  await page.locator("#mapSvg .node").first().tap();
+  if (await page.isVisible("#brief")) { await page.keyboard.press("Escape"); }
+  const padY = () => page.evaluate(() => document.getElementById("pad").getBoundingClientRect().top);
+  // Let the folding briefing finish moving the layout before measuring.
+  let before = await padY();
+  for (let i = 0; i < 20; i++) { await page.waitForTimeout(100); const y = await padY(); if (y === before) break; before = y; }
+  await page.evaluate(() => { ui.notes.push("combo"); render(); });
+  assert.ok(await page.isVisible("#coach"));
+  assert.equal(await padY(), before, "the pad stays put when a note appears");
+  await page.tap('[data-act="noteOk"]');
+  assert.equal(await padY(), before);
+});
