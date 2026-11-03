@@ -138,12 +138,15 @@ function renderTitle() {
   $("unlocks").innerHTML = UNLOCKS.map(u => `<li class="${u.has(P) ? "" : "no"}"><span class="tick">${u.has(P) ? "✓" : "·"}</span><span><b>${esc(u.what)}</b> <span class="muted">${esc(u.how)}</span></span></li>`).join("");
 }
 
-// The hat picker: the shako and every hat UNLOCKS hands out (locked ones say how to earn them), with your cadet wearing it.
-const hatName = id => id === "shako" ? "Shako" : UNLOCKS.find(u => u.id === id).what.replace(" (hat)", "");
+// The hat picker: the shako and every hat UNLOCKS hands out, with your cadet wearing it. Locked hats say how to earn
+// them on hover; the note under the picker names the next one. Owning a hat is the unlock's own has(P).
+const HAT_UNLOCK = Object.fromEntries(UNLOCKS.filter(u => u.kind === "hat").map(u => [u.id, u]));
+const hatName = id => id === "shako" ? "Shako" : HAT_UNLOCK[id].what.replace(" (hat)", "");
+const lowerFirst = s => s.charAt(0).toLowerCase() + s.slice(1);
 function renderHats() {
-  const has = id => id === "shako" || !!P.hats[id], next = UNLOCKS.find(u => u.kind === "hat" && !P.hats[u.id]);
-  $("hats").innerHTML = HATS.map(id => `<button data-hat="${id}" class="${youLook().hat === id || (id === "shako" && !youLook().hat) ? "on" : ""}"${has(id) ? "" : " disabled"}>${esc(hatName(id))}</button>`).join("");
-  $("hatNote").textContent = next ? `Next hat: ${hatName(next.id)}, ${next.how.toLowerCase()}.` : "Every hat is yours.";
+  const has = id => id === "shako" || HAT_UNLOCK[id].has(P), next = Object.values(HAT_UNLOCK).find(u => !u.has(P)), worn = youLook().hat || "shako";
+  $("hats").innerHTML = HATS.map(id => `<button data-hat="${id}" class="${worn === id ? "on" : ""}"${has(id) ? "" : ` disabled title="${esc(HAT_UNLOCK[id].how)}"`}>${esc(hatName(id))}</button>`).join("");
+  $("hatNote").textContent = next ? `Next hat: ${hatName(next.id)}, ${lowerFirst(next.how)}.` : "Every hat is yours.";
   const g = $("hatCv").getContext("2d");
   g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, 120, 150); g.scale(2, 2);
   tin(g, 28, 68, 0.62, youLook(), { ring: "#e0ac45" });

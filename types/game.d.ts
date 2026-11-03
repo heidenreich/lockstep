@@ -82,7 +82,7 @@ interface Shop {
 }
 
 interface Reward {
-  title?: string;      // screen heading: "Room cleared", "Boss down", "New orders"
+  title: string;       // screen heading: "Room cleared", "Boss down", "New orders" (v4; migrateRun fills it for older saves)
   gold: number;
   cards: string[];
   upgrade: boolean;
